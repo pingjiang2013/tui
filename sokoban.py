@@ -4,7 +4,6 @@ Run with:
     conda run -n py311 python sokoban.py
 """
 
-# 说明
 
 from __future__ import annotations
 
