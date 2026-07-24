@@ -1,0 +1,1300 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>经典扫雷</title>
+  <style>
+    :root {
+      --chrome: #c0c0c0;
+      --light: #ffffff;
+      --mid: #808080;
+      --dark: #000000;
+      --cell-size: 28px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: #000;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%) 0 0 / 18px 18px,
+        #008080;
+      font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+    }
+
+    button,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      max-width: 100%;
+    }
+
+    .title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 30px;
+      padding: 4px 6px;
+      color: #fff;
+      background: linear-gradient(90deg, #000080, #1084d0);
+      font-weight: 700;
+      user-select: none;
+    }
+
+    .title-bar__name {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .title-bar__icon {
+      font-size: 17px;
+    }
+
+    .window {
+      padding: 3px;
+      background: var(--chrome);
+      border-top: 3px solid var(--light);
+      border-left: 3px solid var(--light);
+      border-right: 3px solid var(--dark);
+      border-bottom: 3px solid var(--dark);
+      box-shadow: 5px 7px 0 rgba(0, 0, 0, 0.25);
+    }
+
+    .menu-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 6px 7px 7px;
+      font-size: 14px;
+    }
+
+    .difficulty {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .difficulty select {
+      min-height: 28px;
+      padding: 2px 28px 2px 7px;
+      color: #000;
+      background: #fff;
+      border: 2px inset #fff;
+    }
+
+    .instructions {
+      color: #333;
+      white-space: nowrap;
+    }
+
+    .game-shell {
+      padding: 8px;
+      border-top: 3px solid var(--mid);
+      border-left: 3px solid var(--mid);
+      border-right: 3px solid var(--light);
+      border-bottom: 3px solid var(--light);
+    }
+
+    .dashboard {
+      min-width: 220px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      padding: 7px;
+      border-top: 3px solid var(--mid);
+      border-left: 3px solid var(--mid);
+      border-right: 3px solid var(--light);
+      border-bottom: 3px solid var(--light);
+    }
+
+    .counter {
+      width: 72px;
+      padding: 2px 4px;
+      color: #ff1a1a;
+      background: #050505;
+      border: 2px inset #777;
+      font: 700 34px/1 "Courier New", monospace;
+      letter-spacing: 1px;
+      text-align: center;
+      text-shadow: 0 0 5px #b30000;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #timer {
+      justify-self: end;
+    }
+
+    .face {
+      width: 46px;
+      height: 46px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      background: var(--chrome);
+      border-top: 4px solid var(--light);
+      border-left: 4px solid var(--light);
+      border-right: 4px solid var(--dark);
+      border-bottom: 4px solid var(--dark);
+      font-size: 27px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .face:active {
+      padding: 2px 0 0 2px;
+      border-top-color: var(--dark);
+      border-left-color: var(--dark);
+      border-right-color: var(--light);
+      border-bottom-color: var(--light);
+    }
+
+    .face:focus-visible,
+    .cell:focus-visible,
+    select:focus-visible {
+      outline: 3px dotted #000080;
+      outline-offset: 2px;
+      z-index: 2;
+    }
+
+    .board-viewport {
+      max-width: calc(100vw - 70px);
+      overflow: auto;
+      background: var(--mid);
+      border-top: 4px solid var(--mid);
+      border-left: 4px solid var(--mid);
+      border-right: 4px solid var(--light);
+      border-bottom: 4px solid var(--light);
+    }
+
+    .board {
+      width: max-content;
+      display: grid;
+      background: var(--mid);
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    .cell {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      padding: 0;
+      display: grid;
+      place-items: center;
+      color: #000;
+      background: var(--chrome);
+      border-top: 4px solid var(--light);
+      border-left: 4px solid var(--light);
+      border-right: 4px solid var(--mid);
+      border-bottom: 4px solid var(--mid);
+      font: 900 18px/1 Arial, sans-serif;
+      cursor: default;
+    }
+
+    .cell:not(.revealed):active {
+      border: 1px solid var(--mid);
+    }
+
+    .cell.revealed {
+      border: 1px solid var(--mid);
+    }
+
+    .cell.flagged {
+      font-size: 18px;
+    }
+
+    .cell.mine {
+      font-size: 17px;
+    }
+
+    .cell.exploded {
+      background: #f00;
+    }
+
+    .cell.wrong {
+      color: #d00000;
+      font-size: 18px;
+    }
+
+    .n1 { color: #0000ff; }
+    .n2 { color: #008000; }
+    .n3 { color: #ff0000; }
+    .n4 { color: #000080; }
+    .n5 { color: #800000; }
+    .n6 { color: #008080; }
+    .n7 { color: #000000; }
+    .n8 { color: #808080; }
+
+    .status {
+      min-height: 24px;
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .game-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 8px 2px 0;
+    }
+
+    .hint-button {
+      flex: 0 0 auto;
+      min-width: 76px;
+      min-height: 30px;
+      padding: 3px 10px;
+      color: #000;
+      background: var(--chrome);
+      border-top: 3px solid var(--light);
+      border-left: 3px solid var(--light);
+      border-right: 3px solid var(--dark);
+      border-bottom: 3px solid var(--dark);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .hint-button:active:not(:disabled) {
+      padding: 5px 8px 1px 12px;
+      border-top-color: var(--dark);
+      border-left-color: var(--dark);
+      border-right-color: var(--light);
+      border-bottom-color: var(--light);
+    }
+
+    .hint-button:disabled {
+      color: #777;
+      text-shadow: 1px 1px #fff;
+      cursor: default;
+    }
+
+    .cell.hint-safe,
+    .cell.hint-mine,
+    .cell.hint-wrong {
+      position: relative;
+      z-index: 1;
+      animation: hint-pulse 0.8s ease-in-out infinite alternate;
+    }
+
+    .cell.hint-safe {
+      outline: 4px solid #00a000;
+      outline-offset: -4px;
+      background: #b8f5b8;
+    }
+
+    .cell.hint-mine {
+      outline: 4px solid #ff8c00;
+      outline-offset: -4px;
+      background: #ffe0a6;
+    }
+
+    .cell.hint-wrong {
+      outline: 4px solid #d00000;
+      outline-offset: -4px;
+      background: #ffb0b0;
+    }
+
+    @keyframes hint-pulse {
+      from { filter: brightness(1); }
+      to { filter: brightness(1.22); }
+    }
+
+    @media (max-width: 640px) {
+      :root {
+        --cell-size: 30px;
+      }
+
+      body {
+        place-items: start center;
+        padding: 10px;
+      }
+
+      .menu-bar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .instructions {
+        white-space: normal;
+      }
+
+      .game-footer {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .board-viewport {
+        max-width: calc(100vw - 42px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-labelledby="game-title">
+    <div class="window">
+      <div class="title-bar">
+        <span class="title-bar__name">
+          <span class="title-bar__icon" aria-hidden="true">💣</span>
+          <span id="game-title">扫雷</span>
+        </span>
+      </div>
+
+      <div class="menu-bar">
+        <label class="difficulty">
+          难度
+          <select id="difficulty" aria-label="选择游戏难度">
+            <option value="beginner">初级 · 9×9 · 10雷</option>
+            <option value="intermediate">中级 · 16×16 · 40雷</option>
+            <option value="expert">高级 · 30×16 · 99雷</option>
+          </select>
+        </label>
+        <span class="instructions">左键翻开 · 右键插旗 · 点击数字快速展开</span>
+      </div>
+
+      <section class="game-shell" aria-label="扫雷游戏">
+        <div class="dashboard">
+          <output id="mine-counter" class="counter" aria-label="剩余地雷">010</output>
+          <button id="restart" class="face" type="button" aria-label="重新开始">🙂</button>
+          <output id="timer" class="counter" aria-label="用时秒数">000</output>
+        </div>
+
+        <div class="board-viewport">
+          <div id="board" class="board" role="grid" aria-label="扫雷棋盘"></div>
+        </div>
+        <div class="game-footer">
+          <p id="status" class="status" role="status" aria-live="polite">点击任意方格开始游戏。</p>
+          <button id="hint" class="hint-button" type="button" disabled>💡 提示</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    "use strict";
+
+    function minesweeperWorker() {
+      "use strict";
+
+      const SEARCH_NODE_LIMIT = 120000;
+      let activeTask = 0;
+      let acceptedLevel = null;
+
+      function neighborsOf(index, rows, cols) {
+        const row = Math.floor(index / cols);
+        const col = index % cols;
+        const result = [];
+        for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
+          for (let colOffset = -1; colOffset <= 1; colOffset += 1) {
+            if (rowOffset === 0 && colOffset === 0) continue;
+            const nextRow = row + rowOffset;
+            const nextCol = col + colOffset;
+            if (nextRow >= 0 && nextRow < rows && nextCol >= 0 && nextCol < cols) {
+              result.push(nextRow * cols + nextCol);
+            }
+          }
+        }
+        return result;
+      }
+
+      function createLayout(rows, cols, mineTotal, firstIndex) {
+        const size = rows * cols;
+        const mines = new Uint8Array(size);
+        const numbers = new Uint8Array(size);
+        const safe = new Set([firstIndex, ...neighborsOf(firstIndex, rows, cols)]);
+        const candidates = [];
+        for (let index = 0; index < size; index += 1) {
+          if (!safe.has(index)) candidates.push(index);
+        }
+        for (let index = candidates.length - 1; index > 0; index -= 1) {
+          const randomIndex = Math.floor(Math.random() * (index + 1));
+          [candidates[index], candidates[randomIndex]] = [candidates[randomIndex], candidates[index]];
+        }
+        candidates.slice(0, mineTotal).forEach(index => {
+          mines[index] = 1;
+        });
+        for (let index = 0; index < size; index += 1) {
+          if (!mines[index]) {
+            numbers[index] = neighborsOf(index, rows, cols).reduce(
+              (total, neighbor) => total + mines[neighbor],
+              0
+            );
+          }
+        }
+        return { rows, cols, mineTotal, firstIndex, mines, numbers };
+      }
+
+      function revealFlood(layout, visible, startIndex) {
+        const queue = [startIndex];
+        const queued = new Set(queue);
+        while (queue.length) {
+          const index = queue.shift();
+          if (visible[index] || layout.mines[index]) continue;
+          visible[index] = 1;
+          if (layout.numbers[index] === 0) {
+            for (const neighbor of neighborsOf(index, layout.rows, layout.cols)) {
+              if (!visible[neighbor] && !layout.mines[neighbor] && !queued.has(neighbor)) {
+                queued.add(neighbor);
+                queue.push(neighbor);
+              }
+            }
+          }
+        }
+      }
+
+      function buildConstraints(layout, visible, knownMines) {
+        const constraints = [];
+        const unique = new Map();
+        let knownMineCount = 0;
+        knownMines.forEach(value => { knownMineCount += value; });
+
+        for (let source = 0; source < visible.length; source += 1) {
+          if (!visible[source]) continue;
+          const neighbors = neighborsOf(source, layout.rows, layout.cols);
+          const cells = neighbors.filter(index => !visible[index] && !knownMines[index]).sort((a, b) => a - b);
+          const adjacentKnown = neighbors.reduce((total, index) => total + knownMines[index], 0);
+          const remaining = layout.numbers[source] - adjacentKnown;
+          if (remaining < 0 || remaining > cells.length) return { invalid: true };
+          if (!cells.length) continue;
+          const key = cells.join(",");
+          if (unique.has(key) && unique.get(key).remaining !== remaining) return { invalid: true };
+          if (!unique.has(key)) {
+            const constraint = { cells, remaining, source };
+            unique.set(key, constraint);
+            constraints.push(constraint);
+          }
+        }
+
+        const unknown = [];
+        for (let index = 0; index < visible.length; index += 1) {
+          if (!visible[index] && !knownMines[index]) unknown.push(index);
+        }
+        const globalRemaining = layout.mineTotal - knownMineCount;
+        if (globalRemaining < 0 || globalRemaining > unknown.length) return { invalid: true };
+        return { invalid: false, constraints, unknown, globalRemaining };
+      }
+
+      function isSubset(smaller, larger) {
+        if (smaller.length >= larger.length) return false;
+        const largerSet = new Set(larger);
+        return smaller.every(cell => largerSet.has(cell));
+      }
+
+      function makeDeductions(info) {
+        const safe = new Map();
+        const mines = new Map();
+        const add = (targetMap, cells, reason, sources) => {
+          cells.forEach(cell => {
+            if (!targetMap.has(cell)) targetMap.set(cell, { reason, sources });
+          });
+        };
+
+        for (const constraint of info.constraints) {
+          if (constraint.remaining === 0) {
+            add(safe, constraint.cells, "clear", [constraint.source]);
+          } else if (constraint.remaining === constraint.cells.length) {
+            add(mines, constraint.cells, "fill", [constraint.source]);
+          }
+        }
+        if (info.globalRemaining === 0) {
+          add(safe, info.unknown, "global-clear", []);
+        } else if (info.globalRemaining === info.unknown.length) {
+          add(mines, info.unknown, "global-fill", []);
+        }
+
+        for (let first = 0; first < info.constraints.length; first += 1) {
+          for (let second = 0; second < info.constraints.length; second += 1) {
+            if (first === second) continue;
+            const small = info.constraints[first];
+            const large = info.constraints[second];
+            if (!isSubset(small.cells, large.cells)) continue;
+            const smallSet = new Set(small.cells);
+            const difference = large.cells.filter(cell => !smallSet.has(cell));
+            const remaining = large.remaining - small.remaining;
+            if (remaining < 0 || remaining > difference.length) return { invalid: true };
+            if (remaining === 0) {
+              add(safe, difference, "subset-clear", [small.source, large.source]);
+            } else if (remaining === difference.length) {
+              add(mines, difference, "subset-fill", [small.source, large.source]);
+            }
+          }
+        }
+
+        for (const cell of safe.keys()) {
+          if (mines.has(cell)) return { invalid: true };
+        }
+        const groups = [];
+        const groupMap = (targetMap, kind) => {
+          const grouped = new Map();
+          targetMap.forEach((proof, cell) => {
+            const key = `${proof.reason}|${proof.sources.join(",")}`;
+            if (!grouped.has(key)) grouped.set(key, { kind, targets: [], ...proof });
+            grouped.get(key).targets.push(cell);
+          });
+          groups.push(...grouped.values());
+        };
+        groupMap(safe, "safe");
+        groupMap(mines, "mine");
+        return { invalid: false, groups };
+      }
+
+      function enumerateComponent(componentCells, componentConstraints, budget) {
+        const degree = new Map(componentCells.map(cell => [cell, 0]));
+        componentConstraints.forEach(constraint => {
+          constraint.cells.forEach(cell => degree.set(cell, (degree.get(cell) || 0) + 1));
+        });
+        const variables = [...componentCells].sort((a, b) => degree.get(b) - degree.get(a));
+        const assignment = new Map();
+        const counts = new Set();
+        const minePossible = new Map();
+        const safePossible = new Map();
+
+        function viable() {
+          for (const constraint of componentConstraints) {
+            let assignedMines = 0;
+            let unassigned = 0;
+            for (const cell of constraint.cells) {
+              if (!assignment.has(cell)) unassigned += 1;
+              else assignedMines += assignment.get(cell);
+            }
+            if (assignedMines > constraint.remaining || assignedMines + unassigned < constraint.remaining) {
+              return false;
+            }
+          }
+          return true;
+        }
+
+        function search(position, mineCount) {
+          budget.nodes += 1;
+          if (budget.nodes > SEARCH_NODE_LIMIT) {
+            budget.exceeded = true;
+            return;
+          }
+          if (!viable()) return;
+          if (position === variables.length) {
+            counts.add(mineCount);
+            if (!minePossible.has(mineCount)) minePossible.set(mineCount, new Set());
+            if (!safePossible.has(mineCount)) safePossible.set(mineCount, new Set());
+            variables.forEach(cell => {
+              (assignment.get(cell) ? minePossible : safePossible).get(mineCount).add(cell);
+            });
+            return;
+          }
+          const cell = variables[position];
+          assignment.set(cell, 0);
+          search(position + 1, mineCount);
+          if (!budget.exceeded) {
+            assignment.set(cell, 1);
+            search(position + 1, mineCount + 1);
+          }
+          assignment.delete(cell);
+        }
+
+        search(0, 0);
+        return { cells: variables, constraints: componentConstraints, counts, minePossible, safePossible };
+      }
+
+      function sumOptions(components, excludedIndex = -1) {
+        let sums = new Set([0]);
+        components.forEach((component, index) => {
+          if (index === excludedIndex) return;
+          const next = new Set();
+          sums.forEach(sum => component.counts.forEach(count => next.add(sum + count)));
+          sums = next;
+        });
+        return sums;
+      }
+
+      function exactDeductions(info) {
+        const frontier = new Set();
+        const constraintsByCell = new Map();
+        info.constraints.forEach((constraint, constraintIndex) => {
+          constraint.cells.forEach(cell => {
+            frontier.add(cell);
+            if (!constraintsByCell.has(cell)) constraintsByCell.set(cell, []);
+            constraintsByCell.get(cell).push(constraintIndex);
+          });
+        });
+        if (!frontier.size) return { invalid: false, groups: [] };
+
+        const components = [];
+        const unseen = new Set(frontier);
+        while (unseen.size) {
+          const firstCell = unseen.values().next().value;
+          const queue = [firstCell];
+          const cells = new Set();
+          const constraintIndexes = new Set();
+          unseen.delete(firstCell);
+          while (queue.length) {
+            const cell = queue.shift();
+            cells.add(cell);
+            for (const constraintIndex of constraintsByCell.get(cell) || []) {
+              if (constraintIndexes.has(constraintIndex)) continue;
+              constraintIndexes.add(constraintIndex);
+              info.constraints[constraintIndex].cells.forEach(linkedCell => {
+                if (unseen.delete(linkedCell)) queue.push(linkedCell);
+              });
+            }
+          }
+          components.push({
+            cells: [...cells],
+            constraints: [...constraintIndexes].map(index => info.constraints[index])
+          });
+        }
+
+        const budget = { nodes: 0, exceeded: false };
+        const enumerated = components.map(component =>
+          enumerateComponent(component.cells, component.constraints, budget)
+        );
+        if (budget.exceeded || enumerated.some(component => component.counts.size === 0)) {
+          return { invalid: true, budgetExceeded: budget.exceeded };
+        }
+
+        const outside = info.unknown.filter(cell => !frontier.has(cell));
+        const allSums = sumOptions(enumerated);
+        const possibleRemainders = [...allSums]
+          .map(sum => info.globalRemaining - sum)
+          .filter(remaining => remaining >= 0 && remaining <= outside.length);
+        if (!possibleRemainders.length) return { invalid: true };
+
+        const safe = new Set();
+        const mines = new Set();
+        enumerated.forEach((component, componentIndex) => {
+          const otherSums = sumOptions(enumerated, componentIndex);
+          const viableCounts = [...component.counts].filter(count =>
+            [...otherSums].some(sum => {
+              const outsideMines = info.globalRemaining - count - sum;
+              return outsideMines >= 0 && outsideMines <= outside.length;
+            })
+          );
+          component.cells.forEach(cell => {
+            const canBeMine = viableCounts.some(count => component.minePossible.get(count)?.has(cell));
+            const canBeSafe = viableCounts.some(count => component.safePossible.get(count)?.has(cell));
+            if (!canBeMine) safe.add(cell);
+            if (!canBeSafe) mines.add(cell);
+          });
+        });
+
+        if (possibleRemainders.every(remaining => remaining === 0)) {
+          outside.forEach(cell => safe.add(cell));
+        } else if (outside.length && possibleRemainders.every(remaining => remaining === outside.length)) {
+          outside.forEach(cell => mines.add(cell));
+        }
+        for (const cell of safe) {
+          if (mines.has(cell)) return { invalid: true };
+        }
+
+        const sources = [...new Set(info.constraints.map(constraint => constraint.source))].slice(0, 6);
+        const groups = [];
+        if (safe.size) groups.push({ kind: "safe", targets: [...safe], reason: "constraint-safe", sources });
+        if (mines.size) groups.push({ kind: "mine", targets: [...mines], reason: "constraint-mine", sources });
+        return { invalid: false, groups };
+      }
+
+      function derive(layout, visible, knownMines) {
+        const info = buildConstraints(layout, visible, knownMines);
+        if (info.invalid) return { invalid: true };
+        const basic = makeDeductions(info);
+        if (basic.invalid || basic.groups.length) return basic;
+        return exactDeductions(info);
+      }
+
+      function solveGeneratedLayout(layout) {
+        const visible = new Uint8Array(layout.rows * layout.cols);
+        const knownMines = new Uint8Array(visible.length);
+        const proof = [];
+        revealFlood(layout, visible, layout.firstIndex);
+
+        for (let round = 0; round < visible.length * 2; round += 1) {
+          let visibleCount = 0;
+          visible.forEach(value => { visibleCount += value; });
+          if (visibleCount === visible.length - layout.mineTotal) return proof;
+          const result = derive(layout, visible, knownMines);
+          if (result.invalid || !result.groups.length) return null;
+          let changed = false;
+          for (const group of result.groups) {
+            const targets = group.targets.filter(index => !visible[index] && !knownMines[index]);
+            if (!targets.length) continue;
+            if (group.kind === "mine") {
+              if (targets.some(index => !layout.mines[index])) return null;
+              targets.forEach(index => { knownMines[index] = 1; });
+            } else {
+              if (targets.some(index => layout.mines[index])) return null;
+              targets.forEach(index => revealFlood(layout, visible, index));
+            }
+            proof.push({ ...group, targets });
+            changed = true;
+          }
+          if (!changed) return null;
+        }
+        return null;
+      }
+
+      function findHint(layout, visibleValues, flaggedValues) {
+        const visible = Uint8Array.from(visibleValues);
+        const flagged = Uint8Array.from(flaggedValues);
+        const knownMines = new Uint8Array(visible.length);
+
+        for (let round = 0; round < visible.length * 2; round += 1) {
+          const result = derive(layout, visible, knownMines);
+          if (result.invalid || !result.groups.length) return null;
+          let learned = false;
+          for (const group of result.groups) {
+            for (const target of group.targets) {
+              if (group.kind === "safe" && !visible[target]) {
+                return {
+                  action: flagged[target] ? "wrong" : "safe",
+                  target,
+                  reason: group.reason,
+                  sources: group.sources
+                };
+              }
+              if (group.kind === "mine" && !flagged[target]) {
+                return { action: "mine", target, reason: group.reason, sources: group.sources };
+              }
+            }
+            if (group.kind === "mine") {
+              group.targets.forEach(target => {
+                if (flagged[target] && !knownMines[target]) {
+                  knownMines[target] = 1;
+                  learned = true;
+                }
+              });
+            }
+          }
+          if (!learned) return null;
+        }
+        return null;
+      }
+
+      function beginGeneration(message) {
+        activeTask = message.taskId;
+        acceptedLevel = null;
+        let attempts = 0;
+        const runBatch = () => {
+          if (activeTask !== message.taskId) return;
+          for (let batchIndex = 0; batchIndex < 6; batchIndex += 1) {
+            attempts += 1;
+            const layout = createLayout(message.rows, message.cols, message.mines, message.firstIndex);
+            const proof = solveGeneratedLayout(layout);
+            if (proof) {
+              acceptedLevel = layout;
+              self.postMessage({
+                type: "accepted",
+                taskId: message.taskId,
+                attempts,
+                mines: Array.from(layout.mines),
+                numbers: Array.from(layout.numbers),
+                proof
+              });
+              return;
+            }
+          }
+          if (attempts % 24 === 0) {
+            self.postMessage({ type: "progress", taskId: message.taskId, attempts });
+          }
+          setTimeout(runBatch, 0);
+        };
+        runBatch();
+      }
+
+      self.onmessage = event => {
+        const message = event.data;
+        if (message.type === "generate") {
+          beginGeneration(message);
+        } else if (message.type === "hint" && acceptedLevel && message.taskId === activeTask) {
+          const hint = findHint(acceptedLevel, message.visible, message.flagged);
+          self.postMessage({ type: "hint", taskId: message.taskId, hint });
+        }
+      };
+    }
+
+    const DIFFICULTIES = Object.freeze({
+      beginner: { rows: 9, cols: 9, mines: 10 },
+      intermediate: { rows: 16, cols: 16, mines: 40 },
+      expert: { rows: 16, cols: 30, mines: 99 }
+    });
+
+    const boardElement = document.querySelector("#board");
+    const difficultyElement = document.querySelector("#difficulty");
+    const restartButton = document.querySelector("#restart");
+    const mineCounter = document.querySelector("#mine-counter");
+    const timerElement = document.querySelector("#timer");
+    const statusElement = document.querySelector("#status");
+    const hintButton = document.querySelector("#hint");
+
+    let config;
+    let board;
+    let phase;
+    let flagCount;
+    let revealedCount;
+    let elapsed;
+    let timerId;
+    let explodedCell;
+    let gameWorker;
+    let taskId = 0;
+    let proofSteps;
+    let currentHint;
+    let hintPending;
+
+    function createCell(row, col) {
+      return {
+        row,
+        col,
+        mine: false,
+        adjacent: 0,
+        revealed: false,
+        flagged: false
+      };
+    }
+
+    function resetGame() {
+      stopTimer();
+      if (gameWorker) {
+        gameWorker.terminate();
+        gameWorker = null;
+      }
+      taskId += 1;
+      config = DIFFICULTIES[difficultyElement.value];
+      board = Array.from({ length: config.rows }, (_, row) =>
+        Array.from({ length: config.cols }, (_, col) => createCell(row, col))
+      );
+      phase = "ready";
+      flagCount = 0;
+      revealedCount = 0;
+      elapsed = 0;
+      explodedCell = null;
+      proofSteps = [];
+      currentHint = null;
+      hintPending = false;
+
+      boardElement.style.gridTemplateColumns = `repeat(${config.cols}, var(--cell-size))`;
+      boardElement.setAttribute("aria-rowcount", config.rows);
+      boardElement.setAttribute("aria-colcount", config.cols);
+      restartButton.textContent = "🙂";
+      restartButton.setAttribute("aria-label", "重新开始");
+      hintButton.disabled = true;
+      statusElement.textContent = "点击任意方格开始游戏。";
+      updateDisplays();
+      renderBoard();
+    }
+
+    function getNeighbors(row, col) {
+      const neighbors = [];
+      for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
+        for (let colOffset = -1; colOffset <= 1; colOffset += 1) {
+          if (rowOffset === 0 && colOffset === 0) continue;
+          const nextRow = row + rowOffset;
+          const nextCol = col + colOffset;
+          if (
+            nextRow >= 0 &&
+            nextRow < config.rows &&
+            nextCol >= 0 &&
+            nextCol < config.cols
+          ) {
+            neighbors.push(board[nextRow][nextCol]);
+          }
+        }
+      }
+      return neighbors;
+    }
+
+    function createSolverWorker() {
+      const workerSource = `(${minesweeperWorker.toString()})()`;
+      const workerUrl = URL.createObjectURL(new Blob([workerSource], { type: "text/javascript" }));
+      const worker = new Worker(workerUrl);
+      URL.revokeObjectURL(workerUrl);
+      return worker;
+    }
+
+    function beginLevelGeneration(firstCell) {
+      phase = "generating";
+      currentHint = null;
+      hintButton.disabled = true;
+      restartButton.textContent = "⏳";
+      restartButton.setAttribute("aria-label", "正在生成，可点击重新开始");
+      statusElement.textContent = "正在生成并检测无猜关卡…";
+      renderBoard();
+
+      const currentTask = taskId;
+      gameWorker = createSolverWorker();
+      gameWorker.onmessage = event => {
+        const message = event.data;
+        if (message.taskId !== taskId || message.taskId !== currentTask) return;
+        if (message.type === "progress") {
+          statusElement.textContent = "正在生成并检测无猜关卡…请稍候";
+        } else if (message.type === "accepted") {
+          acceptGeneratedLevel(message, firstCell);
+        } else if (message.type === "hint") {
+          showHintResult(message.hint);
+        }
+      };
+      gameWorker.onerror = () => {
+        if (currentTask !== taskId) return;
+        phase = "ready";
+        restartButton.textContent = "😵";
+        restartButton.setAttribute("aria-label", "生成失败，重新开始");
+        statusElement.textContent = "关卡检测器启动失败，请点击表情重新开始。";
+        renderBoard();
+      };
+      gameWorker.postMessage({
+        type: "generate",
+        taskId: currentTask,
+        rows: config.rows,
+        cols: config.cols,
+        mines: config.mines,
+        firstIndex: firstCell.row * config.cols + firstCell.col
+      });
+    }
+
+    function acceptGeneratedLevel(message, firstCell) {
+      for (let index = 0; index < message.mines.length; index += 1) {
+        const cell = board[Math.floor(index / config.cols)][index % config.cols];
+        cell.mine = Boolean(message.mines[index]);
+        cell.adjacent = message.numbers[index];
+      }
+      proofSteps = message.proof;
+      phase = "playing";
+      restartButton.textContent = "🙂";
+      restartButton.setAttribute("aria-label", "重新开始");
+      hintButton.disabled = false;
+      statusElement.textContent = "无猜关卡检测通过，游戏开始。";
+      revealArea(firstCell);
+      startTimer();
+      if (hasWon()) winGame();
+      else renderBoard();
+    }
+
+    function startTimer() {
+      if (timerId) return;
+      timerId = window.setInterval(() => {
+        elapsed = Math.min(elapsed + 1, 999);
+        updateDisplays();
+        if (elapsed === 999) stopTimer();
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerId) {
+        window.clearInterval(timerId);
+        timerId = null;
+      }
+    }
+
+    function formatCounter(value) {
+      const limited = Math.max(-99, Math.min(999, value));
+      if (limited < 0) return `-${String(Math.abs(limited)).padStart(2, "0")}`;
+      return String(limited).padStart(3, "0");
+    }
+
+    function updateDisplays() {
+      mineCounter.value = formatCounter(config.mines - flagCount);
+      mineCounter.textContent = mineCounter.value;
+      timerElement.value = formatCounter(elapsed);
+      timerElement.textContent = timerElement.value;
+    }
+
+    function revealArea(startCell) {
+      const queue = [startCell];
+      const queued = new Set([`${startCell.row},${startCell.col}`]);
+
+      while (queue.length) {
+        const cell = queue.shift();
+        if (cell.revealed || cell.flagged || cell.mine) continue;
+
+        cell.revealed = true;
+        revealedCount += 1;
+
+        if (cell.adjacent === 0) {
+          for (const neighbor of getNeighbors(cell.row, cell.col)) {
+            const key = `${neighbor.row},${neighbor.col}`;
+            if (!neighbor.revealed && !neighbor.flagged && !neighbor.mine && !queued.has(key)) {
+              queued.add(key);
+              queue.push(neighbor);
+            }
+          }
+        }
+      }
+    }
+
+    function revealCell(cell) {
+      if (phase === "generating" || phase === "won" || phase === "lost" || cell.flagged) return;
+
+      if (cell.revealed) {
+        chordCell(cell);
+        return;
+      }
+
+      if (phase === "ready") {
+        beginLevelGeneration(cell);
+        return;
+      }
+
+      if (cell.mine) {
+        loseGame(cell);
+        return;
+      }
+
+      revealArea(cell);
+      if (hasWon()) {
+        winGame();
+      } else {
+        renderBoard();
+      }
+    }
+
+    function chordCell(cell) {
+      if (phase !== "playing" || !cell.revealed || cell.adjacent === 0) return;
+      const neighbors = getNeighbors(cell.row, cell.col);
+      const adjacentFlags = neighbors.filter(neighbor => neighbor.flagged).length;
+      if (adjacentFlags !== cell.adjacent) return;
+
+      const hiddenNeighbors = neighbors.filter(neighbor => !neighbor.flagged && !neighbor.revealed);
+      const mine = hiddenNeighbors.find(neighbor => neighbor.mine);
+      if (mine) {
+        loseGame(mine);
+        return;
+      }
+
+      hiddenNeighbors.forEach(revealArea);
+      if (hasWon()) {
+        winGame();
+      } else {
+        renderBoard();
+      }
+    }
+
+    function toggleFlag(cell) {
+      if (phase === "generating" || phase === "won" || phase === "lost" || cell.revealed) return;
+      cell.flagged = !cell.flagged;
+      flagCount += cell.flagged ? 1 : -1;
+      updateDisplays();
+      renderBoard();
+    }
+
+    function hasWon() {
+      return revealedCount === config.rows * config.cols - config.mines;
+    }
+
+    function winGame() {
+      phase = "won";
+      stopTimer();
+      currentHint = null;
+      hintButton.disabled = true;
+      flagCount = 0;
+      for (const row of board) {
+        for (const cell of row) {
+          if (cell.mine) cell.flagged = true;
+          if (cell.flagged) flagCount += 1;
+        }
+      }
+      restartButton.textContent = "😎";
+      restartButton.setAttribute("aria-label", "胜利，重新开始");
+      statusElement.textContent = `恭喜！你用 ${elapsed} 秒清除了全部地雷。`;
+      updateDisplays();
+      renderBoard();
+    }
+
+    function loseGame(cell) {
+      phase = "lost";
+      explodedCell = cell;
+      cell.revealed = true;
+      stopTimer();
+      currentHint = null;
+      hintButton.disabled = true;
+      restartButton.textContent = "😵";
+      restartButton.setAttribute("aria-label", "游戏失败，重新开始");
+      statusElement.textContent = "踩到地雷了！点击笑脸重新开始。";
+      renderBoard();
+    }
+
+    function cellPosition(index) {
+      return `第 ${Math.floor(index / config.cols) + 1} 行，第 ${index % config.cols + 1} 列`;
+    }
+
+    function explainHint(hint) {
+      const source = hint.sources?.[0];
+      const sourceCell = Number.isInteger(source) ? board[Math.floor(source / config.cols)][source % config.cols] : null;
+      const sourceText = sourceCell ? `${cellPosition(source)}的数字 ${sourceCell.adjacent}` : "全局剩余雷数";
+      const explanations = {
+        clear: `${sourceText}周围所需地雷已经全部确定，因此高亮格安全。`,
+        fill: `${sourceText}周围剩余未知格数量等于剩余地雷数，因此高亮格是地雷。`,
+        "subset-clear": "比较两个相邻数字的未知格集合后，差集不再包含地雷，因此高亮格安全。",
+        "subset-fill": "比较两个相邻数字的未知格集合后，差集中的每一格都必须是地雷。",
+        "global-clear": "棋盘上的地雷已经全部确定，因此其余未翻开格都安全。",
+        "global-fill": "剩余地雷数等于所有未确定格数量，因此这些格都是地雷。",
+        "constraint-safe": "综合当前所有数字和剩余雷数，所有有效排列都认定高亮格安全。",
+        "constraint-mine": "综合当前所有数字和剩余雷数，所有有效排列都认定高亮格是地雷。"
+      };
+      const base = explanations[hint.reason] || "根据当前可见数字，高亮格的状态可以唯一确定。";
+      if (hint.action === "wrong") return `这面旗帜有误：${base} 请先移除旗帜。`;
+      if (hint.action === "mine") return `${base} 可以在此插旗。`;
+      return `${base} 可以安全翻开。`;
+    }
+
+    function requestHint() {
+      if (phase !== "playing" || !gameWorker || hintPending) return;
+      currentHint = null;
+      hintPending = true;
+      hintButton.disabled = true;
+      statusElement.textContent = "正在根据当前局面寻找确定的一步…";
+      const visible = [];
+      const flagged = [];
+      for (const row of board) {
+        for (const cell of row) {
+          visible.push(cell.revealed ? 1 : 0);
+          flagged.push(cell.flagged ? 1 : 0);
+        }
+      }
+      gameWorker.postMessage({ type: "hint", taskId, visible, flagged, proofLength: proofSteps.length });
+    }
+
+    function showHintResult(hint) {
+      if (phase !== "playing") return;
+      hintPending = false;
+      hintButton.disabled = false;
+      if (!hint) {
+        currentHint = null;
+        statusElement.textContent = "当前可见信息中没有尚未完成的确定操作；请检查旗帜或继续翻开已知安全格。";
+        renderBoard();
+        return;
+      }
+      currentHint = { index: hint.target, action: hint.action };
+      statusElement.textContent = explainHint(hint);
+      renderBoard();
+      const target = boardElement.querySelector(`[data-row="${Math.floor(hint.target / config.cols)}"][data-col="${hint.target % config.cols}"]`);
+      target?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+    }
+
+    function clearHint() {
+      if (!currentHint) return;
+      currentHint = null;
+    }
+
+    function getCellPresentation(cell) {
+      const classes = ["cell"];
+      let content = "";
+      let label = `第 ${cell.row + 1} 行，第 ${cell.col + 1} 列`;
+
+      if (phase === "lost" && cell.flagged && !cell.mine) {
+        classes.push("revealed", "wrong");
+        content = "✕";
+        label += "，错误旗帜";
+      } else if (cell.flagged) {
+        classes.push("flagged");
+        content = "🚩";
+        label += "，已插旗";
+      } else if (cell.revealed || (phase === "lost" && cell.mine)) {
+        classes.push("revealed");
+        if (cell.mine) {
+          classes.push("mine");
+          if (cell === explodedCell) classes.push("exploded");
+          content = "💣";
+          label += cell === explodedCell ? "，引爆的地雷" : "，地雷";
+        } else if (cell.adjacent > 0) {
+          classes.push(`n${cell.adjacent}`);
+          content = String(cell.adjacent);
+          label += `，周围有 ${cell.adjacent} 个地雷`;
+        } else {
+          label += "，空白";
+        }
+      } else {
+        label += "，未翻开";
+      }
+
+      const index = cell.row * config.cols + cell.col;
+      if (currentHint?.index === index) {
+        const hintClass = {
+          safe: "hint-safe",
+          mine: "hint-mine",
+          wrong: "hint-wrong"
+        }[currentHint.action];
+        classes.push(hintClass);
+        label += currentHint.action === "safe"
+          ? "，提示：可以安全翻开"
+          : currentHint.action === "mine"
+            ? "，提示：可以插旗"
+            : "，提示：此旗帜有误";
+      }
+
+      return { classes, content, label };
+    }
+
+    function renderBoard() {
+      const fragment = document.createDocumentFragment();
+
+      for (const row of board) {
+        for (const cell of row) {
+          const presentation = getCellPresentation(cell);
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = presentation.classes.join(" ");
+          button.textContent = presentation.content;
+          button.dataset.row = cell.row;
+          button.dataset.col = cell.col;
+          button.setAttribute("role", "gridcell");
+          button.setAttribute("aria-rowindex", cell.row + 1);
+          button.setAttribute("aria-colindex", cell.col + 1);
+          button.setAttribute("aria-label", presentation.label);
+          button.disabled = phase === "generating" || phase === "won" || phase === "lost";
+          fragment.appendChild(button);
+        }
+      }
+
+      boardElement.replaceChildren(fragment);
+    }
+
+    function cellFromEvent(event) {
+      const button = event.target.closest(".cell");
+      if (!button || !boardElement.contains(button)) return null;
+      return board[Number(button.dataset.row)][Number(button.dataset.col)];
+    }
+
+    boardElement.addEventListener("click", event => {
+      const cell = cellFromEvent(event);
+      if (cell) {
+        clearHint();
+        revealCell(cell);
+      }
+    });
+
+    boardElement.addEventListener("contextmenu", event => {
+      const cell = cellFromEvent(event);
+      if (!cell) return;
+      event.preventDefault();
+      clearHint();
+      toggleFlag(cell);
+    });
+
+    boardElement.addEventListener("mousedown", event => {
+      if (event.button === 0 && (phase === "ready" || phase === "playing")) {
+        restartButton.textContent = "😮";
+      }
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (phase === "ready" || phase === "playing") restartButton.textContent = "🙂";
+    });
+
+    difficultyElement.addEventListener("change", resetGame);
+    restartButton.addEventListener("click", resetGame);
+    hintButton.addEventListener("click", requestHint);
+
+    resetGame();
+  </script>
+</body>
+</html>
