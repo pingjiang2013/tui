@@ -164,6 +164,8 @@
 
     .face:focus-visible,
     .cell:focus-visible,
+    .tool-button:focus-visible,
+    .hint-button:focus-visible,
     select:focus-visible {
       outline: 3px dotted #000080;
       outline-offset: 2px;
@@ -253,10 +255,48 @@
       margin: 8px 2px 0;
     }
 
+    .game-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tool-switch {
+      display: flex;
+      align-items: stretch;
+    }
+
+    .tool-button {
+      min-width: 72px;
+      min-height: 36px;
+      padding: 4px 9px;
+      color: #000;
+      background: var(--chrome);
+      border-top: 3px solid var(--light);
+      border-left: 3px solid var(--light);
+      border-right: 3px solid var(--dark);
+      border-bottom: 3px solid var(--dark);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tool-button + .tool-button {
+      margin-left: 3px;
+    }
+
+    .tool-button[aria-pressed="true"] {
+      padding: 6px 7px 2px 11px;
+      background: #d8d8d8;
+      border-top-color: var(--dark);
+      border-left-color: var(--dark);
+      border-right-color: var(--light);
+      border-bottom-color: var(--light);
+    }
+
     .hint-button {
       flex: 0 0 auto;
       min-width: 76px;
-      min-height: 30px;
+      min-height: 36px;
       padding: 3px 10px;
       color: #000;
       background: var(--chrome);
@@ -338,6 +378,20 @@
         flex-direction: column;
       }
 
+      .game-controls {
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: space-between;
+      }
+
+      .tool-switch {
+        flex: 1 1 auto;
+      }
+
+      .tool-button {
+        flex: 1 1 0;
+      }
+
       .board-viewport {
         max-width: calc(100vw - 42px);
       }
@@ -363,7 +417,7 @@
             <option value="expert">高级 · 30×16 · 99雷</option>
           </select>
         </label>
-        <span class="instructions">左键翻开 · 右键插旗 · 点击数字快速展开</span>
+        <span class="instructions">选择工具后点击或轻触方格 · 右键直接插旗 · 双击数字快速展开</span>
       </div>
 
       <section class="game-shell" aria-label="扫雷游戏">
@@ -378,7 +432,13 @@
         </div>
         <div class="game-footer">
           <p id="status" class="status" role="status" aria-live="polite">点击任意方格开始游戏。</p>
-          <button id="hint" class="hint-button" type="button" disabled>💡 提示</button>
+          <div class="game-controls">
+            <div class="tool-switch" role="group" aria-label="方格操作工具">
+              <button class="tool-button" type="button" data-tool="reveal" aria-pressed="true">⛏️ 铲子</button>
+              <button class="tool-button" type="button" data-tool="flag" aria-pressed="false">🚩 旗子</button>
+            </div>
+            <button id="hint" class="hint-button" type="button" disabled>💡 提示</button>
+          </div>
         </div>
       </section>
     </div>
@@ -836,6 +896,7 @@
     const timerElement = document.querySelector("#timer");
     const statusElement = document.querySelector("#status");
     const hintButton = document.querySelector("#hint");
+    const toolButtons = [...document.querySelectorAll(".tool-button")];
 
     let config;
     let board;
@@ -850,6 +911,12 @@
     let proofSteps;
     let currentHint;
     let hintPending;
+    let activeTool = "reveal";
+    let pointerPress = null;
+    let lastPrimaryActivation = null;
+
+    const DOUBLE_ACTIVATION_MS = 400;
+    const TAP_MOVE_TOLERANCE = 10;
 
     function createCell(row, col) {
       return {
@@ -1034,10 +1101,7 @@
     function revealCell(cell) {
       if (phase === "generating" || phase === "won" || phase === "lost" || cell.flagged) return;
 
-      if (cell.revealed) {
-        chordCell(cell);
-        return;
-      }
+      if (cell.revealed) return;
 
       if (phase === "ready") {
         beginLevelGeneration(cell);
@@ -1264,12 +1328,93 @@
       return board[Number(button.dataset.row)][Number(button.dataset.col)];
     }
 
-    boardElement.addEventListener("click", event => {
-      const cell = cellFromEvent(event);
-      if (cell) {
-        clearHint();
-        revealCell(cell);
+    function selectTool(tool) {
+      activeTool = tool;
+      for (const button of toolButtons) {
+        button.setAttribute("aria-pressed", String(button.dataset.tool === activeTool));
       }
+    }
+
+    function performToolAction(cell) {
+      clearHint();
+      if (activeTool === "flag") toggleFlag(cell);
+      else revealCell(cell);
+    }
+
+    function isChordTarget(cell) {
+      return phase === "playing" && cell.revealed && cell.adjacent > 0;
+    }
+
+    boardElement.addEventListener("pointerdown", event => {
+      if (!event.isPrimary || event.button !== 0) return;
+      const cell = cellFromEvent(event);
+      if (!cell) return;
+
+      pointerPress = {
+        pointerId: event.pointerId,
+        pointerType: event.pointerType,
+        row: cell.row,
+        col: cell.col,
+        x: event.clientX,
+        y: event.clientY
+      };
+
+      if (phase === "ready" || phase === "playing") {
+        restartButton.textContent = "😮";
+      }
+    });
+
+    boardElement.addEventListener("pointerup", event => {
+      const press = pointerPress;
+      pointerPress = null;
+      if (!press || press.pointerId !== event.pointerId) return;
+
+      const cell = cellFromEvent(event);
+      const moved = Math.hypot(event.clientX - press.x, event.clientY - press.y);
+      if (
+        !cell ||
+        cell.row !== press.row ||
+        cell.col !== press.col ||
+        moved > TAP_MOVE_TOLERANCE
+      ) {
+        return;
+      }
+
+      const now = performance.now();
+      const chordEligible = isChordTarget(cell);
+      const isDoubleActivation =
+        chordEligible &&
+        lastPrimaryActivation?.eligible &&
+        lastPrimaryActivation.pointerType === press.pointerType &&
+        lastPrimaryActivation.row === cell.row &&
+        lastPrimaryActivation.col === cell.col &&
+        now - lastPrimaryActivation.time <= DOUBLE_ACTIVATION_MS;
+
+      clearHint();
+      if (isDoubleActivation) {
+        lastPrimaryActivation = null;
+        chordCell(cell);
+      } else {
+        lastPrimaryActivation = {
+          pointerType: press.pointerType,
+          row: cell.row,
+          col: cell.col,
+          time: now,
+          eligible: chordEligible
+        };
+        if (activeTool === "flag") toggleFlag(cell);
+        else revealCell(cell);
+      }
+    });
+
+    boardElement.addEventListener("pointercancel", event => {
+      if (pointerPress?.pointerId === event.pointerId) pointerPress = null;
+    });
+
+    boardElement.addEventListener("click", event => {
+      if (event.detail !== 0) return;
+      const cell = cellFromEvent(event);
+      if (cell) performToolAction(cell);
     });
 
     boardElement.addEventListener("contextmenu", event => {
@@ -1280,16 +1425,16 @@
       toggleFlag(cell);
     });
 
-    boardElement.addEventListener("mousedown", event => {
-      if (event.button === 0 && (phase === "ready" || phase === "playing")) {
-        restartButton.textContent = "😮";
-      }
-    });
-
-    window.addEventListener("mouseup", () => {
+    function restoreFace() {
       if (phase === "ready" || phase === "playing") restartButton.textContent = "🙂";
-    });
+    }
 
+    window.addEventListener("pointerup", restoreFace);
+    window.addEventListener("pointercancel", restoreFace);
+
+    toolButtons.forEach(button => {
+      button.addEventListener("click", () => selectTool(button.dataset.tool));
+    });
     difficultyElement.addEventListener("change", resetGame);
     restartButton.addEventListener("click", resetGame);
     hintButton.addEventListener("click", requestHint);
