@@ -11,6 +11,7 @@
       --mid: #808080;
       --dark: #000000;
       --cell-size: 28px;
+      --page-gutter: 48px;
     }
 
     * {
@@ -22,7 +23,7 @@
       margin: 0;
       display: grid;
       place-items: center;
-      padding: 24px;
+      padding: 12px 24px 36px;
       color: #000;
       background:
         linear-gradient(135deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%) 0 0 / 18px 18px,
@@ -36,7 +37,9 @@
     }
 
     .app {
+      width: min(var(--frame-width, 100vw), calc(100vw - var(--page-gutter)));
       max-width: 100%;
+      container-type: inline-size;
     }
 
     .title-bar {
@@ -62,6 +65,7 @@
     }
 
     .window {
+      width: 100%;
       padding: 3px;
       background: var(--chrome);
       border-top: 3px solid var(--light);
@@ -75,6 +79,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
       gap: 18px;
       padding: 6px 7px 7px;
       font-size: 14px;
@@ -83,6 +88,7 @@
     .menu-options {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 14px;
     }
 
@@ -103,11 +109,14 @@
     }
 
     .instructions {
+      flex: 1 1 280px;
+      min-width: 0;
       color: #333;
-      white-space: nowrap;
+      overflow-wrap: anywhere;
     }
 
     .game-shell {
+      min-width: 0;
       padding: 8px;
       border-top: 3px solid var(--mid);
       border-left: 3px solid var(--mid);
@@ -181,6 +190,7 @@
     }
 
     .board-viewport {
+      min-width: 0;
       max-width: calc(100vw - 70px);
       overflow: auto;
       background: var(--mid);
@@ -259,13 +269,20 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
       gap: 12px;
       margin: 8px 2px 0;
+    }
+
+    .game-footer .status {
+      flex: 1 1 180px;
+      min-width: 0;
     }
 
     .game-controls {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
     }
 
@@ -850,9 +867,42 @@
     :root[data-theme="war"] .hint-button:focus-visible,
     :root[data-theme="war"] select:focus-visible { outline-color: #ffe175; }
 
+    @container (max-width: 380px) {
+      .menu-bar {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .menu-options {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .difficulty,
+      .theme-picker {
+        justify-content: space-between;
+      }
+
+      .instructions {
+        flex-basis: auto;
+      }
+
+      .victory-replay {
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      .replay-progress {
+        grid-column: 1 / -1;
+        grid-row: 2;
+      }
+    }
+
     @media (max-width: 640px) {
       :root {
         --cell-size: 30px;
+        --page-gutter: 20px;
       }
 
       body {
@@ -882,6 +932,7 @@
       }
 
       .instructions {
+        flex-basis: auto;
         white-space: normal;
       }
 
@@ -1417,6 +1468,10 @@
       expert: { rows: 16, cols: 30, mines: 99 }
     });
 
+    const appElement = document.querySelector(".app");
+    const windowElement = document.querySelector(".window");
+    const gameShellElement = document.querySelector(".game-shell");
+    const boardViewportElement = document.querySelector(".board-viewport");
     const boardElement = document.querySelector("#board");
     const difficultyElement = document.querySelector("#difficulty");
     const themeElement = document.querySelector("#theme");
@@ -1460,10 +1515,34 @@
     const THEME_STORAGE_KEY = "minesweeper-theme";
     const THEMES = new Set(["classic", "tech", "mono", "war"]);
 
+    function horizontalBoxSize(element, includePadding = true) {
+      const style = getComputedStyle(element);
+      const value = property => Number.parseFloat(style.getPropertyValue(property)) || 0;
+      return (
+        value("border-left-width") +
+        value("border-right-width") +
+        (includePadding ? value("padding-left") + value("padding-right") : 0)
+      );
+    }
+
+    function syncFrameToBoard() {
+      const boardWidth = boardElement.getBoundingClientRect().width;
+      if (!boardWidth) return;
+
+      const frameWidth = Math.ceil(
+        boardWidth +
+        horizontalBoxSize(boardViewportElement, false) +
+        horizontalBoxSize(gameShellElement) +
+        horizontalBoxSize(windowElement)
+      );
+      appElement.style.setProperty("--frame-width", `${frameWidth}px`);
+    }
+
     function applyTheme(value, persist = true) {
       const theme = THEMES.has(value) ? value : "classic";
       document.documentElement.dataset.theme = theme;
       themeElement.value = theme;
+      if (board) syncFrameToBoard();
       if (persist) {
         try {
           localStorage.setItem(THEME_STORAGE_KEY, theme);
@@ -1525,6 +1604,7 @@
       statusElement.textContent = "点击任意方格开始游戏。";
       updateDisplays();
       renderBoard();
+      syncFrameToBoard();
     }
 
     function getNeighbors(row, col) {
@@ -2190,6 +2270,7 @@
       else startVictoryReplay();
     });
 
+    new ResizeObserver(syncFrameToBoard).observe(boardElement);
     applyTheme(loadSavedTheme(), false);
     resetGame();
   </script>
