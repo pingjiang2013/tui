@@ -1345,6 +1345,20 @@
       return phase === "playing" && cell.revealed && cell.adjacent > 0;
     }
 
+    boardElement.addEventListener("mousedown", event => {
+      const primaryAndSecondaryDown = (event.buttons & 3) === 3;
+      if (!primaryAndSecondaryDown || (event.button !== 0 && event.button !== 2)) return;
+
+      const cell = cellFromEvent(event);
+      if (!cell || !isChordTarget(cell)) return;
+
+      event.preventDefault();
+      pointerPress = null;
+      lastPrimaryActivation = null;
+      clearHint();
+      chordCell(cell);
+    });
+
     boardElement.addEventListener("pointerdown", event => {
       if (!event.isPrimary || event.button !== 0) return;
       const cell = cellFromEvent(event);
