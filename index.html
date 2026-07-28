@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="classic">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -80,13 +80,21 @@
       font-size: 14px;
     }
 
-    .difficulty {
+    .menu-options {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .difficulty,
+    .theme-picker {
       display: flex;
       align-items: center;
       gap: 7px;
     }
 
-    .difficulty select {
+    .difficulty select,
+    .theme-picker select {
       min-height: 28px;
       padding: 2px 28px 2px 7px;
       color: #000;
@@ -353,6 +361,495 @@
       to { filter: brightness(1.22); }
     }
 
+    .victory-replay {
+      display: grid;
+      grid-template-columns: minmax(140px, 1fr) minmax(100px, 220px) auto;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      padding: 7px;
+      border-top: 3px solid var(--mid);
+      border-left: 3px solid var(--mid);
+      border-right: 3px solid var(--light);
+      border-bottom: 3px solid var(--light);
+      font-size: 13px;
+    }
+
+    .victory-replay[hidden] { display: none; }
+
+    .replay-progress {
+      width: 100%;
+      height: 12px;
+      accent-color: #000080;
+    }
+
+    .replay-button {
+      min-width: 104px;
+      min-height: 32px;
+      padding: 3px 9px;
+      color: #000;
+      background: var(--chrome);
+      border-top: 3px solid var(--light);
+      border-left: 3px solid var(--light);
+      border-right: 3px solid var(--dark);
+      border-bottom: 3px solid var(--dark);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .cell.replay-active,
+    .cell.replay-changed {
+      position: relative;
+      z-index: 1;
+    }
+
+    .cell.replay-active {
+      outline: 3px solid #0066ff;
+      outline-offset: -3px;
+      animation: replay-focus 0.38s ease-out;
+    }
+
+    .cell.replay-changed { animation: replay-change 0.38s ease-out; }
+
+    @keyframes replay-focus {
+      from { transform: scale(0.72); filter: brightness(1.75); }
+      to { transform: scale(1); filter: brightness(1); }
+    }
+
+    @keyframes replay-change {
+      from { filter: brightness(2); }
+      to { filter: brightness(1); }
+    }
+
+    :root[data-theme="tech"] .victory-replay {
+      color: #baf5ff;
+      background: rgba(2, 13, 23, 0.72);
+      border: 1px solid #276d87;
+      border-radius: 4px;
+    }
+    :root[data-theme="tech"] .replay-progress { accent-color: #56e6ff; }
+    :root[data-theme="tech"] .replay-button {
+      color: #d7f7ff;
+      background: #0b2b3d;
+      border: 1px solid #2b8bab;
+      border-radius: 3px;
+    }
+    :root[data-theme="tech"] .cell.replay-active { outline-color: #5de7ff; }
+
+    :root[data-theme="mono"] .victory-replay {
+      color: #fff;
+      background: #080808;
+      border: 1px solid #777;
+    }
+    :root[data-theme="mono"] .replay-progress { accent-color: #fff; }
+    :root[data-theme="mono"] .replay-button {
+      color: #fff;
+      background: #080808;
+      border: 1px solid #aaa;
+    }
+    :root[data-theme="mono"] .cell.replay-active { outline: 2px solid #fff; outline-offset: -2px; }
+
+    :root[data-theme="war"] .victory-replay {
+      color: #eee8c7;
+      background: #414832;
+      border: 2px solid #292e21;
+    }
+    :root[data-theme="war"] .replay-progress { accent-color: #ffd35b; }
+    :root[data-theme="war"] .replay-button {
+      color: #171a11;
+      background: #aaa473;
+      border: 2px solid #34392a;
+      font-weight: 800;
+    }
+    :root[data-theme="war"] .cell.replay-active { outline-color: #ffe175; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cell.hint-safe,
+      .cell.hint-mine,
+      .cell.hint-wrong,
+      .cell.replay-active,
+      .cell.replay-changed {
+        animation: none;
+      }
+    }
+
+    /* Deep-blue technology */
+    :root[data-theme="tech"] body {
+      color: #d9f7ff;
+      background-color: #020914;
+      background-image:
+        radial-gradient(circle at 50% -20%, rgba(0, 194, 255, 0.24), transparent 42%),
+        linear-gradient(rgba(46, 177, 226, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(46, 177, 226, 0.08) 1px, transparent 1px);
+      background-size: auto, 28px 28px, 28px 28px;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+
+    :root[data-theme="tech"] .window {
+      padding: 8px;
+      background: rgba(5, 22, 38, 0.94);
+      border: 1px solid #2aa6d2;
+      border-radius: 10px;
+      box-shadow: 0 18px 55px rgba(0, 0, 0, 0.65), 0 0 26px rgba(0, 191, 255, 0.2), inset 0 0 0 1px rgba(139, 235, 255, 0.12);
+    }
+
+    :root[data-theme="tech"] .title-bar {
+      min-height: 38px;
+      padding: 7px 10px;
+      color: #baf5ff;
+      background: linear-gradient(90deg, #072c48, #0b5872 55%, #061827);
+      border: 1px solid #2385a8;
+      border-radius: 5px 5px 0 0;
+      letter-spacing: 0.08em;
+      text-shadow: 0 0 10px rgba(82, 225, 255, 0.65);
+    }
+
+    :root[data-theme="tech"] .menu-bar {
+      color: #a6cfdb;
+      border-bottom: 1px solid rgba(75, 191, 224, 0.28);
+    }
+
+    :root[data-theme="tech"] .instructions { color: #7fb3c3; }
+
+    :root[data-theme="tech"] select {
+      color: #d8f8ff;
+      background: #071d2d;
+      border: 1px solid #2e8dad;
+      border-radius: 3px;
+      box-shadow: inset 0 0 10px rgba(0, 173, 231, 0.1);
+    }
+
+    :root[data-theme="tech"] .game-shell {
+      padding: 10px;
+      background: linear-gradient(145deg, rgba(12, 43, 63, 0.75), rgba(2, 13, 23, 0.9));
+      border: 1px solid #164f69;
+    }
+
+    :root[data-theme="tech"] .dashboard {
+      border: 1px solid #276d87;
+      border-radius: 5px;
+      background: rgba(2, 13, 23, 0.7);
+      box-shadow: inset 0 0 22px rgba(0, 162, 218, 0.08);
+    }
+
+    :root[data-theme="tech"] .counter {
+      color: #56e6ff;
+      background: #01070d;
+      border: 1px solid #1b7896;
+      border-radius: 3px;
+      text-shadow: 0 0 5px #00bde8, 0 0 12px rgba(0, 191, 232, 0.7);
+      box-shadow: inset 0 0 14px rgba(0, 118, 161, 0.2);
+    }
+
+    :root[data-theme="tech"] .face,
+    :root[data-theme="tech"] .tool-button,
+    :root[data-theme="tech"] .hint-button {
+      color: #d7f7ff;
+      background: linear-gradient(180deg, #123c54, #071c2c);
+      border: 1px solid #2b8bab;
+      border-radius: 4px;
+      box-shadow: inset 0 1px rgba(190, 246, 255, 0.15), 0 3px 8px rgba(0, 0, 0, 0.35);
+      text-shadow: 0 0 8px rgba(85, 222, 255, 0.38);
+    }
+
+    :root[data-theme="tech"] .face:active,
+    :root[data-theme="tech"] .tool-button[aria-pressed="true"],
+    :root[data-theme="tech"] .hint-button:active:not(:disabled) {
+      padding: initial;
+      color: #fff;
+      background: #04121e;
+      border-color: #5fe3ff;
+      box-shadow: inset 0 0 14px rgba(0, 174, 232, 0.28);
+    }
+
+    :root[data-theme="tech"] .hint-button:disabled {
+      color: #4f7480;
+      text-shadow: none;
+    }
+
+    :root[data-theme="tech"] .board-viewport {
+      background: #04101a;
+      border: 2px solid #1c6b88;
+      box-shadow: 0 0 18px rgba(0, 177, 234, 0.12);
+    }
+
+    :root[data-theme="tech"] .board {
+      gap: 1px;
+      background: #0b3b50;
+    }
+
+    :root[data-theme="tech"] .cell {
+      color: #d9f8ff;
+      background: #0d2d40;
+      border: 1px solid #27647d;
+      box-shadow: none;
+    }
+
+    :root[data-theme="tech"] .cell:not(.revealed):hover { background: #1b536c; }
+    :root[data-theme="tech"] .cell:not(.revealed):active { border: 1px solid #68dff7; }
+    :root[data-theme="tech"] .cell.revealed { background: #06141f; border: 1px solid #15384a; box-shadow: none; }
+    :root[data-theme="tech"] .cell.exploded { background: #d3233f; }
+    :root[data-theme="tech"] .n1 { color: #64d8ff; }
+    :root[data-theme="tech"] .n2 { color: #62f0bd; }
+    :root[data-theme="tech"] .n3 { color: #ff758d; }
+    :root[data-theme="tech"] .n4 { color: #b394ff; }
+    :root[data-theme="tech"] .n5 { color: #ff9c67; }
+    :root[data-theme="tech"] .n6 { color: #72f2ee; }
+    :root[data-theme="tech"] .n7 { color: #ecfaff; }
+    :root[data-theme="tech"] .n8 { color: #7f9ba6; }
+    :root[data-theme="tech"] .cell.hint-safe { outline-color: #32edb0; background: #104c48; }
+    :root[data-theme="tech"] .cell.hint-mine { outline-color: #ffc857; background: #55401c; }
+    :root[data-theme="tech"] .cell.hint-wrong { outline-color: #ff5370; background: #561d32; }
+    :root[data-theme="tech"] .face:focus-visible,
+    :root[data-theme="tech"] .cell:focus-visible,
+    :root[data-theme="tech"] .tool-button:focus-visible,
+    :root[data-theme="tech"] .hint-button:focus-visible,
+    :root[data-theme="tech"] select:focus-visible { outline-color: #5de7ff; }
+
+    /* Black-and-white minimalism */
+    :root[data-theme="mono"] body {
+      color: #f5f5f5;
+      background: #050505;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+    }
+
+    :root[data-theme="mono"] .window {
+      padding: 12px;
+      background: #080808;
+      border: 1px solid #d8d8d8;
+      box-shadow: none;
+    }
+
+    :root[data-theme="mono"] .title-bar {
+      min-height: 42px;
+      padding: 8px 10px;
+      color: #fff;
+      background: #080808;
+      border-bottom: 1px solid #d8d8d8;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+    }
+
+    :root[data-theme="mono"] .title-bar__icon,
+    :root[data-theme="mono"] .face,
+    :root[data-theme="mono"] .cell { filter: grayscale(1); }
+    :root[data-theme="mono"] .menu-bar { padding: 12px 0; }
+    :root[data-theme="mono"] .instructions { color: #aaa; }
+
+    :root[data-theme="mono"] select {
+      color: #fff;
+      background: #080808;
+      border: 1px solid #aaa;
+      border-radius: 0;
+    }
+
+    :root[data-theme="mono"] .game-shell { padding: 0; background: #080808; border: 0; }
+
+    :root[data-theme="mono"] .dashboard {
+      margin-bottom: 12px;
+      padding: 8px 0;
+      border: 0;
+      border-top: 1px solid #555;
+      border-bottom: 1px solid #555;
+    }
+
+    :root[data-theme="mono"] .counter {
+      color: #fff;
+      background: #050505;
+      border: 1px solid #555;
+      font-weight: 400;
+      text-shadow: none;
+    }
+
+    :root[data-theme="mono"] .face,
+    :root[data-theme="mono"] .tool-button,
+    :root[data-theme="mono"] .hint-button {
+      color: #fff;
+      background: #080808;
+      border: 1px solid #aaa;
+      box-shadow: none;
+    }
+
+    :root[data-theme="mono"] .face:active,
+    :root[data-theme="mono"] .hint-button:active:not(:disabled) {
+      padding: 0;
+      color: #050505;
+      background: #fff;
+      border-color: #fff;
+      transform: none;
+      box-shadow: none;
+    }
+
+    :root[data-theme="mono"] .tool-button[aria-pressed="true"] {
+      padding: 4px 9px;
+      color: #050505;
+      background: #fff;
+      border-color: #fff;
+      box-shadow: none;
+    }
+
+    :root[data-theme="mono"] .hint-button:disabled {
+      color: #666;
+      background: #080808;
+      text-shadow: none;
+    }
+
+    :root[data-theme="mono"] .board-viewport { background: #050505; border: 1px solid #d8d8d8; }
+    :root[data-theme="mono"] .board { gap: 1px; background: #555; }
+
+    :root[data-theme="mono"] .cell {
+      color: #fff;
+      background: #0a0a0a;
+      border: 0;
+      box-shadow: none;
+    }
+
+    :root[data-theme="mono"] .cell:not(.revealed):hover { background: #1b1b1b; }
+    :root[data-theme="mono"] .cell:not(.revealed):active { background: #252525; border: 0; box-shadow: none; }
+    :root[data-theme="mono"] .cell.revealed { background: #202020; border: 0; box-shadow: none; }
+    :root[data-theme="mono"] .cell.exploded { color: #050505; background: #fff; }
+    :root[data-theme="mono"] .cell.wrong { color: #fff; text-decoration: line-through; }
+    :root[data-theme="mono"] .n1,
+    :root[data-theme="mono"] .n2,
+    :root[data-theme="mono"] .n3,
+    :root[data-theme="mono"] .n4,
+    :root[data-theme="mono"] .n5,
+    :root[data-theme="mono"] .n6,
+    :root[data-theme="mono"] .n7,
+    :root[data-theme="mono"] .n8 { color: #fff; }
+    :root[data-theme="mono"] .cell.hint-safe { outline: 2px dotted #fff; outline-offset: -3px; background: #191919; }
+    :root[data-theme="mono"] .cell.hint-mine { color: #050505; outline: 3px double #050505; outline-offset: -4px; background: #fff; }
+    :root[data-theme="mono"] .cell.hint-wrong { color: #fff; outline: 2px dashed #fff; outline-offset: -3px; background: #303030; }
+    :root[data-theme="mono"] .face:focus-visible,
+    :root[data-theme="mono"] .cell:focus-visible,
+    :root[data-theme="mono"] .tool-button:focus-visible,
+    :root[data-theme="mono"] .hint-button:focus-visible,
+    :root[data-theme="mono"] select:focus-visible { outline: 2px solid #fff; }
+
+    /* Battlefield command console */
+    :root[data-theme="war"] body {
+      color: #1d2014;
+      background-color: #293023;
+      background-image:
+        radial-gradient(ellipse at 15% 20%, rgba(108, 116, 72, 0.48) 0 12%, transparent 13%),
+        radial-gradient(ellipse at 82% 65%, rgba(23, 35, 25, 0.55) 0 16%, transparent 17%),
+        radial-gradient(ellipse at 42% 82%, rgba(83, 80, 49, 0.42) 0 14%, transparent 15%);
+      background-size: 230px 180px, 270px 210px, 250px 190px;
+      font-family: "Arial Narrow", "Microsoft YaHei", sans-serif;
+    }
+
+    :root[data-theme="war"] .window {
+      padding: 7px;
+      background: #8d8a62;
+      border: 3px solid #25291e;
+      box-shadow: 8px 10px 0 rgba(9, 12, 8, 0.55), inset 0 0 0 2px #b5ae78;
+    }
+
+    :root[data-theme="war"] .title-bar {
+      min-height: 38px;
+      padding: 7px 9px;
+      color: #eee8c7;
+      background:
+        linear-gradient(135deg, transparent 47%, rgba(231, 191, 56, 0.22) 48% 52%, transparent 53%) 0 0 / 16px 16px,
+        linear-gradient(90deg, #303a26, #586142, #2d3425);
+      border: 1px solid #1e251b;
+      letter-spacing: 0.12em;
+      text-shadow: 1px 2px #1b2118;
+    }
+
+    :root[data-theme="war"] .menu-bar {
+      color: #202317;
+      border-bottom: 2px dashed rgba(42, 45, 29, 0.5);
+      font-weight: 700;
+    }
+
+    :root[data-theme="war"] .instructions { color: #3e402c; }
+
+    :root[data-theme="war"] select {
+      color: #181a12;
+      background: #c0b987;
+      border: 2px solid #3c422d;
+      border-radius: 0;
+      font-weight: 700;
+    }
+
+    :root[data-theme="war"] .game-shell {
+      background: #777653;
+      border-top: 3px solid #4a4c35;
+      border-left: 3px solid #4a4c35;
+      border-right: 3px solid #aaa478;
+      border-bottom: 3px solid #aaa478;
+    }
+
+    :root[data-theme="war"] .dashboard {
+      background: #696b4a;
+      border: 2px solid #353a29;
+      box-shadow: inset 0 0 0 2px rgba(180, 176, 124, 0.25);
+    }
+
+    :root[data-theme="war"] .counter {
+      color: #ffd35b;
+      background: #171b13;
+      border: 2px solid #3a402d;
+      text-shadow: 0 0 5px #b87812;
+      box-shadow: inset 0 0 12px #000;
+    }
+
+    :root[data-theme="war"] .face,
+    :root[data-theme="war"] .tool-button,
+    :root[data-theme="war"] .hint-button {
+      color: #171a11;
+      background: linear-gradient(#b4ad78, #777650);
+      border-top-color: #d0c790;
+      border-left-color: #d0c790;
+      border-right-color: #303528;
+      border-bottom-color: #303528;
+      text-shadow: 0 1px rgba(255, 255, 255, 0.25);
+    }
+
+    :root[data-theme="war"] .tool-button[aria-pressed="true"] {
+      background: #555b3e;
+      color: #f3e8b7;
+      border-top-color: #303528;
+      border-left-color: #303528;
+      border-right-color: #c5bd87;
+      border-bottom-color: #c5bd87;
+    }
+
+    :root[data-theme="war"] .hint-button:disabled { color: #555842; text-shadow: none; }
+    :root[data-theme="war"] .board-viewport { background: #343a29; border-color: #333829 #333829 #aaa477 #aaa477; }
+    :root[data-theme="war"] .board { gap: 1px; background: #353a29; }
+
+    :root[data-theme="war"] .cell {
+      color: #171a10;
+      background: #8b8d61;
+      border-top-color: #c2bd86;
+      border-left-color: #c2bd86;
+      border-right-color: #4a5038;
+      border-bottom-color: #4a5038;
+      text-shadow: 0 1px rgba(255, 255, 255, 0.22);
+    }
+
+    :root[data-theme="war"] .cell:not(.revealed):hover { background: #a0a16d; }
+    :root[data-theme="war"] .cell.revealed { background: #b6ab79; border: 1px solid #77704e; }
+    :root[data-theme="war"] .cell.exploded { background: #b53a24; }
+    :root[data-theme="war"] .n1 { color: #183f82; }
+    :root[data-theme="war"] .n2 { color: #285b24; }
+    :root[data-theme="war"] .n3 { color: #a2251d; }
+    :root[data-theme="war"] .n4 { color: #34305f; }
+    :root[data-theme="war"] .n5 { color: #70251f; }
+    :root[data-theme="war"] .n6 { color: #1e6260; }
+    :root[data-theme="war"] .n7 { color: #161910; }
+    :root[data-theme="war"] .n8 { color: #5c5b49; }
+    :root[data-theme="war"] .cell.hint-safe { outline-color: #e2ed99; background: #77824f; }
+    :root[data-theme="war"] .cell.hint-mine { outline-color: #ffc43d; background: #927332; }
+    :root[data-theme="war"] .cell.hint-wrong { outline-color: #cf2f25; background: #a65b45; }
+    :root[data-theme="war"] .face:focus-visible,
+    :root[data-theme="war"] .cell:focus-visible,
+    :root[data-theme="war"] .tool-button:focus-visible,
+    :root[data-theme="war"] .hint-button:focus-visible,
+    :root[data-theme="war"] select:focus-visible { outline-color: #ffe175; }
+
     @media (max-width: 640px) {
       :root {
         --cell-size: 30px;
@@ -367,6 +864,21 @@
         align-items: flex-start;
         flex-direction: column;
         gap: 5px;
+      }
+
+      .menu-options {
+        width: 100%;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .victory-replay {
+        grid-template-columns: 1fr auto;
+      }
+
+      .replay-progress {
+        grid-column: 1 / -1;
+        grid-row: 2;
       }
 
       .instructions {
@@ -409,15 +921,26 @@
       </div>
 
       <div class="menu-bar">
-        <label class="difficulty">
-          难度
-          <select id="difficulty" aria-label="选择游戏难度">
-            <option value="beginner">初级 · 9×9 · 10雷</option>
-            <option value="intermediate">中级 · 16×16 · 40雷</option>
-            <option value="expert">高级 · 30×16 · 99雷</option>
-          </select>
-        </label>
-        <span class="instructions">选择工具后点击或轻触方格 · 右键直接插旗 · 双击数字快速展开</span>
+        <div class="menu-options">
+          <label class="difficulty">
+            难度
+            <select id="difficulty" aria-label="选择游戏难度">
+              <option value="beginner">初级 · 9×9 · 10雷</option>
+              <option value="intermediate">中级 · 16×16 · 40雷</option>
+              <option value="expert">高级 · 30×16 · 99雷</option>
+            </select>
+          </label>
+          <label class="theme-picker">
+            主题
+            <select id="theme" aria-label="选择界面主题">
+              <option value="classic">经典灰</option>
+              <option value="tech">深蓝科技</option>
+              <option value="mono">黑白极简</option>
+              <option value="war">战地军武</option>
+            </select>
+          </label>
+        </div>
+        <span class="instructions">选择工具后点击或轻触方格 · 右键直接插旗 · 双击或左右键同按数字快速展开</span>
       </div>
 
       <section class="game-shell" aria-label="扫雷游戏">
@@ -429,6 +952,11 @@
 
         <div class="board-viewport">
           <div id="board" class="board" role="grid" aria-label="扫雷棋盘"></div>
+        </div>
+        <div id="victory-replay" class="victory-replay" hidden>
+          <span id="replay-label">本局回放</span>
+          <progress id="replay-progress" class="replay-progress" value="0" max="1" aria-label="回放进度"></progress>
+          <button id="replay-control" class="replay-button" type="button">跳过回放</button>
         </div>
         <div class="game-footer">
           <p id="status" class="status" role="status" aria-live="polite">点击任意方格开始游戏。</p>
@@ -891,11 +1419,16 @@
 
     const boardElement = document.querySelector("#board");
     const difficultyElement = document.querySelector("#difficulty");
+    const themeElement = document.querySelector("#theme");
     const restartButton = document.querySelector("#restart");
     const mineCounter = document.querySelector("#mine-counter");
     const timerElement = document.querySelector("#timer");
     const statusElement = document.querySelector("#status");
     const hintButton = document.querySelector("#hint");
+    const replayPanel = document.querySelector("#victory-replay");
+    const replayLabel = document.querySelector("#replay-label");
+    const replayProgress = document.querySelector("#replay-progress");
+    const replayControl = document.querySelector("#replay-control");
     const toolButtons = [...document.querySelectorAll(".tool-button")];
 
     let config;
@@ -911,12 +1444,42 @@
     let proofSteps;
     let currentHint;
     let hintPending;
+    let actionHistory;
+    let replayInitialFlags;
+    let replayState;
+    let replayTimerId;
+    let replayRunId = 0;
+    let replayMode;
+    let victoryMessage;
     let activeTool = "reveal";
     let pointerPress = null;
     let lastPrimaryActivation = null;
 
     const DOUBLE_ACTIVATION_MS = 400;
     const TAP_MOVE_TOLERANCE = 10;
+    const THEME_STORAGE_KEY = "minesweeper-theme";
+    const THEMES = new Set(["classic", "tech", "mono", "war"]);
+
+    function applyTheme(value, persist = true) {
+      const theme = THEMES.has(value) ? value : "classic";
+      document.documentElement.dataset.theme = theme;
+      themeElement.value = theme;
+      if (persist) {
+        try {
+          localStorage.setItem(THEME_STORAGE_KEY, theme);
+        } catch {
+          // The theme still applies when storage is unavailable.
+        }
+      }
+    }
+
+    function loadSavedTheme() {
+      try {
+        return localStorage.getItem(THEME_STORAGE_KEY) || "classic";
+      } catch {
+        return "classic";
+      }
+    }
 
     function createCell(row, col) {
       return {
@@ -931,6 +1494,7 @@
 
     function resetGame() {
       stopTimer();
+      cancelVictoryReplay(true);
       if (gameWorker) {
         gameWorker.terminate();
         gameWorker = null;
@@ -948,6 +1512,9 @@
       proofSteps = [];
       currentHint = null;
       hintPending = false;
+      actionHistory = [];
+      replayInitialFlags = [];
+      victoryMessage = "";
 
       boardElement.style.gridTemplateColumns = `repeat(${config.cols}, var(--cell-size))`;
       boardElement.setAttribute("aria-rowcount", config.rows);
@@ -1040,7 +1607,9 @@
       restartButton.setAttribute("aria-label", "重新开始");
       hintButton.disabled = false;
       statusElement.textContent = "无猜关卡检测通过，游戏开始。";
-      revealArea(firstCell);
+      replayInitialFlags = board.flat().map(cell => cell.flagged ? 1 : 0);
+      const firstTargets = revealArea(firstCell);
+      recordAction("first", firstCell, firstTargets);
       startTimer();
       if (hasWon()) winGame();
       else renderBoard();
@@ -1075,9 +1644,24 @@
       timerElement.textContent = timerElement.value;
     }
 
+    function cellIndex(cell) {
+      return cell.row * config.cols + cell.col;
+    }
+
+    function recordAction(type, originCell, targets = [], flagged = null) {
+      if (phase !== "playing") return;
+      actionHistory.push({
+        type,
+        origin: cellIndex(originCell),
+        targets: targets.map(cellIndex),
+        flagged
+      });
+    }
+
     function revealArea(startCell) {
       const queue = [startCell];
       const queued = new Set([`${startCell.row},${startCell.col}`]);
+      const newlyRevealed = [];
 
       while (queue.length) {
         const cell = queue.shift();
@@ -1085,6 +1669,7 @@
 
         cell.revealed = true;
         revealedCount += 1;
+        newlyRevealed.push(cell);
 
         if (cell.adjacent === 0) {
           for (const neighbor of getNeighbors(cell.row, cell.col)) {
@@ -1096,6 +1681,7 @@
           }
         }
       }
+      return newlyRevealed;
     }
 
     function revealCell(cell) {
@@ -1113,7 +1699,8 @@
         return;
       }
 
-      revealArea(cell);
+      const targets = revealArea(cell);
+      if (targets.length) recordAction("reveal", cell, targets);
       if (hasWon()) {
         winGame();
       } else {
@@ -1134,7 +1721,9 @@
         return;
       }
 
-      hiddenNeighbors.forEach(revealArea);
+      const targets = [];
+      hiddenNeighbors.forEach(neighbor => targets.push(...revealArea(neighbor)));
+      if (targets.length) recordAction("chord", cell, targets);
       if (hasWon()) {
         winGame();
       } else {
@@ -1146,6 +1735,7 @@
       if (phase === "generating" || phase === "won" || phase === "lost" || cell.revealed) return;
       cell.flagged = !cell.flagged;
       flagCount += cell.flagged ? 1 : -1;
+      recordAction("flag", cell, [], cell.flagged);
       updateDisplays();
       renderBoard();
     }
@@ -1168,9 +1758,11 @@
       }
       restartButton.textContent = "😎";
       restartButton.setAttribute("aria-label", "胜利，重新开始");
-      statusElement.textContent = `恭喜！你用 ${elapsed} 秒清除了全部地雷。`;
+      victoryMessage = `恭喜！你用 ${elapsed} 秒清除了全部地雷。`;
+      statusElement.textContent = victoryMessage;
       updateDisplays();
       renderBoard();
+      prepareVictoryReplay();
     }
 
     function loseGame(cell) {
@@ -1249,20 +1841,154 @@
       currentHint = null;
     }
 
+    function clearReplayTimer() {
+      if (!replayTimerId) return;
+      window.clearTimeout(replayTimerId);
+      replayTimerId = null;
+    }
+
+    function cancelVictoryReplay(hidePanel = false) {
+      replayRunId += 1;
+      clearReplayTimer();
+      replayState = null;
+      replayMode = null;
+      if (hidePanel) replayPanel.hidden = true;
+    }
+
+    function setReplayPanel(label, step, controlText) {
+      replayPanel.hidden = false;
+      replayLabel.textContent = label;
+      replayProgress.max = Math.max(1, actionHistory.length);
+      replayProgress.value = Math.min(step, actionHistory.length);
+      replayControl.textContent = controlText;
+    }
+
+    function prepareVictoryReplay() {
+      cancelVictoryReplay(false);
+      if (!actionHistory.length) {
+        replayPanel.hidden = true;
+        return;
+      }
+
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        replayMode = "done";
+        setReplayPanel(`本局共 ${actionHistory.length} 次操作`, actionHistory.length, "重新观看");
+        return;
+      }
+
+      replayMode = "pending";
+      setReplayPanel("胜利！即将回放本局…", 0, "跳过回放");
+      const token = replayRunId;
+      replayTimerId = window.setTimeout(() => {
+        if (token === replayRunId) startVictoryReplay();
+      }, 650);
+    }
+
+    function replayActionText(action, step) {
+      const position = cellPosition(action.origin);
+      if (action.type === "first") return `第 ${step} 步 · 首次点击 ${position}`;
+      if (action.type === "chord") return `第 ${step} 步 · 快速展开 ${position}`;
+      if (action.type === "flag") return `第 ${step} 步 · ${action.flagged ? "插旗" : "撤旗"} ${position}`;
+      return `第 ${step} 步 · 翻开 ${position}`;
+    }
+
+    function scrollReplayTarget(index) {
+      const target = boardElement.querySelector(
+        `[data-row="${Math.floor(index / config.cols)}"][data-col="${index % config.cols}"]`
+      );
+      target?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+
+    function scheduleReplayStep(callback, delay, token) {
+      clearReplayTimer();
+      replayTimerId = window.setTimeout(() => {
+        replayTimerId = null;
+        if (token === replayRunId) callback(token);
+      }, delay);
+    }
+
+    function advanceVictoryReplay(token) {
+      if (!replayState || replayState.step >= actionHistory.length) {
+        finishVictoryReplay();
+        return;
+      }
+
+      const action = actionHistory[replayState.step];
+      const changed = new Set();
+      if (action.type === "flag") {
+        replayState.flagged[action.origin] = action.flagged ? 1 : 0;
+        changed.add(action.origin);
+      } else {
+        action.targets.forEach(index => {
+          replayState.visible[index] = 1;
+          changed.add(index);
+        });
+      }
+
+      replayState.activeIndex = action.origin;
+      replayState.changed = changed;
+      replayState.step += 1;
+      setReplayPanel(replayActionText(action, replayState.step), replayState.step, "跳过回放");
+      renderBoard();
+      scrollReplayTarget(action.origin);
+
+      const isLast = replayState.step >= actionHistory.length;
+      scheduleReplayStep(
+        isLast ? finishVictoryReplay : advanceVictoryReplay,
+        isLast ? 650 : replayState.stepDelay,
+        token
+      );
+    }
+
+    function startVictoryReplay() {
+      if (phase !== "won" || !actionHistory.length) return;
+      replayRunId += 1;
+      clearReplayTimer();
+      const token = replayRunId;
+      const size = config.rows * config.cols;
+      replayState = {
+        visible: new Uint8Array(size),
+        flagged: Uint8Array.from(replayInitialFlags),
+        activeIndex: null,
+        changed: new Set(),
+        step: 0,
+        stepDelay: Math.max(70, Math.min(500, 5000 / actionHistory.length))
+      };
+      replayMode = "playing";
+      statusElement.textContent = "正在回放本局操作…";
+      setReplayPanel("从第一次点击开始", 0, "跳过回放");
+      renderBoard();
+      scheduleReplayStep(advanceVictoryReplay, 400, token);
+    }
+
+    function finishVictoryReplay() {
+      if (phase !== "won") return;
+      replayRunId += 1;
+      clearReplayTimer();
+      replayState = null;
+      replayMode = "done";
+      setReplayPanel(`回放完成 · 共 ${actionHistory.length} 次操作`, actionHistory.length, "重新观看");
+      statusElement.textContent = victoryMessage;
+      renderBoard();
+    }
+
     function getCellPresentation(cell) {
       const classes = ["cell"];
       let content = "";
       let label = `第 ${cell.row + 1} 行，第 ${cell.col + 1} 列`;
+      const index = cell.row * config.cols + cell.col;
+      const displayedFlagged = replayState ? Boolean(replayState.flagged[index]) : cell.flagged;
+      const displayedRevealed = replayState ? Boolean(replayState.visible[index]) : cell.revealed;
 
-      if (phase === "lost" && cell.flagged && !cell.mine) {
+      if (phase === "lost" && displayedFlagged && !cell.mine) {
         classes.push("revealed", "wrong");
         content = "✕";
         label += "，错误旗帜";
-      } else if (cell.flagged) {
+      } else if (displayedFlagged) {
         classes.push("flagged");
         content = "🚩";
         label += "，已插旗";
-      } else if (cell.revealed || (phase === "lost" && cell.mine)) {
+      } else if (displayedRevealed || (phase === "lost" && cell.mine)) {
         classes.push("revealed");
         if (cell.mine) {
           classes.push("mine");
@@ -1280,7 +2006,6 @@
         label += "，未翻开";
       }
 
-      const index = cell.row * config.cols + cell.col;
       if (currentHint?.index === index) {
         const hintClass = {
           safe: "hint-safe",
@@ -1293,6 +2018,13 @@
           : currentHint.action === "mine"
             ? "，提示：可以插旗"
             : "，提示：此旗帜有误";
+      }
+
+      if (replayState?.activeIndex === index) {
+        classes.push("replay-active");
+        label += "，回放当前操作";
+      } else if (replayState?.changed.has(index)) {
+        classes.push("replay-changed");
       }
 
       return { classes, content, label };
@@ -1450,9 +2182,15 @@
       button.addEventListener("click", () => selectTool(button.dataset.tool));
     });
     difficultyElement.addEventListener("change", resetGame);
+    themeElement.addEventListener("change", () => applyTheme(themeElement.value));
     restartButton.addEventListener("click", resetGame);
     hintButton.addEventListener("click", requestHint);
+    replayControl.addEventListener("click", () => {
+      if (replayMode === "pending" || replayMode === "playing") finishVictoryReplay();
+      else startVictoryReplay();
+    });
 
+    applyTheme(loadSavedTheme(), false);
     resetGame();
   </script>
 </body>
