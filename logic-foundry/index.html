@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f2ead9" />
+  <title>逻辑铸造厂 · 从空集开始</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="逻辑铸造厂首页">
+        <span class="brand-mark" aria-hidden="true">∅</span>
+        <span><strong>逻辑铸造厂</strong><small>LOGIC FOUNDRY</small></span>
+      </a>
+      <nav class="route-status" aria-label="当前关卡路径">
+        <span><small>当前路径</small><b id="routeLabel">公共起点</b></span>
+        <button id="mapButton" class="map-button" type="button">关卡地图 <i>⌘</i></button>
+      </nav>
+      <button id="soundToggle" class="icon-button" type="button" aria-label="切换音效">♪</button>
+    </header>
+
+    <main class="main-grid">
+      <aside class="brief-panel">
+        <div class="chapter-label" id="chapterLabel">第一章 · 点火</div>
+        <div class="level-number" id="levelNumber">01</div>
+        <h1 id="levelTitle">从无到有</h1>
+        <p class="level-copy" id="levelCopy"></p>
+
+        <section class="goal-card">
+          <span class="eyebrow">本关目标</span>
+          <p id="goalText"></p>
+        </section>
+
+        <section class="tool-section">
+          <div class="section-heading">
+            <span class="eyebrow">零件架</span>
+            <button id="clearButton" class="text-button" type="button">清空画布</button>
+          </div>
+          <div id="toolbox" class="toolbox"></div>
+          <p class="tool-hint">点击零件放入画布。先点输出端，再点输入端，即可接线。</p>
+        </section>
+
+        <button id="definitionButton" class="definition-button" type="button">
+          <span>查看底层定义</span><span aria-hidden="true">↗</span>
+        </button>
+        <button id="tutorialReplay" class="definition-button tutorial-replay" type="button">
+          <span>重播配对教程</span><span aria-hidden="true">↺</span>
+        </button>
+        <button id="unionTutorialReplay" class="definition-button tutorial-replay" type="button" hidden>
+          <span>重播并集教程</span><span aria-hidden="true">↺</span>
+        </button>
+        <button id="intersectionTutorialReplay" class="definition-button tutorial-replay" type="button" hidden>
+          <span>重播交集教程</span><span aria-hidden="true">↺</span>
+        </button>
+      </aside>
+
+      <section class="workbench" aria-label="节点工作台">
+        <div class="bench-toolbar">
+          <div class="status-lights" aria-label="系统状态">
+            <span></span><span></span><span></span>
+            <b>构造台在线</b>
+          </div>
+          <div class="bench-actions">
+            <button id="displayModeToggle" class="ghost-button display-mode-button" type="button" aria-pressed="false"><span id="displayModeLabel">数学记法</span><b aria-hidden="true">⇄</b></button>
+            <button id="hintButton" class="ghost-button" type="button">给我一点提示</button>
+            <button id="runButton" class="run-button" type="button"><span>运行构造</span><b>▶</b></button>
+          </div>
+        </div>
+
+        <div id="canvasWrap" class="canvas-wrap">
+          <nav id="formulaViewTabs" class="formula-view-tabs" aria-label="公式视图" hidden>
+            <button type="button" data-formula-view="construction" class="active">构造网络</button>
+            <button type="button" data-formula-view="syntax">语法树</button>
+            <button type="button" data-formula-view="evaluation">求值过程</button>
+          </nav>
+          <svg id="wireLayer" class="wire-layer" aria-hidden="true"></svg>
+          <div id="nodeCanvas" class="node-canvas"></div>
+          <div class="canvas-tip" id="canvasTip">从左边取一个零件开始</div>
+          <section id="formulaInspector" class="formula-inspector" hidden>
+            <div id="valuationControls" class="valuation-controls" hidden>
+              <span class="eyebrow">当前真值</span>
+              <button type="button" data-valuation-prop="P"></button>
+              <button type="button" data-valuation-prop="Q"></button>
+            </div>
+            <div id="formulaTree" class="formula-tree"></div>
+            <div id="evaluationEquation" class="evaluation-equation" hidden></div>
+            <section id="truthTablePanel" class="truth-table-panel" hidden></section>
+            <p id="formulaInspectorNote" class="formula-inspector-note"></p>
+          </section>
+        </div>
+
+        <div id="consolePanel" class="console-panel" aria-live="polite">
+          <div class="console-head">
+            <span class="eyebrow">运行记录</span>
+            <span id="testCount">等待构造</span>
+          </div>
+          <div id="consoleBody" class="console-body">
+            <span class="prompt">›</span> 系统准备完毕。把一个结果接入金色的目标节点。
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <aside id="displayCoachmark" class="display-coachmark" role="dialog" aria-labelledby="displayCoachmarkTitle" hidden>
+    <button id="displayCoachmarkClose" class="coachmark-close" type="button" aria-label="关闭显示引导">×</button>
+    <span class="eyebrow">新功能</span>
+    <h2 id="displayCoachmarkTitle">换一个角度看集合</h2>
+    <p>试着切换“数学记法”和“集合编码”，观察同一条有序边的两种表示。</p>
+  </aside>
+
+  <dialog id="definitionDialog" class="info-dialog">
+    <button class="dialog-close" type="button" aria-label="关闭">×</button>
+    <span class="eyebrow">结构透视</span>
+    <h2 id="definitionTitle"></h2>
+    <div id="definitionBody"></div>
+  </dialog>
+
+  <dialog id="successDialog" class="success-dialog">
+    <div class="success-sigil">✓</div>
+    <span class="eyebrow">构造成立</span>
+    <h2 id="successTitle">漂亮。</h2>
+    <p id="successText"></p>
+    <div id="completionLesson" class="completion-lesson" hidden></div>
+    <div id="unlockCard" class="unlock-card"></div>
+    <button id="alternateNextButton" class="ghost-button wide secondary-next" type="button" hidden></button>
+    <button id="nextButton" class="run-button wide" type="button">进入下一关 <b>→</b></button>
+  </dialog>
+
+  <dialog id="mapDialog" class="map-dialog">
+    <button class="dialog-close" type="button" aria-label="关闭">×</button>
+    <span class="eyebrow">LOGIC FOUNDRY · CAMPAIGN</span>
+    <h2>关卡地图</h2>
+    <p>策梅洛路线推进主线；构造函数并完成冯·诺依曼路线后可以探索有限序列。虚线锁位展示以后开放的理论分支。</p>
+    <div id="levelMap" class="level-map"></div>
+  </dialog>
+
+  <dialog id="pairTutorial" class="tutorial-dialog">
+    <button id="tutorialSkip" class="dialog-close tutorial-skip" type="button">跳过</button>
+    <span class="eyebrow">入厂训练 · 配对器</span>
+    <h2>先认识你的第一台机器</h2>
+    <p id="tutorialInstruction" class="tutorial-copy"></p>
+    <div class="tutorial-stage">
+      <div class="tutorial-sources">
+        <button class="tutorial-token" data-token="a" type="button">a</button>
+        <button class="tutorial-token" data-token="b" type="button">b</button>
+      </div>
+      <div class="tutorial-arrow">→</div>
+      <div class="tutorial-machine">
+        <b>配对</b>
+        <div class="tutorial-slots">
+          <button data-slot="0" type="button">?</button>
+          <button data-slot="1" type="button">?</button>
+        </div>
+      </div>
+      <div class="tutorial-arrow">→</div>
+      <output id="tutorialResult" class="tutorial-result">等待输入</output>
+    </div>
+    <p id="tutorialLesson" class="tutorial-lesson">先点击一个对象，再点击配对器的输入口。</p>
+    <button id="tutorialNext" class="run-button wide" type="button" disabled>下一步 <b>→</b></button>
+  </dialog>
+
+  <dialog id="unionTutorial" class="tutorial-dialog union-tutorial">
+    <button id="unionTutorialSkip" class="dialog-close tutorial-skip" type="button">跳过</button>
+    <span class="eyebrow">新机器训练 · 并集族</span>
+    <h2>拆掉一层，汇集成员</h2>
+    <p id="unionTutorialInstruction" class="tutorial-copy"></p>
+    <div class="union-stage">
+      <section class="union-card before-card">
+        <span>操作前 · 集合族</span>
+        <strong id="unionBefore"></strong>
+        <small id="unionBeforeNote"></small>
+      </section>
+      <button id="unionActivate" class="union-machine" type="button">
+        <b>⋃</b><span>启动并集族</span>
+      </button>
+      <section id="unionAfterCard" class="union-card after-card">
+        <span>操作后 · 汇集结果</span>
+        <strong id="unionAfter">?</strong>
+        <small id="unionAfterNote">等待机器运行</small>
+      </section>
+    </div>
+    <div id="unionVisual" class="union-visual" aria-hidden="true"></div>
+    <p id="unionTutorialLesson" class="tutorial-lesson"></p>
+    <button id="unionTutorialNext" class="run-button wide" type="button" disabled>下一个例子 <b>→</b></button>
+  </dialog>
+
+  <dialog id="intersectionTutorial" class="tutorial-dialog union-tutorial intersection-tutorial">
+    <button id="intersectionTutorialSkip" class="dialog-close tutorial-skip" type="button">跳过</button>
+    <span class="eyebrow">新机器训练 · 交集族</span>
+    <h2>逐个检查，只留下共同成员</h2>
+    <p class="tutorial-copy">交集族不会汇集所有成员；它逐个比较内部集合，只保留每一个集合都拥有的对象。</p>
+    <div class="union-stage">
+      <section class="union-card before-card">
+        <span>操作前 · 非空集合族</span>
+        <strong>{{a,b},{b,c}}</strong>
+        <small>两个内部集合都需要参与检查</small>
+      </section>
+      <button id="intersectionActivate" class="union-machine" type="button">
+        <b>⋂</b><span>启动交集族</span>
+      </button>
+      <section id="intersectionAfterCard" class="union-card after-card">
+        <span>操作后 · 共同部分</span>
+        <strong id="intersectionAfter">?</strong>
+        <small id="intersectionAfterNote">等待机器运行</small>
+      </section>
+    </div>
+    <div id="intersectionVisual" class="union-visual" aria-hidden="true"></div>
+    <p id="intersectionTutorialLesson" class="tutorial-lesson">点击中间的交集机器，比较操作前后的结构。</p>
+    <button id="intersectionTutorialNext" class="run-button wide" type="button" disabled>开始交集族关卡 <b>→</b></button>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
