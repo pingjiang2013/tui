@@ -1,0 +1,15 @@
+# Local encrypted documents may contain sensitive content.
+*.stxt
+
+# PyInstaller intermediate output.
+/build/
+
+# Python cache files.
+__pycache__/
+*.py[cod]
+
+# Local editor and OS metadata.
+.venv/
+.pytest_cache/
+.DS_Store
+Thumbs.db
