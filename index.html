@@ -941,6 +941,10 @@
         flex-direction: column;
       }
 
+      .game-footer .status {
+        flex: 0 0 auto;
+      }
+
       .game-controls {
         width: 100%;
         flex-wrap: wrap;
@@ -991,7 +995,7 @@
             </select>
           </label>
         </div>
-        <span class="instructions">选择工具后点击或轻触方格 · 右键直接插旗 · 双击或左右键同按数字快速展开</span>
+        <span class="instructions">选择工具后点击或轻触方格 · 右键直接插旗 · 单击或左右键同按数字快速展开</span>
       </div>
 
       <section class="game-shell" aria-label="扫雷游戏">
@@ -1508,9 +1512,7 @@
     let victoryMessage;
     let activeTool = "reveal";
     let pointerPress = null;
-    let lastPrimaryActivation = null;
 
-    const DOUBLE_ACTIVATION_MS = 400;
     const TAP_MOVE_TOLERANCE = 10;
     const THEME_STORAGE_KEY = "minesweeper-theme";
     const THEMES = new Set(["classic", "tech", "mono", "war"]);
@@ -2149,6 +2151,10 @@
 
     function performToolAction(cell) {
       clearHint();
+      if (isChordTarget(cell)) {
+        chordCell(cell);
+        return;
+      }
       if (activeTool === "flag") toggleFlag(cell);
       else revealCell(cell);
     }
@@ -2166,7 +2172,6 @@
 
       event.preventDefault();
       pointerPress = null;
-      lastPrimaryActivation = null;
       clearHint();
       chordCell(cell);
     });
@@ -2206,31 +2211,7 @@
         return;
       }
 
-      const now = performance.now();
-      const chordEligible = isChordTarget(cell);
-      const isDoubleActivation =
-        chordEligible &&
-        lastPrimaryActivation?.eligible &&
-        lastPrimaryActivation.pointerType === press.pointerType &&
-        lastPrimaryActivation.row === cell.row &&
-        lastPrimaryActivation.col === cell.col &&
-        now - lastPrimaryActivation.time <= DOUBLE_ACTIVATION_MS;
-
-      clearHint();
-      if (isDoubleActivation) {
-        lastPrimaryActivation = null;
-        chordCell(cell);
-      } else {
-        lastPrimaryActivation = {
-          pointerType: press.pointerType,
-          row: cell.row,
-          col: cell.col,
-          time: now,
-          eligible: chordEligible
-        };
-        if (activeTool === "flag") toggleFlag(cell);
-        else revealCell(cell);
-      }
+      performToolAction(cell);
     });
 
     boardElement.addEventListener("pointercancel", event => {
