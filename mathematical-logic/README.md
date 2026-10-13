@@ -1,10 +1,12 @@
-# 逻辑铸造厂
+# 数理逻辑 · Mathematical Logic
 
 一个零依赖的数理逻辑节点游戏原型。玩家从公共的 `0、1` 出发，沿策梅洛主干构造后继程序，也可以探索保留并集内容的冯·诺依曼分支；主线继续构造关系、公式、公式集、语义后承和自然演绎证明，有限序列作为可选的集合编码路线开放。
 
 ## 运行
 
 直接用 Google Chrome 打开 `index.html` 即可。项目不需要安装依赖、构建或启动服务器。
+
+项目目录为 `mathematical-logic`，在线地址：https://pingjiang2013.github.io/tui/mathematical-logic/ 。原来的 `logic-foundry/` 地址保留跳转页。同一网站下的旧存档与显示设置会自动迁移到新名称，不清除旧数据。
 
 ## 操作
 

@@ -3,6 +3,14 @@
 
   const $ = (selector) => document.querySelector(selector);
   const clone = (value) => JSON.parse(JSON.stringify(value));
+  // Keep same-origin saves when moving from the former project name and URL.
+  const readSiteStorage = (storageKey) => {
+    const current = localStorage.getItem(storageKey);
+    if (current !== null) return current;
+    const legacy = localStorage.getItem(storageKey.replace(/^mathematical-logic-/, "logic-foundry-"));
+    if (legacy !== null) localStorage.setItem(storageKey, legacy);
+    return legacy;
+  };
 
   // Hereditarily finite sets. Arrays are only the storage representation; every
   // constructor below normalizes them extensionally.
@@ -5696,21 +5704,21 @@
 
   function readProgress() {
     try {
-      const v20Save = localStorage.getItem("logic-foundry-progress-v20");
-      const v19Save = localStorage.getItem("logic-foundry-progress-v19");
-      const v18Save = localStorage.getItem("logic-foundry-progress-v18");
-      const v17Save = localStorage.getItem("logic-foundry-progress-v17");
-      const v16Save = localStorage.getItem("logic-foundry-progress-v16");
-      const v15Save = localStorage.getItem("logic-foundry-progress-v15");
-      const v14Save = localStorage.getItem("logic-foundry-progress-v14");
+      const v20Save = readSiteStorage("mathematical-logic-progress-v20");
+      const v19Save = readSiteStorage("mathematical-logic-progress-v19");
+      const v18Save = readSiteStorage("mathematical-logic-progress-v18");
+      const v17Save = readSiteStorage("mathematical-logic-progress-v17");
+      const v16Save = readSiteStorage("mathematical-logic-progress-v16");
+      const v15Save = readSiteStorage("mathematical-logic-progress-v15");
+      const v14Save = readSiteStorage("mathematical-logic-progress-v14");
       const currentSave = v20Save || v19Save || v18Save || v17Save || v16Save || v15Save || v14Save;
-      const v13Save = localStorage.getItem("logic-foundry-progress-v13");
-      const v12Save = localStorage.getItem("logic-foundry-progress-v12");
-      const v11Save = localStorage.getItem("logic-foundry-progress-v11");
-      const v10Save = localStorage.getItem("logic-foundry-progress-v10");
-      const v9Save = localStorage.getItem("logic-foundry-progress-v9");
-      const v8Save = localStorage.getItem("logic-foundry-progress-v8");
-      const saved = JSON.parse(currentSave || v13Save || v12Save || v11Save || v10Save || v9Save || v8Save || localStorage.getItem("logic-foundry-progress-v7") || localStorage.getItem("logic-foundry-progress-v6") || localStorage.getItem("logic-foundry-progress-v5") || "{}");
+      const v13Save = readSiteStorage("mathematical-logic-progress-v13");
+      const v12Save = readSiteStorage("mathematical-logic-progress-v12");
+      const v11Save = readSiteStorage("mathematical-logic-progress-v11");
+      const v10Save = readSiteStorage("mathematical-logic-progress-v10");
+      const v9Save = readSiteStorage("mathematical-logic-progress-v9");
+      const v8Save = readSiteStorage("mathematical-logic-progress-v8");
+      const saved = JSON.parse(currentSave || v13Save || v12Save || v11Save || v10Save || v9Save || v8Save || readSiteStorage("mathematical-logic-progress-v7") || readSiteStorage("mathematical-logic-progress-v6") || readSiteStorage("mathematical-logic-progress-v5") || "{}");
       const rawCompleted = Array.isArray(saved.completedIds) ? saved.completedIds : [];
       let completed = Array.isArray(saved.completedIds) ? saved.completedIds.filter((id) => levelCatalog.has(id)) : [];
       const retiredSemanticIds = ["semantic-entailment", "semantic-counterexample"];
@@ -5778,7 +5786,7 @@
     currentLevelId: savedProgress.currentLevelId,
     completed: new Set(savedProgress.completed),
     nodes: [], connections: [], selectedOutput: null, nextId: 1, sound: true,
-    displayMode: localStorage.getItem("logic-foundry-display-mode-v1") === "encoding" ? "encoding" : "semantic",
+    displayMode: readSiteStorage("mathematical-logic-display-mode-v1") === "encoding" ? "encoding" : "semantic",
     formulaView: "construction", proofView: "construction", valuation: { P: true, Q: false }, modalWorld: "w₀", truthTableRows: new Map(), truthTableFormulaKey: null,
     surgeryToken: null, surgeryTarget: null, surgeryAction: null, surgeryRoutes: {}
   };
@@ -5850,7 +5858,7 @@
     return Boolean(level) && (level.requires || []).every((id) => state.completed.has(id));
   }
   function saveProgress() {
-    localStorage.setItem("logic-foundry-progress-v20", JSON.stringify({ completedIds: [...state.completed], currentLevelId: state.currentLevelId }));
+    localStorage.setItem("mathematical-logic-progress-v20", JSON.stringify({ completedIds: [...state.completed], currentLevelId: state.currentLevelId }));
   }
 
   function init() {
@@ -6273,7 +6281,7 @@
     if (id === "sequence-intersection") setTimeout(() => {
       if (state.currentLevelId === id) openIntersectionTutorial();
     }, 260);
-    if (id === "sequence-project-first" && !localStorage.getItem("logic-foundry-display-coach-v1")) setTimeout(openDisplayCoachmark, 360);
+    if (id === "sequence-project-first" && !readSiteStorage("mathematical-logic-display-coach-v1")) setTimeout(openDisplayCoachmark, 360);
     if (level.openingLesson) setTimeout(() => {
       if (state.currentLevelId !== id) return;
       const [title, body] = level.openingLesson;
@@ -10062,9 +10070,9 @@
       return;
     }
     state.selectedOutput = state.selectedOutput === nodeId ? null : nodeId;
-    if (state.selectedOutput && !localStorage.getItem("logic-foundry-multiwire-tip-v2")) {
+    if (state.selectedOutput && !readSiteStorage("mathematical-logic-multiwire-tip-v2")) {
       log("提示：同一个输出可以反复选择并连接到多个输入端。", true, "接线技巧");
-      localStorage.setItem("logic-foundry-multiwire-tip-v2", "seen");
+      localStorage.setItem("mathematical-logic-multiwire-tip-v2", "seen");
     }
     renderCanvas();
   }
@@ -10643,7 +10651,7 @@
 
   function toggleDisplayMode() {
     state.displayMode = state.displayMode === "semantic" ? "encoding" : "semantic";
-    localStorage.setItem("logic-foundry-display-mode-v1", state.displayMode);
+    localStorage.setItem("mathematical-logic-display-mode-v1", state.displayMode);
     if (!$("#displayCoachmark").hidden) finishDisplayCoachmark(true);
     updateDisplayModeButton();
     renderCanvas();
@@ -10651,7 +10659,7 @@
   }
 
   function openDisplayCoachmark() {
-    if (state.currentLevelId !== "sequence-project-first" || localStorage.getItem("logic-foundry-display-coach-v1")) return;
+    if (state.currentLevelId !== "sequence-project-first" || readSiteStorage("mathematical-logic-display-coach-v1")) return;
     $("#displayCoachmark").hidden = false;
     $("#displayModeToggle").classList.add("coach-target");
     positionDisplayCoachmark();
@@ -10675,7 +10683,7 @@
   }
 
   function finishDisplayCoachmark(markSeen) {
-    if (markSeen) localStorage.setItem("logic-foundry-display-coach-v1", "done");
+    if (markSeen) localStorage.setItem("mathematical-logic-display-coach-v1", "done");
     hideDisplayCoachmark();
   }
 
