@@ -1193,7 +1193,7 @@
     function waveBlend(from,to,progress) {return {a:from.a+(to.a-from.a)*progress,b:from.b+(to.b-from.b)*progress};}
     function ensureWave() {
       if(!wave)wave={probes:{mae:{history:[{...waveStart}],keys:[],cursor:0},mse:{history:[{...waveStart}],keys:[],cursor:0}},
-        risk:0,joint:false,squared:false,cut:false,narrow:false,
+        balanced:false,scoreOpened:false,compared:false,returned:false,joint:false,squared:false,cut:false,narrow:false,
         alpha:0.05,history:[{...waveStart}],cursor:0,rateOpen:false,shapeHistory:[{a:30,b:40}],shapeTrained:false};
     }
     function waveHistoryParams(history,cursor) {
@@ -1252,7 +1252,7 @@
           const mse=current()==='wave-gradient',probe=waveProbe(mse),params=probe.history[probe.cursor],key=probe.keys[probe.cursor-1];
           const evaluation=waveCompute(biasRecords,params,mse?'mse':'mae');
           paragraph(mse
-            ? '再试一次：点数字增加1。图上仍画差距，但评分改成“差距平方后取平均”。观察同样的改动怎样影响新评分。'
+            ? '回到参数实验，起始规则是20＋时间×30。点数字增加1：图上仍画差距，评分改成“差距平方后取平均”。观察改动怎样影响新评分。'
             : '点数字，让它增加1，另一个数不变。黑点是记录，空心点是预测，线段是差距。试试两个数，观察三行怎样移动。');
           waveTermFormula(mse);
           if(mse) {
@@ -1276,29 +1276,36 @@
             : '接下来同时采用这两个改动。这里仍使用原来的平均差距，先观察一轮真实更新。');
           break;
         case 'wave-score-purpose':
-          paragraph('用一个接球例子看看：槽口允许左右4厘米的落点偏差。下图把预测的偏差当作球偏离槽中心的距离。');
-          paragraph(wave.risk===0
-            ? '方案A的偏差是0、3、6厘米，平均3厘米。投下三个球，看看这份平均数有没有掩盖一次较大的失误。'
-            :wave.risk===1
-              ? 'A有一个球落在槽外。换成方案B：三个球都偏3厘米，平均仍是3厘米。接下来看看相同的平均数，会不会带来不同的结果。'
-              : 'B三个球都接住了。两种方案平均差距都是3，后果却不同：在这个任务里，我们更愿意让每次差一点，也不希望其中一次偏得太远。接下来让评分表达这种偏好。');
+          paragraph(wave.balanced
+            ? '转动后，三个差距都变成15。第一条变差15，第三条改善15，第二条不变。最大的偏差减半，平均差距却仍是15。'
+            : '还是原来的三条记录。这条预测线对上第一条，后两条分别差15和30厘米。我们来比较一种取舍：允许第一条稍微变差，换取第三条明显改善。');
+          waveSummary(scoreCandidates[wave.balanced?1:0],'mae');
+          paragraph(wave.balanced
+            ? '如果希望避免某次偏得特别远，我们会更偏好现在的结果；平均差距却把两条规则评成一样。接下来换一种评分，让它能够认可这种改善。'
+            : '下一步手动转动这条线，暂不训练。留意：最大的差距怎样变，平均差距又怎样变。黑点仍是记录，空心点是预测。');
           break;
-        case 'wave-score':
-          paragraph(wave.squared
-            ? '平方是一种让较大偏差付出更多代价的简单办法。差距从3变成6，翻了2倍；平方却从9变成36，变成4倍。把差距展开成正方形，就能看见这种放大。三个面积取平均，叫平均平方差。'
-            : '仍是刚才两组偏差：A是0、3、6；B是3、3、3。总差距都是9，平均都是3。按旧评分，两者一样好，尽管A有一次落到了槽外。');
-          const ratings=paragraph(wave.squared?'平均平方差：A ':'平均差距：A ');ratings.className='ma-formula';
-          waveOutput(ratings,wave.squared?15:3,'data-ma-rating-a','规则A的评分');
-          ratings.appendChild(document.createTextNode('，B '));waveOutput(ratings,wave.squared?9:3,'data-ma-rating-b','规则B的评分');
-          ratings.appendChild(document.createTextNode(wave.squared?' 平方厘米':' 厘米'));
-          paragraph(wave.squared
-            ? 'A的评分是（0＋9＋36）÷3=15，B是（9＋9＋9）÷3=9，新标准更偏好B。接住数量是任务结果；平方则是引导调整的一种代价，未必适合所有任务。单位已是平方厘米，不能与原来的3厘米直接比较。'
-            : '为了让训练更在意那次较大的偏差，需要改变评分。试试平方：让较大偏差的每1厘米付出更高代价，看看新评分是否更偏好B。');
+        case 'wave-score': {
+          paragraph(!wave.squared
+            ? '把刚才直线的三条差距取出并放大。黑点与空心点仍分别对应记录和预测，长度都是15厘米。这里只改变摆放方式，预测规则不变。'
+            :wave.returned
+              ? '再转回差距更均匀的规则。大方块缩掉的面积，多于小方块增加的面积：三个差距都变成15，平方评分从375降到225。'
+            :wave.compared
+              ? '换回转动前的规则：差距重新变成0、15、30。最大的正方形明显变大；三个面积的平均也从225升到了375。'
+              : '把每条差距展开成正方形，边长仍是差距。边长翻倍，面积就变成四倍，较大的偏差因而付出更高代价。三个面积取平均，叫平均平方差。');
+          waveSummary(scoreCandidates[wave.compared&&!wave.returned?0:1],wave.squared?'mse':'mae');
+          paragraph(!wave.squared
+            ? '试着让每条差距与自己相乘。观察三条线段如何展开成面积，再和转动前的规则比较。'
+            :wave.returned
+              ? '两种规则的平均差距都为15厘米，平方评分却能区分它们。它表达了更在意较大偏差的取舍，并非所有任务都必须如此评分。两种评分单位不同，不能直接比15与225的大小。'
+            :wave.compared
+              ? '30厘米是15厘米的两倍，对应面积900却是225的四倍。现在再转回去，看看大方块缩掉的面积，能否超过小方块增加的面积。'
+              : '现在是（225＋225＋225）÷3=225平方厘米。平方是表达“更在意较大偏差”的一种选择，未必适合所有任务。接着换回原来的规则，看新评分能否区分它们。');
           break;
+        }
         case 'wave-strips':
           paragraph(wave.cut
             ? '差距都缩短0.5，大方块却移走了更多面积。这就是新评分表达的取舍：同样一点修正，用在较大的偏差上，评分下降更多。橙色面积由右边和下面两条窄边组成，拐角只计算一次。'
-            : '平方不只改变两条规则的排名，还会改变训练的侧重：同样一点修正，消除较大的偏差会更有价值吗？把边长3和6的两块面积都缩短0.5，直接比较评分减少多少。');
+            : '平方还会怎样指导调整？接下来用3和6这两个较小的差距，拆解同一种平方运算。让两条差距都缩短0.5，比较评分分别减少多少。');
           paragraph(wave.cut?'3² − 2.5² = 2.75；6² − 5.5² = 5.75。':'同样一点预测改善，会从较大的平方评分中移走多少面积？看两块方块的边缘。').className='ma-formula';
           paragraph('这里只观察一条差距的平方，不是在训练模型。接下来把减少的面积除以缩短的宽度，比较每单位变化的影响。');
           break;
@@ -1367,11 +1374,11 @@
           if(wave.joint)back.textContent='← 撤回这轮更新';
           next.textContent=wave.joint?'怎样评价不同的偏差？ →':'按梯度同时更新两个数';break;
         case 'wave-score-purpose':
-          if(wave.risk)back.textContent=wave.risk===2?'← 再看方案A':'← 收回三个球';
-          next.textContent=['投下方案A的三个球','换成方案B再投一次','让评分区分这两种结果 →'][wave.risk];break;
+          if(wave.balanced)back.textContent='← 撤回这次转动';
+          next.textContent=wave.balanced?'取出刚才的三条差距 →':'转动直线，缩小最大的差距';break;
         case 'wave-score':
-          if(wave.squared)back.textContent='← 回到长度评分';
-          next.textContent=wave.squared?'面积怎样影响调整？ →':'把差距展开成正方形';break;
+          if(wave.squared)back.textContent=wave.returned?'← 再看转动前的规则':wave.compared?'← 再看转动后的规则':'← 回到长度评分';
+          next.textContent=wave.returned?'面积怎样影响调整？ →':wave.compared?'再转回差距更均匀的规则':wave.squared?'比较转动前的规则':'把差距展开成正方形';break;
         case 'wave-strips':
           if(wave.cut)back.textContent='← 恢复完整方块';
           next.textContent=wave.cut?'除以这点改动的宽度 →':'两条边都缩短0.5';break;
@@ -1424,48 +1431,46 @@
       text((mse?'平均平方差 ':'平均差距 ')+number(result.value)+(mse?' 平方厘米':' 厘米'),width/2,292,{'text-anchor':'middle','font-size':20});
       copy.querySelectorAll('[data-ma-wave-term]').forEach(button=>{button.textContent=number(params[button.getAttribute('data-ma-wave-term')]);});
     }
-    function drawWaveRisk(width,progress) {
-      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
-      const choice=wave.risk===2?1:0,evaluation=waveCompute(biasRecords,scoreCandidates[choice],'mae'),tolerance=4;
-      const caught=evaluation.rows.filter(row=>row.gap<=tolerance).length,cell=(width-24)/3,unit=cell/17;
-      svg.setAttribute('data-ma-chart-kind','prediction-consequences');svg.setAttribute('data-ma-risk-choice',choice===0?'A':'B');
-      svg.setAttribute('data-ma-risk-progress',String(progress));svg.setAttribute('data-ma-risk-caught',String(caught));
-      svg.setAttribute('data-ma-risk-tolerance',String(tolerance));svg.setAttribute('data-ma-risk-loss',String(evaluation.value));
-      el('title',{id:'ma-stage-title'}).textContent='教学小例子：将规则的真实预测偏差用作球的落点偏移。每个槽允许左右4厘米的偏差。'+(choice===0?'A':'B')+'的平均差距'+evaluation.value+'厘米，接住'+caught+'个球。投球动画只呈现落点与容差的关系，不模拟真实重力。';
-      evaluation.rows.forEach((row,i)=>{
-        const center=12+(i+0.5)*cell,left=center-tolerance*unit,right=center+tolerance*unit,hit=row.gap<=tolerance;
-        text(String(i+1),center,49,{'text-anchor':'middle',fill:muted,'font-size':13});
-        el('path',{d:'M '+left+' 205 L '+left+' 246 L '+right+' 246 L '+right+' 205',fill:'none',stroke:ink,'stroke-width':3,
-          'data-ma-cup':row.seconds,'data-ma-cup-center':center,'data-ma-cup-unit':unit,'data-ma-cup-half-width':tolerance*unit});
-        line(center,185,center,198,{stroke:axis,'stroke-width':1.5});
-        const x=center+row.residual*unit,y=85+((hit?237:282)-85)*progress;
-        el('circle',{cx:x,cy:y,r:Math.min(6,unit*0.8),fill:accent,'data-ma-risk-ball':row.seconds,'data-ma-risk-residual':row.residual,
-          'data-ma-risk-hit':String(hit),'data-ma-risk-unit':unit,'data-ma-risk-center':center});
-      });
-      text((choice===0?'A':'B')+(wave.risk===0?' · 准备投球':progress<1?' · 投球中':' · 接住 '+caught+' / 3'),width/2,22,{'text-anchor':'middle','font-size':19});
+    const scoreCandidates=[{a:15,b:65},{a:30,b:35}];
+    function drawWaveBalance(width,progress) {
+      const params=waveBlend(scoreCandidates[0],scoreCandidates[1],progress);
+      waveDrawModel(params,width,biasRecords,'mae');
+      svg.setAttribute('data-ma-chart-kind','balancing-line');svg.setAttribute('data-ma-balance-progress',String(progress));
     }
-    const scoreCandidates=[{a:27,b:53},{a:30,b:47}];
-    function drawWaveScores(width,progress) {
-      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
-      svg.setAttribute('data-ma-chart-kind','score-areas');svg.setAttribute('data-ma-square-progress',String(progress));
-      el('title',{id:'ma-stage-title'}).textContent='两条实际规则的差距：A为0、3、6；B为3、3、3。长度评分均为3厘米。正方形展开完成后，平均平方差分别为15和9平方厘米。展开仅改变表现方式，不更新模型。';
-      const cell=(width-64)/3,unit=Math.min(16,cell/7);
-      ['A','B'].forEach((label,rowIndex)=>{
-        const evaluation=waveCompute(biasRecords,scoreCandidates[rowIndex]),bottom=135+135*rowIndex;
-        text(label,10,bottom-24,{fill:muted});
-        evaluation.rows.forEach((row,index)=>{
-          const side=row.gap*unit,x=40+(index+0.5)*cell-side/2,height=progress===0?3:side*progress;
-          if(side)el('rect',{x,y:bottom-height,width:side,height,fill:accent,'fill-opacity':0.35,
-            'data-ma-score-cell':label+index,'data-ma-score-side':row.gap,'data-ma-score-term':row.term,'data-ma-score-unit':unit});
-          else el('circle',{cx:x,cy:bottom,r:2,fill:muted,'data-ma-zero-score':label+index});
-          text(progress===1?row.gap+'²='+row.term:String(row.gap),40+(index+0.5)*cell,bottom+19,{'text-anchor':'middle','font-size':11,fill:muted});
-          if(rowIndex===0)text((index+1)+'秒',40+(index+0.5)*cell,18,{'text-anchor':'middle','font-size':12,fill:muted});
-        });
+    function drawWaveScores(width,phase) {
+      const layout=clamp(phase,0,1),unfold=clamp(phase-1,0,1),comparison=phase>3?clamp(4-phase,0,1):clamp(phase-2,0,1);
+      const params=waveBlend(scoreCandidates[1],scoreCandidates[0],comparison),evaluation=waveCompute(biasRecords,params);
+      if(layout<1) {
+        drawBiasGraph(params.b,params.a,width);
+        Array.from(svg.children).forEach(child=>{if(child.getAttribute('id')!=='ma-stage-title')child.setAttribute('opacity',String(1-layout));});
+        ['[data-ma-bias-gap]','[data-ma-bias-record]','[data-ma-bias-prediction]'].forEach(selector=>svg.querySelectorAll(selector).forEach(node=>node.setAttribute('opacity','0')));
+      } else svg.replaceChildren();
+      handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
+      svg.setAttribute('data-ma-chart-kind','score-areas');svg.setAttribute('data-ma-score-phase',String(phase));
+      svg.setAttribute('data-ma-layout-progress',String(layout));svg.setAttribute('data-ma-square-progress',String(unfold));
+      svg.setAttribute('data-ma-score-a',String(params.a));svg.setAttribute('data-ma-score-b',String(params.b));
+      svg.setAttribute('data-ma-score-mse',String(evaluation.value));
+      const loss=wave.squared?'mse':'mae';
+      svg.setAttribute('data-ma-wave-a',String(params.a));svg.setAttribute('data-ma-wave-b',String(params.b));
+      svg.setAttribute('data-ma-wave-loss',String(waveCompute(biasRecords,params,loss).value));svg.setAttribute('data-ma-wave-score',loss);
+      const description='沿用同一条线性预测规则与三条记录。起始值'+waveNumber(params.b)+'，每秒距离'+waveNumber(params.a)+'。差距'+evaluation.rows.map(row=>waveNumber(row.gap)).join('、')+'。取出差距与展开面积只是布局变化，不更新参数；比较两条规则时才改变参数。平均平方差'+waveNumber(evaluation.value)+'平方厘米。';
+      if(layout<1)svg.children[0].textContent=description;else el('title',{id:'ma-stage-title'}).textContent=description;
+      const cell=(width-48)/3,unit=Math.min(4,(cell-12)/30),bottom=232;
+      const mix=(from,to)=>from+(to-from)*layout;
+      evaluation.rows.forEach((row,index)=>{
+        const side=row.gap*unit,targetX=24+(index+0.5)*cell-30*unit/2,targetY=bottom-side;
+        const sourceX=54+row.seconds/4.4*(width-76),recordY=260-row.position/200*227,predictionY=260-row.prediction/200*227;
+        const x=mix(sourceX,targetX),top=mix(recordY,targetY),end=mix(predictionY,bottom);
+        if(side)el('rect',{x:targetX,y:targetY,width:side*unfold,height:side,fill:accent,'fill-opacity':0.3,
+          'data-ma-score-cell':row.seconds,'data-ma-score-side':row.gap,'data-ma-score-term':row.term,'data-ma-score-unit':unit});
+        line(x,top,x,end,{stroke:accent,'stroke-width':3.5,'data-ma-score-gap':row.seconds,'data-ma-score-gap-value':row.gap});
+        el('circle',{cx:x,cy:end,r:6,fill:'none',stroke:accent,'stroke-width':1.8,'data-ma-score-prediction':row.seconds});
+        el('circle',{cx:x,cy:top,r:4.5,fill:ink,'data-ma-score-record':row.seconds});
+        text(number(row.gap),targetX,258,{'text-anchor':'middle','font-size':17,fill:accent,opacity:layout});
+        text(row.seconds+'秒',targetX,289,{'text-anchor':'middle','font-size':13,fill:muted,opacity:layout});
       });
-      if(wave.squared) {
-        copy.querySelectorAll('[data-ma-rating-a]').forEach(node=>{node.textContent=progress===1?'15':'展开中';});
-        copy.querySelectorAll('[data-ma-rating-b]').forEach(node=>{node.textContent=progress===1?'9':'展开中';});
-      }
+      syncWaveSummary(params,loss);
+      if((wave.squared&&unfold<1)||(unfold>0&&unfold<1))copy.querySelectorAll('[data-ma-wave-loss]').forEach(node=>{node.textContent='展开中';});
     }
     function drawWaveStrips(width,h) {
       svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
@@ -1519,9 +1524,11 @@
           const mse=current()==='wave-gradient',probe=waveProbe(mse);
           animatePlot(current(),width,probe.cursor,index=>drawWaveProbe(width,mse,index),800);break;
         }
-        case 'wave-score-purpose':animatePlot(current()+'-'+wave.risk,width,wave.risk?1:0,progress=>drawWaveRisk(width,progress),1000);break;
+        case 'wave-score-purpose':animatePlot(current(),width,wave.balanced?1:0,progress=>drawWaveBalance(width,progress),1100);break;
         case 'wave-joint':animatePlot(current(),width,wave.joint?1:0,progress=>waveDrawModel(waveBlend(waveStart,waveStep(biasRecords,waveStart,0.25,'mae'),progress),width,biasRecords,'mae'),800);break;
-        case 'wave-score':animatePlot(current(),width,wave.squared?1:0,progress=>drawWaveScores(width,progress),850);break;
+        case 'wave-score':
+          if(!wave.scoreOpened){wave.scoreOpened=true;lastPlot={scene:current(),width,distance:0};}
+          animatePlot(current(),width,wave.returned?4:wave.compared?3:wave.squared?2:1,phase=>drawWaveScores(width,phase),1000);break;
         case 'wave-strips':animatePlot(current(),width,wave.cut?0.5:0,h=>drawWaveStrips(width,h),800);break;
         case 'wave-normalize':animatePlot(current(),width,wave.narrow?0.1:0.5,h=>drawWaveNormalized(width,h),800);break;
         case 'wave-train':animatePlot(current(),width,wave.cursor,index=>{waveDrawModel(waveHistoryParams(wave.history,index),width);svg.setAttribute('data-ma-wave-frame-round',String(index));},800);break;
@@ -1559,10 +1566,10 @@
       stopAutomation();ensureWave();
       if((current()==='wave-effects'||current()==='wave-gradient')&&waveProbeSeen(current()==='wave-gradient').size<2)return;
       if(current()==='wave-joint'&&!wave.joint){wave.joint=true;refreshWave();return;}
-      if(current()==='wave-score-purpose'&&wave.risk<2){
-        wave.risk++;lastPlot={scene:current()+'-'+wave.risk,width:Math.max(240,figure.getBoundingClientRect().width||736),distance:0};refreshWave();return;
-      }
+      if(current()==='wave-score-purpose'&&!wave.balanced){wave.balanced=true;refreshWave();return;}
       if(current()==='wave-score'&&!wave.squared){wave.squared=true;refreshWave();return;}
+      if(current()==='wave-score'&&!wave.compared){wave.compared=true;refreshWave();return;}
+      if(current()==='wave-score'&&!wave.returned){wave.returned=true;refreshWave();return;}
       if(current()==='wave-strips'&&!wave.cut){wave.cut=true;refreshWave();return;}
       if(current()==='wave-normalize'&&!wave.narrow){wave.narrow=true;refreshWave();return;}
       if(current()==='wave-train'&&waveTrainStatus()==='ready'){waveAdvanceTrain();refreshWave();return;}
@@ -1575,8 +1582,10 @@
       if(current()==='wave-effects'||current()==='wave-gradient') {
         const probe=waveProbe(current()==='wave-gradient');if(probe.cursor){probe.cursor--;refreshWave();return;}
       }
-      if(current()==='wave-score-purpose'&&wave.risk){wave.risk--;refreshWave();return;}
+      if(current()==='wave-score-purpose'&&wave.balanced){wave.balanced=false;refreshWave();return;}
       if(current()==='wave-joint'&&wave.joint){wave.joint=false;refreshWave();return;}
+      if(current()==='wave-score'&&wave.returned){wave.returned=false;refreshWave();return;}
+      if(current()==='wave-score'&&wave.compared){wave.compared=false;refreshWave();return;}
       if(current()==='wave-score'&&wave.squared){wave.squared=false;refreshWave();return;}
       if(current()==='wave-strips'&&wave.cut){wave.cut=false;refreshWave();return;}
       if(current()==='wave-normalize'&&wave.narrow){wave.narrow=false;refreshWave();return;}

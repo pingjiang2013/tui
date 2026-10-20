@@ -696,20 +696,41 @@ function assertProbeGeometry(app,expected,loss='mae') {
   assert.equal(app.svg.querySelectorAll('[data-ma-effect-trace]').length,0);
   assert.ok(app.copy.children.length<=3);return evaluation;
 }
-function assertRiskGeometry(app,choice,progress) {
-  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'prediction-consequences');
-  assert.equal(app.svg.getAttribute('data-ma-risk-choice'),choice);close(app.svg.getAttribute('data-ma-risk-progress'),progress);
-  close(app.svg.getAttribute('data-ma-risk-loss'),3);
-  const residuals=choice==='A'?[0,-3,-6]:[-3,-3,-3];
-  app.svg.querySelectorAll('[data-ma-risk-ball]').forEach((ball,i)=>{
-    const center=Number(ball.getAttribute('data-ma-risk-center')),unit=Number(ball.getAttribute('data-ma-risk-unit')),hit=Math.abs(residuals[i])<=4;
-    close(ball.getAttribute('cx'),center+residuals[i]*unit);
-    close(ball.getAttribute('cy'),85+((hit?237:282)-85)*progress);
-    assert.equal(ball.getAttribute('data-ma-risk-hit'),String(hit));
-    const cup=app.svg.querySelectorAll('[data-ma-cup]')[i];close(cup.getAttribute('data-ma-cup-half-width'),4*unit);
-    assert.equal(Math.abs(Number(ball.getAttribute('cx'))-center)<=4*unit,hit);
+function assertBalanceGeometry(app,width,progress) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'balancing-line');
+  close(app.svg.getAttribute('data-ma-balance-progress'),progress);
+  const params=waveModel(app,width);close(params.a,15+15*progress);close(params.b,65-30*progress);
+  close(app.svg.getAttribute('data-ma-wave-loss'),15);
+  assert.equal(app.svg.querySelectorAll('[data-ma-bias-line]').length,1);
+  return params;
+}
+function assertScoreGeometry(app,width,phase) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'score-areas');
+  close(app.svg.getAttribute('data-ma-score-phase'),phase);
+  const layout=Math.min(1,phase),unfold=Math.max(0,Math.min(1,phase-1)),comparison=phase>3?Math.max(0,4-phase):Math.max(0,phase-2);
+  const params={a:30-15*comparison,b:35+30*comparison},evaluation=math.compute(waveData,params);
+  close(app.svg.getAttribute('data-ma-score-a'),params.a);close(app.svg.getAttribute('data-ma-score-b'),params.b);
+  close(app.svg.getAttribute('data-ma-score-mse'),evaluation.value);
+  close(app.svg.getAttribute('data-ma-wave-a'),params.a);close(app.svg.getAttribute('data-ma-wave-b'),params.b);
+  close(app.svg.getAttribute('data-ma-wave-loss'),math.compute(waveData,params,app.svg.getAttribute('data-ma-wave-score')).value);
+  const cell=(width-48)/3,unit=Math.min(4,(cell-12)/30),mix=(a,b)=>a+(b-a)*layout;
+  const gaps=app.svg.querySelectorAll('[data-ma-score-gap]');assert.equal(gaps.length,3);
+  gaps.forEach((gap,i)=>{
+    const row=evaluation.rows[i],targetX=24+(i+0.5)*cell-30*unit/2,sourceX=54+row.seconds/4.4*(width-76);
+    close(gap.getAttribute('x1'),mix(sourceX,targetX));close(gap.getAttribute('x2'),mix(sourceX,targetX));
+    close(gap.getAttribute('y1'),mix(260-row.position/200*227,232-row.gap*unit));
+    close(gap.getAttribute('y2'),mix(260-row.prediction/200*227,232));
   });
-  close(app.svg.getAttribute('data-ma-risk-caught'),choice==='A'?2:3);
+  app.svg.querySelectorAll('[data-ma-score-cell]').forEach(rect=>{
+    const side=Number(rect.getAttribute('data-ma-score-side'));
+    close(rect.getAttribute('width'),side*unit*unfold);close(rect.getAttribute('height'),side*unit);
+    close(Number(rect.getAttribute('width'))*Number(rect.getAttribute('height'))/unit**2,Number(rect.getAttribute('data-ma-score-term'))*unfold);
+  });
+  const loss=app.copy.querySelectorAll('[data-ma-wave-loss]')[0];
+  if(phase>1&&phase<2)assert.equal(loss.textContent,'展开中');
+  else if(phase>=2)close(loss.textContent,Number(evaluation.value.toFixed(4)));
+  else if(phase<1)close(loss.textContent,15);
+  assert.ok(app.copy.children.length<=3);return evaluation;
 }
 for(const width of [736,360,280]) {
   const app=mount(width,'#act-6');assert.equal(app.figure.hidden,true);app.advance();
@@ -724,15 +745,12 @@ for(const width of [736,360,280]) {
   app.advance();
   waveModel(app,width);app.advance();const joint=waveModel(app,width);close(joint.a,30.5);close(joint.b,20.25);
   app.retreat();close(waveModel(app,width).a,30);app.advance();app.advance();
-  assertRiskGeometry(app,'A',0);app.advance();assertRiskGeometry(app,'A',1);app.advance();assertRiskGeometry(app,'B',1);
-  app.retreat();assertRiskGeometry(app,'A',1);app.advance();app.advance();
-  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'score-areas');app.advance();
-  app.svg.querySelectorAll('[data-ma-score-cell]').forEach(rect=>{
-    const side=Number(rect.getAttribute('data-ma-score-side')),unit=Number(rect.getAttribute('data-ma-score-unit'));
-    close(rect.getAttribute('width'),side*unit);close(rect.getAttribute('height'),side*unit);
-    close(Number(rect.getAttribute('width'))*Number(rect.getAttribute('height'))/unit**2,rect.getAttribute('data-ma-score-term'));
-  });
-  assert.equal(app.copy.querySelectorAll('[data-ma-rating-a]')[0].textContent,'15');
+  assertBalanceGeometry(app,width,0);app.advance();assertBalanceGeometry(app,width,1);
+  app.retreat();assertBalanceGeometry(app,width,0);app.advance();app.advance();
+  assertScoreGeometry(app,width,1);app.advance();close(assertScoreGeometry(app,width,2).value,225);
+  app.advance();close(assertScoreGeometry(app,width,3).value,375);
+  app.retreat();close(assertScoreGeometry(app,width,2).value,225);app.advance();
+  app.advance();close(assertScoreGeometry(app,width,4).value,225);
   app.advance();app.advance();
   const strips=app.svg.querySelectorAll('[data-ma-strip-part]');
   for(const d of [3,6]) {
@@ -758,7 +776,7 @@ for(const width of [736,360,280]) {
   app.advance();assert.deepEqual(app.svg.querySelectorAll('[data-ma-actual-increment]').map(n=>Number(n.getAttribute('data-ma-increment-value'))),[30,50]);
   app.svg.querySelectorAll('[data-ma-model-increment]').forEach(n=>assert.ok(Math.abs(Number(n.getAttribute('data-ma-increment-value'))-40)<1e-5));
   app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.match(app.copy.textContent,/两个数各自该改多少/);
-  console.log('PASS width='+width+': direct parameter increments, moving predictions/gaps, computed catch consequences, simultaneous updates, square/strip geometry, real training, and linear-model limitation');
+  console.log('PASS width='+width+': direct parameter increments, real line comparison at constant MAE, extracted gaps and square scoring, simultaneous updates, real training and linear-model limitation');
 }
 const movingWave=mount(360,'#act-6',script,true);
 movingWave.advance();clickWaveNumber(movingWave,'a');movingWave.frame(400);assertProbeGeometry(movingWave,{a:30.5,b:20});
@@ -780,11 +798,24 @@ close(interpolated.a,expected.a);close(interpolated.b,expected.b);
 movingTrain.automatic.fire('click');assert.equal(movingTrain.frames.size,0);assert.equal(movingTrain.timers.size,0);
 movingTrain.automatic.fire('click');movingTrain.goToSecond();assert.equal(movingTrain.timers.size,0);assert.equal(movingTrain.frames.size,0);
 const reducedWave=mount(280,'#act-9',script,'reduce');reducedWave.advance();assert.equal(reducedWave.frames.size,0);
-const movingRisk=mount(360,'#act-7',script,true);
-assertRiskGeometry(movingRisk,'A',0);movingRisk.advance();movingRisk.frame(500);assertRiskGeometry(movingRisk,'A',0.5);
-movingRisk.frame(500);assertRiskGeometry(movingRisk,'A',1);movingRisk.advance();movingRisk.frame(500);assertRiskGeometry(movingRisk,'B',0.5);
-movingRisk.hide();assertRiskGeometry(movingRisk,'B',1);assert.equal(movingRisk.frames.size,0);movingRisk.show();
-movingRisk.retreat();assertRiskGeometry(movingRisk,'A',1);movingRisk.goToSecond();assert.equal(movingRisk.frames.size,0);
+for(const width of [736,360,280]) {
+  const movingScore=mount(width,'#act-7',script,true);
+  assertBalanceGeometry(movingScore,width,0);movingScore.advance();movingScore.frame(550);assertBalanceGeometry(movingScore,width,0.5);
+  movingScore.frame(550);assertBalanceGeometry(movingScore,width,1);movingScore.advance();assertScoreGeometry(movingScore,width,0);
+  movingScore.frame(500);assertScoreGeometry(movingScore,width,0.5);movingScore.frame(500);assertScoreGeometry(movingScore,width,1);
+  movingScore.advance();movingScore.frame(500);assertScoreGeometry(movingScore,width,1.5);movingScore.frame(500);assertScoreGeometry(movingScore,width,2);
+  movingScore.advance();movingScore.frame(500);close(assertScoreGeometry(movingScore,width,2.5).value,262.5);
+  movingScore.hide();assertScoreGeometry(movingScore,width,3);assert.equal(movingScore.frames.size,0);movingScore.show();
+  movingScore.advance();movingScore.frame(500);close(assertScoreGeometry(movingScore,width,3.5).value,262.5);
+  movingScore.frame(500);assertScoreGeometry(movingScore,width,4);movingScore.retreat();movingScore.frame(1000);assertScoreGeometry(movingScore,width,3);
+  movingScore.retreat();movingScore.frame(500);assertScoreGeometry(movingScore,width,2.5);movingScore.frame(500);assertScoreGeometry(movingScore,width,2);
+  movingScore.retreat();movingScore.frame(1000);assertScoreGeometry(movingScore,width,1);movingScore.retreat();assertBalanceGeometry(movingScore,width,1);
+  movingScore.retreat();movingScore.frame(550);assertBalanceGeometry(movingScore,width,0.5);movingScore.goToSecond();assert.equal(movingScore.frames.size,0);
+}
+const reducedScore=mount(280,'#act-7',script,'reduce');reducedScore.advance();assertBalanceGeometry(reducedScore,280,1);
+reducedScore.advance();assertScoreGeometry(reducedScore,280,1);reducedScore.advance();assertScoreGeometry(reducedScore,280,2);
+reducedScore.advance();assertScoreGeometry(reducedScore,280,3);assert.equal(reducedScore.frames.size,0);
+reducedScore.advance();assertScoreGeometry(reducedScore,280,4);assert.equal(reducedScore.frames.size,0);
 const reducedProbe=mount(280,'#act-6',script,'reduce');reducedProbe.advance();clickWaveNumber(reducedProbe,'a');assertProbeGeometry(reducedProbe,{a:31,b:20});assert.equal(reducedProbe.frames.size,0);
 const crossingProbe=mount(280,'#act-6');crossingProbe.advance();for(let i=0;i<12;i++)clickWaveNumber(crossingProbe,'a');
 assertProbeGeometry(crossingProbe,{a:42,b:20});assert.match(crossingProbe.copy.textContent,/越过记录/);
