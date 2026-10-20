@@ -1,0 +1,1121 @@
+<div id="minimal-ai-scene" class="ma-text-page">
+  <style>
+    #minimal-ai-scene { --ma-paper:light-dark(#fffefb,#21221f); --ma-ink:light-dark(#30322c,#edece5); --ma-muted:light-dark(#6b7063,#b9bdaf); --ma-axis:light-dark(#cbd0c2,#656b5d); --ma-accent:light-dark(#b75a2e,#efa577); width:100%; max-width:850px; margin:0 auto; min-height:min(650px,calc(100svh - 48px)); display:flex; flex-direction:column; padding:36px 26px 20px; box-sizing:border-box; background:var(--ma-paper); color:var(--ma-ink); font-family:system-ui,"Noto Sans SC","Microsoft YaHei",sans-serif; }
+    #minimal-ai-scene * { box-sizing:border-box; }
+    #minimal-ai-scene [hidden] { display:none!important; }
+    #minimal-ai-scene .ma-copy { width:100%; max-width:620px; margin:0 auto 12px; min-height:210px; }
+    #minimal-ai-scene .ma-copy p { margin:0 0 17px; font-size:18px; line-height:1.95; font-weight:400; }
+    #minimal-ai-scene.ma-text-page .ma-copy { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; margin-bottom:24px; }
+    #minimal-ai-scene.ma-text-page .ma-copy p { font-size:21px; line-height:2.05; margin-bottom:22px; }
+    #minimal-ai-scene .ma-figure { position:relative; width:100%; flex:1; }
+    #minimal-ai-scene svg { display:block; width:100%; height:265px; overflow:hidden; }
+    #minimal-ai-scene .ma-handle { position:absolute; width:34px; height:34px; padding:0; transform:translate(-50%,-50%); border:2px solid var(--ma-accent); border-radius:50%; background:var(--ma-paper); cursor:ew-resize; touch-action:none; }
+    #minimal-ai-scene .ma-handle::after { content:""; position:absolute; left:11px; top:11px; width:8px; height:8px; border-radius:50%; background:var(--ma-accent); pointer-events:none; }
+    #minimal-ai-scene button:focus-visible { outline:2px solid var(--ma-ink); outline-offset:5px; }
+    #minimal-ai-scene .ma-formula { font-variant-numeric:tabular-nums; }
+    #minimal-ai-scene .ma-parameter { color:var(--ma-accent); font-weight:500; padding:0 3px; font-variant-numeric:tabular-nums; }
+    #minimal-ai-scene .ma-term { font:inherit; font-size:1.15em; color:var(--ma-ink); background:transparent; padding:2px 3px; border:0; border-bottom:1px solid var(--ma-axis); cursor:pointer; }
+    #minimal-ai-scene .ma-term[aria-pressed="true"] { border-color:var(--ma-accent); color:var(--ma-accent); }
+    #minimal-ai-scene .ma-controls { display:flex; align-items:center; flex-wrap:wrap; gap:8px 16px; }
+    #minimal-ai-scene .ma-controls button { font:inherit; color:var(--ma-muted); background:none; border:0; border-bottom:1px solid var(--ma-axis); padding:2px 0; cursor:pointer; }
+    #minimal-ai-scene .ma-controls button[aria-pressed="true"] { color:var(--ma-accent); border-color:var(--ma-accent); }
+    #minimal-ai-scene .ma-controls label { display:inline-flex; align-items:center; gap:8px; }
+    #minimal-ai-scene .ma-controls input { font:inherit; width:6em; color:var(--ma-ink); background:transparent; border:0; border-bottom:1px solid var(--ma-axis); padding:2px 4px; }
+    #minimal-ai-scene .ma-input-error { width:100%; font-size:14px; color:var(--ma-accent); }
+    #minimal-ai-scene .ma-nav { width:100%; max-width:620px; margin:25px auto 0; display:flex; justify-content:space-between; align-items:center; gap:20px; }
+    #minimal-ai-scene .ma-nav button { font:inherit; font-size:14px; padding:8px 0; background:transparent; color:var(--ma-ink); border:0; cursor:pointer; }
+    #minimal-ai-scene .ma-nav .ma-next { border-bottom:1px solid var(--ma-ink); padding-bottom:5px; }
+    #minimal-ai-scene .ma-nav button:disabled { opacity:0; pointer-events:none; }
+    @media(max-width:480px) {
+      #minimal-ai-scene { padding:24px 12px 16px; min-height:min(660px,calc(100svh - 48px)); }
+      #minimal-ai-scene .ma-copy { min-height:230px; }
+      #minimal-ai-scene .ma-copy p { font-size:16px; line-height:1.95; }
+      #minimal-ai-scene.ma-text-page .ma-copy p { font-size:18px; line-height:2; }
+      #minimal-ai-scene .ma-nav { margin-top:20px; }
+      #minimal-ai-scene .ma-nav button { font-size:13px; }
+    }
+  </style>
+  <section class="ma-copy" data-ma-copy aria-label="当前讲解"></section>
+  <div class="ma-figure" data-ma-figure hidden>
+    <svg data-ma-svg role="img" aria-labelledby="ma-stage-title"></svg>
+    <button class="ma-handle" data-ma-handle type="button" role="slider" aria-label="调整预测规则中每秒前进的距离" aria-orientation="horizontal" aria-valuemin="5" aria-valuemax="40" hidden></button>
+  </div>
+  <nav class="ma-nav" aria-label="阅读进度">
+    <button data-ma-back type="button" disabled>← 上一页</button>
+    <button data-ma-auto type="button" hidden>自动继续</button>
+    <button class="ma-next" data-ma-next type="button">看看已有的记录 →</button>
+  </nav>
+  <script>
+  (() => {
+    const root=document.getElementById('minimal-ai-scene');
+    if(!root) return;
+    const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
+    const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
+    const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending'];
+    // Scenario data and prediction parameters are deliberately independent.
+    const simulation={positionAt:seconds=>20+30*seconds};
+    const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
+    const rule={start:records[0].position,initialDistance:20};
+    const state={scene:0,distance:rule.initialDistance,adjusted:false,snapshot:null,revealed:false,seenResult:false,actualResult:null,highlight:null};
+    const ns='http://www.w3.org/2000/svg';
+    const ink='var(--ma-ink)', muted='var(--ma-muted)', axis='var(--ma-axis)', accent='var(--ma-accent)';
+    let geometry=null,drag=null,feedback=null,learning=null,autoTimer=null,autoRunning=false;
+    let plotFrame=null,plotMotion=null,lastPlot=null;
+    let direction=null,stepLesson=null;
+    const current=()=>scenes[state.scene];
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending'].includes(current());
+    const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
+    const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+    const number=value=>Number(value.toFixed(1)).toString();
+    const aligned=(a,b)=>number(a)===number(b);
+    function el(tag,attrs={},parent=svg) {
+      const node=document.createElementNS(ns,tag);
+      Object.entries(attrs).forEach(([key,value])=>node.setAttribute(key,String(value)));
+      parent.appendChild(node);return node;
+    }
+    function text(value,x,y,attrs={},parent=svg) {
+      const node=el('text',{x,y,fill:ink,'font-size':13,...attrs},parent);node.textContent=value;return node;
+    }
+    function line(x1,y1,x2,y2,attrs={},parent=svg) {return el('line',{x1,y1,x2,y2,stroke:axis,...attrs},parent);}
+    function paragraph(value) {const p=document.createElement('p');p.textContent=value;copy.appendChild(p);return p;}
+    function ensureSnapshot() {
+      if(!state.snapshot) state.snapshot={distance:state.distance,position:predict(4),alreadySeen:state.seenResult};
+    }
+    function adjustmentFeedback() {
+      const p3=predict(3),difference=Math.abs(p3-records[3].position);
+      if(records.every(row=>aligned(predict(row.seconds),row.position))) {
+        return state.seenResult
+          ? '现在，同一条规则算出的三个预测都与记录对上了。接下来，再检查它在第4秒的预测。'
+          : '现在，同一条规则算出的三个预测都与记录对上了。接下来，用它预测一个还没看过的结果。';
+      }
+      if(state.distance===5||state.distance===40) return `已到这次实验的调整范围。第3秒预测是${number(p3)}厘米，与记录相差${number(difference)}厘米。`;
+      return `第3秒的预测现在是${number(p3)}厘米，与记录相差${number(difference)}厘米。你调整的是同一条规则，所以其他时刻的预测也跟着改变。`;
+    }
+    function renderCopy() {
+      copy.replaceChildren();feedback=null;
+      if(current().startsWith('step-')) {renderStepCopy();return;}
+      if(current().startsWith('direction-')) {renderDirectionCopy();return;}
+      if(current().startsWith('learn-')) {renderLearningCopy();return;}
+      switch(current()) {
+        case 'purpose':
+          paragraph('我们想让电脑做到一件事：根据已有的记录，预测一个还不知道的结果。');
+          paragraph('先从一个简单例子开始。这里有小车前几秒的位置记录，我们想让电脑算出它下一秒会在哪里。');
+          paragraph(state.seenResult?'你也可以回到已有记录，试试不同的规则会给出怎样的预测。':'下一秒的结果先不揭开。我们先看看，电脑可以依据什么来预测。');
+          break;
+        case 'records':
+          paragraph('这些实心标记是已经知道的位置。它们给了我们几组“时间—位置”的对应关系。');
+          paragraph(state.seenResult?'我们已经看过第4秒的结果。接下来，仍只用前三秒的记录调整规则，再检查它给出的预测。':'但记住这些答案还不够：我们要预测的下一秒，并不在这些记录里。');
+          paragraph('这里使用一组简单的模拟记录。');
+          break;
+        case 'why-rule':
+          paragraph('我们需要一条规则：给它一个时间，它就能算出一个预测位置。');
+          paragraph('规则一开始可能不准。好在，前面的记录有已知答案，可以先用来检查和调整它。');
+          paragraph('接下来，空心标记表示规则算出的预测。让它们靠近实心记录，是为了找到一条更符合已有记录的规则。');
+          break;
+        case 'adjust':
+          paragraph(`当前规则在第3秒预测出${number(predict(3))}厘米，而记录是110厘米。我们先调整规则，让它更接近已知答案。`);
+          feedback=paragraph(state.adjusted?adjustmentFeedback():'拖动第3秒的空心标记。它会改变规则里的“每秒前进多少厘米”，前两秒的预测也会一起重算。');
+          feedback.setAttribute('aria-live','polite');feedback.setAttribute('aria-atomic','true');
+          break;
+        case 'predict': {
+          ensureSnapshot();const prediction=number(state.snapshot.position);
+          if(!state.revealed) {
+            paragraph(state.snapshot.alreadySeen
+              ? `沿用这次调整后的规则，第4秒的预测是${prediction}厘米。`
+              : `现在，把还没有答案的第4秒交给同一条规则。它算出的预测是${prediction}厘米。`);
+            paragraph(state.snapshot.alreadySeen
+              ? '这个结果我们已经看过。先保留本次预测，再与模拟结果核对，看看改变规则带来了什么影响。'
+              : '这就是我们想做的：根据已有记录，给出一个未知结果的估计。接下来再揭开结果，检查这次预测。');
+          } else {
+            const actual=number(state.actualResult),difference=number(Math.abs(state.snapshot.position-state.actualResult));
+            if(aligned(state.snapshot.position,state.actualResult)) {
+              paragraph(state.snapshot.alreadySeen
+                ? `这次的预测与第4秒的结果都为${actual}厘米。我们改变了规则，预测也按同一计算重新产生。`
+                : `揭开的结果也是${actual}厘米。这次，我们用已有记录调整的规则，预测对了一个没有参与调整的结果。`);
+              paragraph('一次对上，还不能保证它在其他情况下也都准确。');
+            } else {
+              paragraph(`模拟结果是${actual}厘米，预测是${prediction}厘米，相差${difference}厘米。`);
+              paragraph('规则给出了预测，但预测仍有偏差。我们还需要想办法让规则更准确。');
+            }
+          }
+          break;
+        }
+        case 'calculation': {
+          ensureSnapshot();const snapshot=state.snapshot;
+          paragraph('电脑并没有提前看到刚才揭开的答案。它只是把新的时间，放进我们调整过的规则。');
+          const p=paragraph(''),terms=[['start',number(rule.start),'起始位置'],['time','4','输入时间'],['distance',number(snapshot.distance),'规则中每秒前进的距离'],['output',number(snapshot.position),'预测结果']];
+          p.className='ma-formula';
+          terms.forEach(([key,value,label],index)=>{
+            if(index>0) p.appendChild(document.createTextNode(index===1?' + ':index===2?' × ':' = '));
+            const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=value;
+            button.setAttribute('data-ma-term',key);button.setAttribute('aria-label',`${label}：${value}`);button.setAttribute('aria-pressed',String(state.highlight===key));
+            button.addEventListener('click',()=>{
+              state.highlight=state.highlight===key?null:key;
+              copy.querySelectorAll('[data-ma-term]').forEach(term=>term.setAttribute('aria-pressed',String(term.getAttribute('data-ma-term')===state.highlight)));
+              renderStage();
+            });p.appendChild(button);
+          });
+          p.appendChild(document.createTextNode(' 厘米'));
+          paragraph(`20是已知起点，4是新输入的时间，${number(snapshot.distance)}是刚才调整的每秒距离，${number(snapshot.position)}是算出的预测。`);
+          break;
+        }
+        case 'ending':
+          paragraph('我们已经做成了一件事：用已有记录调整一条规则，再把新的输入交给它，得到一个预测。这样一条用来预测的规则，就是一个简单的模型。');
+          paragraph('刚才是你在检查记录、调整规则。电脑已经能计算预测，还需要学会怎样自己改进。');
+          paragraph('下一步，要让机器判断一次调整有没有变好，再自己继续调整。');
+          break;
+      }
+    }
+    function updateNav() {
+      back.disabled=state.scene===0;
+      back.textContent='← 上一页';automatic.hidden=true;
+      if(current().startsWith('step-')) {updateStepNav();return;}
+      if(current().startsWith('direction-')) {updateDirectionNav();return;}
+      if(current().startsWith('learn-')) {updateLearningNav();return;}
+      const labels=['看看已有的记录 →','怎样从记录走向预测？ →','试着对上这些记录 →','把这条规则用到第4秒 →',state.revealed?'拆开这次计算 →':state.seenResult?'核对这次预测':'揭开结果，检查预测','这算是机器学会了吗？ →','让电脑自己调整 →'];
+      next.textContent=labels[state.scene];
+    }
+    function renderStage() {
+      if(textOnly()) return;
+      if(current().startsWith('step-')) {renderStepGraph();return;}
+      if(current().startsWith('direction-')) {renderDirectionGraph();return;}
+      if(current().startsWith('learn-')) {renderLearningGraph();return;}
+      svg.replaceChildren();const width=Math.max(280,figure.getBoundingClientRect().width||736),height=265;
+      svg.style.height='265px';
+      const left=25,right=width-25,scale=(right-left)/200,X=position=>left+position*scale;
+      const trackY=157,actualY=126,predictedY=213;
+      geometry={scale,X,predictedY};svg.setAttribute('viewBox',`0 0 ${width} ${height}`);
+      const title=el('title',{id:'ma-stage-title'});
+      let description=records.map(row=>`${row.seconds}秒的记录是${row.position}厘米`).join('；');
+      if(current()==='adjust') description+='。'+[1,2,3].map(seconds=>`${seconds}秒的预测是${number(predict(seconds))}厘米`).join('；');
+      if(current()==='predict'||current()==='calculation') {
+        ensureSnapshot();description+=`。4秒的预测是${number(state.snapshot.position)}厘米`;
+        if(state.revealed) description+=`，模拟结果是${number(state.actualResult)}厘米`;
+      }
+      title.textContent=description+'。位置单位为厘米。';
+      line(left,trackY,right,trackY);
+      [0,50,100,150,200].forEach(position=>{
+        line(X(position),trackY,X(position),trackY+6);
+        text(String(position),X(position),trackY+24,{'text-anchor':position===0?'start':position===200?'end':'middle',fill:muted,'font-size':12});
+      });
+      text('厘米',right,trackY+43,{'text-anchor':'end',fill:muted,'font-size':12});
+      const highlight=state.highlight;
+      records.forEach(row=>{
+        const active=current()==='calculation'&&highlight==='start'&&row.seconds===0;
+        line(X(row.position),actualY,X(row.position),trackY,{stroke:active?accent:axis});
+        el('circle',{cx:X(row.position),cy:actualY,r:active?7:5,fill:active?accent:ink});
+        text(`${row.seconds}秒`,X(row.position),actualY-20,{'text-anchor':'middle',fill:active?accent:muted,'font-size':12});
+      });
+      handle.hidden=current()!=='adjust';
+      if(current()==='adjust') {
+        [1,2,3].forEach(seconds=>{
+          const position=predict(seconds);
+          line(X(position),trackY+31,X(position),predictedY-8,{stroke:axis});
+          if(seconds!==3) el('circle',{cx:X(position),cy:predictedY,r:4.5,fill:'var(--ma-paper)',stroke:accent,'stroke-width':1.5});
+          if(seconds===3||predict(2)-predict(1)>24/scale) text(`${seconds}秒`,X(position),predictedY+30,{'text-anchor':'middle',fill:muted,'font-size':12});
+        });
+        handle.hidden=false;handle.style.left=`${X(predict(3))}px`;handle.style.top=`${predictedY}px`;
+        handle.setAttribute('aria-valuenow',String(state.distance));
+        handle.setAttribute('aria-valuetext',`每秒${number(state.distance)}厘米；第3秒预测${number(predict(3))}厘米`);
+      }
+      if(current()==='predict'||current()==='calculation') {
+        const position=state.snapshot.position,isCalc=current()==='calculation';
+        const active=isCalc&&(highlight==='output'||highlight==='time');
+        line(X(position),trackY+31,X(position),predictedY-9,{stroke:accent,'stroke-dasharray':'3 4'});
+        el('circle',{cx:X(position),cy:predictedY,r:active?11:8,fill:'var(--ma-paper)',stroke:accent,'stroke-width':active?3:2});
+        text('4秒',X(position),predictedY+30,{'text-anchor':'middle',fill:highlight==='time'?accent:muted,'font-size':highlight==='time'?15:12});
+        if(state.revealed) {
+          const actual=state.actualResult;
+          line(X(actual),actualY,X(actual),trackY);
+          el('circle',{cx:X(actual),cy:actualY,r:6,fill:ink});
+          text('4秒',X(actual),actualY-20,{'text-anchor':'middle',fill:muted,'font-size':12});
+        }
+        if(isCalc&&highlight==='distance') {
+          const end=predict(1,state.snapshot.distance),y=55;
+          line(X(rule.start),y,X(end),y,{stroke:accent,'stroke-width':2});
+          line(X(rule.start),y-5,X(rule.start),y+5,{stroke:accent});line(X(end),y-5,X(end),y+5,{stroke:accent});
+          text(`每秒 ${number(state.snapshot.distance)} 厘米`,(X(rule.start)+X(end))/2,y-14,{'text-anchor':'start',fill:accent,'font-size':12});
+        }
+      }
+    }
+    // Only the first three seconds participate in fitting and scoring.
+    // The fourth-second result remains an independent check.
+    const trainingRecords=records.filter(row=>row.seconds>0);
+    function score(distance) {
+      return trainingRecords.reduce((sum,row)=>sum+Math.abs(predict(row.seconds,distance)-row.position),0)/trainingRecords.length;
+    }
+    function errorDerivative(distance) {
+      const terms=trainingRecords.map(row=>{
+        const residual=predict(row.seconds,distance)-row.position;
+        return residual===0?null:Math.sign(residual)*row.seconds;
+      });
+      return terms.some(value=>value===null)?null:terms.reduce((sum,value)=>sum+value,0)/terms.length;
+    }
+    function bestCandidate(base,...candidates) {
+      return candidates.reduce((best,candidate)=>candidate.score<best.score?candidate:best,{distance:base,score:score(base)});
+    }
+    function comparisonAt(base) {
+      const lowerDistance=clamp(base-1,5,40),higherDistance=clamp(base+1,5,40);
+      const lower={distance:lowerDistance,score:score(lowerDistance)},higher={distance:higherDistance,score:score(higherDistance)};
+      return {base,lower,higher,best:bestCandidate(base,lower,higher)};
+    }
+    function firstComparison() {return comparisonAt(rule.initialDistance);}
+    function describeComparison(value,baseline) {
+      if(value===baseline) return `与原来的${number(baseline)}厘米相同`;
+      return `比原来的${number(baseline)}厘米${value<baseline?'更小':'更大'}`;
+    }
+    function ensureLearning() {
+      if(!learning) learning={measureAll:false,tryStep:0,events:[{distance:firstComparison().best.distance,phase:'ready',lower:null,higher:null}],cursor:0,checkShown:false};
+    }
+    function loopEvent() {return learning.events[learning.cursor];}
+    function trialView() {
+      const comparison=firstComparison();
+      const distance=[comparison.base,comparison.lower.distance,comparison.higher.distance,comparison.best.distance][learning.tryStep];
+      return {distance,accepted:learning.tryStep===3?comparison.best.distance:comparison.base,trial:learning.tryStep===1||learning.tryStep===2};
+    }
+    function learningView() {
+      if(current()==='learn-try') return trialView();
+      if(['learn-loop','learn-check','learn-ending'].includes(current())) {
+        const event=loopEvent();
+        return {distance:event.distance,accepted:event.distance,trial:false};
+      }
+      return {distance:rule.initialDistance,accepted:rule.initialDistance,trial:false};
+    }
+    function renderLearningCopy() {
+      ensureLearning();
+      const view=learningView(),average=score(view.distance);
+      switch(current()) {
+        case 'learn-purpose':
+          paragraph('刚才，调整规则的工作由你完成。要让电脑自己调整，它得先能判断：改过之后，预测有没有更接近已有答案？');
+          paragraph('这次另开一个小实验，从“每秒前进20厘米”开始。第一幕里你的调整会保留。');
+          paragraph('我们先给电脑一个判断好坏的办法，再让它试着改。');
+          break;
+        case 'learn-map':
+          paragraph('一条规则会给出多个预测。要一起检查它们，我们把时间放在横轴、位置放在纵轴。');
+          paragraph('实心点仍是已有记录。橙线来自当前规则，线上每个空心点，是它对那个时刻的预测。现在，不同时刻的预测可以放在一起比较了。');
+          break;
+        case 'learn-measure':
+          if(!learning.measureAll) {
+            const row=trainingRecords[0],prediction=predict(row.seconds,view.distance),difference=Math.abs(prediction-row.position);
+            paragraph('先看一条记录：第1秒预测是'+number(prediction)+'厘米，答案是'+row.position+'厘米，两点之间差'+number(difference)+'厘米。');
+            paragraph('这个距离可以计算，也可以比较。但要评价整条规则，我们还得把另外两条记录算进去。');
+          } else {
+            const gaps=trainingRecords.map(row=>Math.abs(predict(row.seconds,view.distance)-row.position));
+            paragraph(`三个预测分别差${number(gaps[0])}、${number(gaps[1])}、${number(gaps[2])}厘米。先把这些距离相加，再除以记录数，就得到平均差距。`);
+            paragraph(`（${gaps.map(number).join(' + ')}）÷ ${gaps.length} = ${number(average)} 厘米。`);
+            paragraph('平均差距越小，规则就越接近这些记录。接下来，电脑可以用它比较调整前后的好坏。');
+          }
+          break;
+        case 'learn-try': {
+          const {base,lower,higher,best}=firstComparison();
+          if(learning.tryStep===0) {
+            paragraph(`现在每秒前进${number(base)}厘米，平均差距是${number(score(base))}厘米。电脑先改变一个数，重新计算预测，再看平均差距有没有变小。`);
+            paragraph('先把每秒距离减小1厘米。这只是一次试算，比较完再决定要不要保留。');
+          } else if(learning.tryStep===1) {
+            paragraph(`试着减到每秒${number(lower.distance)}厘米，平均差距变成${number(lower.score)}厘米，${describeComparison(lower.score,score(base))}。`);
+            paragraph(`这次改动暂不保留。回到原来的${number(base)}，再试着增大1厘米。图里显示的是正在试算的规则。`);
+          } else if(learning.tryStep===2) {
+            paragraph(`从原来的${number(base)}增到每秒${number(higher.distance)}厘米，平均差距变成${number(higher.score)}厘米，${describeComparison(higher.score,score(base))}。`);
+            paragraph(`两个方向都算过了：减小时差距${number(lower.score)}厘米，增大时差距${number(higher.score)}厘米。电脑现在有依据决定保留哪一个。`);
+          } else {
+            paragraph(best.score<score(base)
+              ? `电脑保留每秒${number(best.distance)}厘米的规则，平均差距从${number(score(base))}降到${number(best.score)}厘米。`
+              : `两边都没有更小的差距，电脑保留原来的每秒${number(best.distance)}厘米，平均差距仍为${number(best.score)}厘米。`);
+            paragraph('一次调整就这样完成：试算两边、比较差距、保留更好的规则。现在可以重复这个过程。');
+          }
+          break;
+        }
+        case 'learn-loop': {
+          const event=loopEvent(),acceptedScore=score(event.distance);
+          if(event.phase==='ready') {
+            paragraph('现在保留的是每秒'+number(event.distance)+'厘米的规则，平均差距'+number(acceptedScore)+'厘米。');
+            paragraph('接下来，每次点击就完成一整轮：试算两边，保留更好的规则。留意橙色差距线怎样缩短，也可以让电脑自动继续。');
+          } else if(event.phase==='adopted') {
+            paragraph(`比较两边后，电脑保留每秒${number(event.distance)}厘米，平均差距从${number(score(event.previousDistance))}降到${number(acceptedScore)}厘米。`);
+            paragraph('这一轮比较已经完成。预测点靠近记录时，橙色差距线也会一起缩短。下一次调整从当前规则继续。');
+          } else {
+            paragraph(`现在每秒${number(event.distance)}厘米，平均差距是${number(acceptedScore)}厘米。再向两边各试1厘米，都没有更小的差距，电脑停止调整。`);
+            paragraph('这是对这组记录、按当前试探幅度得到的结果。接下来，检查一个没有用于本轮调整的时刻。');
+          }
+          break;
+        }
+        case 'learn-check': {
+          const prediction=predict(4,view.accepted);
+          if(!learning.checkShown) {
+            paragraph(`学到的规则在第4秒预测出${number(prediction)}厘米。本轮调整只用了第1、2、3秒的记录，第4秒没有参与比较。`);
+            paragraph(state.seenResult?'第4秒的结果我们已经看过。现在再用它检查，看看电脑自己调整后，预测改变了多少。':'现在用第4秒的模拟结果，检查调整后的规则，而不把这个结果用于调整。');
+          } else {
+            const actual=simulation.positionAt(4),before=predict(4,rule.initialDistance);
+            paragraph(`第4秒的模拟结果是${number(actual)}厘米。原规则预测${number(before)}厘米，调整后预测${number(prediction)}厘米，差距从${number(Math.abs(before-actual))}变成${number(Math.abs(prediction-actual))}厘米。`);
+            paragraph('这次调整改善了一个没有参与调整的预测。但这个例子很简单，预测对一次，还不足以说明它适用于所有情况。');
+          }
+          break;
+        }
+        case 'learn-ending':
+          paragraph('电脑已经能根据记录，自己改善一条预测规则。它反复做的是：试算、比较，再保留差距更小的规则。');
+          paragraph('这里用的是向两边试探的办法，平均差距是判断依据。每一步都实际重新计算。');
+          paragraph('不过，每次都把两边算一遍，还有改进的余地。能不能从当前位置，就知道该往哪个方向调整？');
+          break;
+      }
+    }
+    function updateLearningNav() {
+      switch(current()) {
+        case 'learn-purpose':next.textContent='把记录放在一起看 →';break;
+        case 'learn-map':next.textContent='怎样判断预测准不准？ →';break;
+        case 'learn-measure':
+          if(learning.measureAll) back.textContent='← 看一条记录';
+          next.textContent=learning.measureAll?'让电脑试着改一次 →':'把另外两条也算进来 →';break;
+        case 'learn-try':
+          if(learning.tryStep>0) back.textContent='← 回退一步';
+          next.textContent=['先试着减小一点','再试着增大一点','保留差距更小的规则 →','重复这个过程 →'][learning.tryStep];break;
+        case 'learn-loop':
+          if(learning.cursor>0) back.textContent='← 回退一轮';
+          automatic.hidden=loopEvent().phase==='done';automatic.textContent=autoRunning?'暂停':'自动继续';
+          automatic.setAttribute('aria-pressed',String(autoRunning));
+          next.textContent=loopEvent().phase==='done'?'检查第4秒的预测 →':'再调整一次 →';break;
+        case 'learn-check':next.textContent=learning.checkShown?'我们做成了什么？ →':'核对第4秒的预测';break;
+        case 'learn-ending':next.textContent='看看怎样判断方向 →';break;
+      }
+    }
+    function renderLearningGraph() {
+      const width=Math.max(240,figure.getBoundingClientRect().width||736),view=learningView(),scene=current();
+      animatePlot(scene,width,view.distance,distance=>drawLearningGraph({...view,distance,target:view.distance,transition:distance!==view.distance},width));
+    }
+    function animatePlot(scene,width,target,drawFrame,duration=420) {
+      const from=lastPlot&&lastPlot.scene===scene&&lastPlot.width===width?lastPlot.distance:target;
+      cancelPlotAnimation();
+      const draw=distance=>{
+        drawFrame(distance);
+        lastPlot={scene,width,distance};
+      };
+      const reducedMotion=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      if(reducedMotion||typeof globalThis.requestAnimationFrame!=='function'||Math.abs(from-target)<1e-9) {draw(target);return;}
+      // Animate the application of a computed decision, never the search itself.
+      // All marks in a frame share the same interpolated parameter and prediction function.
+      const motion={draw,target};plotMotion=motion;
+      const started=globalThis.performance?.now?.()??Date.now();
+      draw(from);
+      const frame=now=>{
+        if(plotMotion!==motion) return;
+        const progress=clamp((now-started)/duration,0,1),eased=progress*progress*(3-2*progress);
+        draw(progress===1?target:from+(target-from)*eased);
+        if(progress<1) plotFrame=globalThis.requestAnimationFrame(frame);
+        else {plotFrame=null;plotMotion=null;}
+      };
+      plotFrame=globalThis.requestAnimationFrame(frame);
+    }
+    function cancelPlotAnimation(settle=false) {
+      if(plotFrame!==null) globalThis.cancelAnimationFrame?.(plotFrame);
+      plotFrame=null;
+      const motion=plotMotion;plotMotion=null;
+      if(settle&&motion) motion.draw(motion.target);
+    }
+    function drawLearningGraph(view,width) {
+      svg.replaceChildren();handle.hidden=true;
+      svg.setAttribute('data-ma-chart-kind','time-position');
+      const height=310;
+      const left=54,right=width-22,top=33,bottom=height-50;
+      const X=seconds=>left+seconds/4.4*(right-left),Y=position=>bottom-position/200*(bottom-top);
+      const showGaps=!['learn-map'].includes(current());
+      svg.setAttribute('viewBox',`0 0 ${width} ${height}`);svg.style.height=`${height}px`;
+      svg.setAttribute('data-ma-plot-distance',String(view.distance));
+      const title=el('title',{id:'ma-stage-title'});
+      title.textContent=`横轴时间，单位秒；纵轴位置，单位厘米。${view.transition?'图形过渡，当前绘制':view.trial?'本次试算':'当前规则'}每秒${number(view.distance)}厘米，三个预测的平均差距${number(score(view.distance))}厘米。`+trainingRecords.map(row=>`${row.seconds}秒：预测${number(predict(row.seconds,view.distance))}，记录${row.position}`).join('；');
+      if(view.transition) title.textContent+=`。正在呈现已算出的${view.trial?'试算':'调整'}结果：每秒${number(view.target)}厘米。`;
+      if(view.trial) title.textContent+=`。仍保留每秒${number(view.accepted)}厘米的规则。`;
+      line(left,top,left,bottom);line(left,bottom,right,bottom);
+      [0,50,100,150,200].forEach(position=>{
+        line(left-5,Y(position),left,Y(position));
+        text(String(position),left-10,Y(position)+4,{'text-anchor':'end',fill:muted,'font-size':12});
+      });
+      [0,1,2,3,4].forEach(seconds=>{
+        line(X(seconds),bottom,X(seconds),bottom+5);
+        text(String(seconds),X(seconds),bottom+23,{'text-anchor':'middle',fill:muted,'font-size':12});
+      });
+      text('位置（厘米）',left,17,{fill:muted,'font-size':12});
+      text('时间（秒）',right,height-2,{'text-anchor':'end',fill:muted,'font-size':12});
+      const defs=el('defs'),clip=el('clipPath',{id:'ma-learning-clip'},defs);
+      el('rect',{x:left-8,y:top-8,width:right-left+16,height:bottom-top+16},clip);
+      const marks=el('g',{'clip-path':'url(#ma-learning-clip)'});
+      line(X(0),Y(predict(0,view.distance)),X(4.4),Y(predict(4.4,view.distance)),{stroke:accent,'stroke-width':2,'data-ma-prediction-line':''},marks);
+      records.forEach(row=>{
+        const prediction=predict(row.seconds,view.distance);
+        const selected=view.selected!==undefined&&view.selected!==null?row.seconds===view.selected:current()==='learn-measure'&&!learning.measureAll&&row.seconds===1;
+        const displayGap=showGaps&&row.seconds>0&&(current()!=='learn-measure'||learning.measureAll||selected)&&(!current().startsWith('direction-')||view.selected===null||selected);
+        if(displayGap) line(X(row.seconds),Y(row.position),X(row.seconds),Y(prediction),{stroke:accent,'stroke-width':selected?4:3.5,'stroke-opacity':selected?0.9:0.6,'stroke-linecap':'round','data-ma-gap-time':row.seconds},marks);
+        el('circle',{cx:X(row.seconds),cy:Y(row.position),r:4.5,fill:ink,'data-ma-record-time':row.seconds},marks);
+        if(row.seconds>0) el('circle',{cx:X(row.seconds),cy:Y(prediction),r:6,fill:'none',stroke:accent,'stroke-width':1.5,'data-ma-prediction-time':row.seconds},marks);
+        if(selected&&current()==='learn-measure') text(`${number(Math.abs(prediction-row.position))}厘米`,X(row.seconds)+10,(Y(prediction)+Y(row.position))/2+4,{fill:accent,'font-size':12});
+      });
+      if(current()==='learn-check') {
+        const prediction=predict(4,view.accepted);
+        el('circle',{cx:X(4),cy:Y(prediction),r:8,fill:'var(--ma-paper)',stroke:accent,'stroke-width':2},marks);
+        line(X(4),bottom,X(4),Y(prediction),{stroke:axis,'stroke-dasharray':'3 4'},marks);
+        title.textContent+=`。第4秒预测${number(prediction)}厘米。`;
+        if(learning.checkShown) {
+          const actual=simulation.positionAt(4);
+          el('circle',{cx:X(4),cy:Y(actual),r:4.5,fill:ink},marks);
+          title.textContent+=`模拟结果${number(actual)}厘米。`;
+        }
+      }
+    }
+    function computeNextRound(previous) {
+      const base=previous.distance;
+      const {lower,higher,best}=comparisonAt(base);
+      return {distance:best.distance,previousDistance:base,lower,higher,phase:best.score<score(base)?'adopted':'done'};
+    }
+    function advanceLoop() {
+      if(loopEvent().phase==='done') return;
+      if(learning.cursor===learning.events.length-1) learning.events.push(computeNextRound(loopEvent()));
+      learning.cursor++;
+      if(loopEvent().phase==='done') stopAutomation();
+    }
+    function refreshLearning() {renderCopy();updateNav();renderStage();}
+    function stopAutomation() {
+      if(autoTimer!==null) clearTimeout(autoTimer);
+      autoTimer=null;autoRunning=false;
+      cancelPlotAnimation(true);
+    }
+    function scheduleStep() {
+      autoTimer=setTimeout(()=>{
+        autoTimer=null;
+        if(!autoRunning||current()!=='learn-loop') return;
+        advanceLoop();refreshLearning();
+        if(autoRunning) scheduleStep();
+      },800);
+    }
+    function forwardLearning() {
+      stopAutomation();
+      if(current()==='learn-measure'&&!learning.measureAll) {learning.measureAll=true;refreshLearning();return;}
+      if(current()==='learn-try'&&learning.tryStep<3) {learning.tryStep++;refreshLearning();return;}
+      if(current()==='learn-loop') {
+        if(loopEvent().phase!=='done') {advanceLoop();refreshLearning();return;}
+        learning.checkShown=false;
+      }
+      if(current()==='learn-check'&&!learning.checkShown) {learning.checkShown=true;refreshLearning();return;}
+      state.scene++;renderScene();
+    }
+    function backwardLearning() {
+      stopAutomation();
+      if(current()==='learn-measure'&&learning.measureAll) {learning.measureAll=false;refreshLearning();return;}
+      if(current()==='learn-try'&&learning.tryStep>0) {learning.tryStep--;refreshLearning();return;}
+      if(current()==='learn-loop'&&learning.cursor>0) {learning.cursor--;refreshLearning();return;}
+      if(current()==='learn-check'&&learning.checkShown) {learning.checkShown=false;refreshLearning();return;}
+      state.scene--;renderScene();
+    }
+    function ensureDirection() {
+      if(!direction) direction={experimentChanged:false,averageSplit:false,updated:false,farUpdated:false,layouts:new Set()};
+    }
+    function directionView() {
+      ensureDirection();
+      const far=current()==='direction-far',near=['direction-purpose','direction-near'].includes(current()),base=far?35:near?21:22;
+      const influences=trainingRecords.map(row=>{
+        const prediction=predict(row.seconds,base),difference=prediction-row.position;
+        // Local derivative of absolute distance. At its corner, no unique derivative exists.
+        const influence=difference===0?null:Math.sign(difference)*row.seconds;
+        return {...row,prediction,influence};
+      });
+      const rate=influences.some(row=>row.influence===null)?null:influences.reduce((sum,row)=>sum+row.influence,0)/influences.length;
+      const choice=rate===null?base:base-Math.sign(rate);
+      const adopted=far?direction.farUpdated:current()==='direction-apply'?direction.updated:false;
+      const distance=current()==='direction-near'?(direction.experimentChanged?base+1:base):adopted?choice:base;
+      return {base,influences,rate,choice,distance,accepted:distance,trial:false,selected:null};
+    }
+    function signed(value) {return value>0?'+'+number(value):value<0?'−'+number(Math.abs(value)):'0';}
+    function directionEquation(view) {
+      if(view.rate===null)return '这里有预测恰好对齐，绝对距离在该处有折点，需要另外处理。';
+      return '（'+view.influences.map(row=>signed(row.influence)).join(' ')+'）÷ '+view.influences.length+' = '+signed(view.rate)+'。';
+    }
+    function directionRule(view) {
+      const p=paragraph('预测位置 = 20 + 时间 × ');p.className='ma-formula';
+      const value=document.createElement('output');value.className='ma-parameter';value.textContent=number(view.distance);
+      value.setAttribute('data-ma-direction-value','');value.setAttribute('aria-label','当前参数：每秒前进的距离');value.setAttribute('aria-live','off');
+      p.appendChild(value);return value;
+    }
+    function directionError(prefix,view,suffix) {
+      const p=paragraph(prefix),value=document.createElement('output');value.textContent=number(score(view.distance));
+      value.setAttribute('data-ma-error-value','');value.setAttribute('aria-label','当前三个预测的平均差距');value.setAttribute('aria-live','off');
+      p.appendChild(value);p.appendChild(document.createTextNode(suffix));
+    }
+    function renderDirectionCopy() {
+      const view=directionView();
+      switch(current()) {
+        case 'direction-purpose':
+          paragraph('为了让预测更准，电脑刚才每次都要试着增大、再试着减小，比较之后才能选方向。我们想省去向两边分别试算，直接从当前计算知道往哪边改。');
+          paragraph('规则里“每秒前进多少厘米”是能调整的数，叫参数。时间是输入，位置是预测。接下来只改这个参数，追踪它怎样影响三个预测，再影响平均差距。');
+          paragraph('先回看参数为21的规则。前面训练好的结果会保留。');
+          break;
+        case 'direction-near':
+          if(!direction.experimentChanged) {
+            paragraph('橙色的21是参数，黑点是记录，空心点是预测。只把21改成22，注意三个预测各移动多少，以及竖直的差距线怎样缩短。');
+            directionRule(view);
+            paragraph('同一个参数要分别乘以第1、2、3秒的时间，所以一次改动会同时影响三个预测。');
+          } else {
+            paragraph('参数增加1，三个预测分别向上增加1、2、3厘米。图中标出的增加量来自实际计算；每个预测都还低于记录，所以这些移动让差距缩短。');
+            directionRule(view);
+            paragraph('差距线在坐标图里很短。接下来把这三条线原样提取、转向并放大排列，仔细看刚才究竟缩掉了多少。参数仍保留22。');
+          }
+          break;
+        case 'direction-gaps':
+          paragraph('这就是刚才的三条差距：只换摆放方式和显示比例，数值没有改变。每行的黑点、空心点仍是同一条记录和预测，线段长度表示它们的差距。');
+          directionRule(view);
+          paragraph('每行右侧显示刚才缩短前后的差距，单位是厘米。淡色短段是缩掉的部分。为了看平均差距减少多少，接下来把这三小段放到一起。');
+          break;
+        case 'direction-average':
+          if(!direction.averageSplit) {
+            paragraph('现在只取刚才缩掉的三小段，按原来的长度比例拼在一起：1 + 2 + 3，一共减少了6厘米。当前规则仍是参数22，三个预测没有再次改变。');
+            paragraph('我们衡量的是三个预测的平均差距，所以总共减少6，还要除以记录的数量3。接下来把这条长度平均分成三份。');
+          } else {
+            paragraph('6厘米平均分成三份，每份2厘米。所以参数从21增加到22时，三个预测的平均差距减少了2厘米，从18变成16。');
+            paragraph('这里分的是“总减少量”，并不是说三个预测各自都只改善了2厘米。我们已经看见结果，接下来要弄清：电脑不先改一次，也能知道这个方向吗？');
+          }
+          break;
+        case 'direction-rate':
+          paragraph('可以，因为变化的原因就在计算里。当前参数22时，三个预测仍偏低。参数在第1、2、3秒分别乘以1、2、3；只要略增后还没越过记录，三条差距就分别减少这点增量的1、2、3倍。');
+          paragraph('减少记作负数，平均差距对参数的局部变化率就是：'+directionEquation(view)+' 这从乘数和当前偏差算出，不需要先计算两边的新规则。');
+          paragraph('这个−2叫作“平均差距对每秒距离参数的导数”。它说的是参数稍微增大时，平均差距怎样变；负号给出先下降的方向。本例这一小段的变化比例固定，一般情况下，导数只描述当前位置附近。');
+          break;
+        case 'direction-apply':
+          paragraph(direction.updated
+            ? '按刚才算出的负号，把参数增加1。三条差距由同一条新规则重新计算；淡色部分显示这一次缩掉的长度。'
+            : '现在使用刚才得到的方向。当前参数22，平均差距16厘米；导数为负，所以选择增大。把22改成23，检查三条差距和平均差距是否真的减小。');
+          directionRule(view);
+          directionError(direction.updated?'平均差距从16变为':'当前平均差距是',view,direction.updated
+            ? '厘米。这次先从当前计算判断方向，再更新规则。下一步换一条预测偏高的规则。'
+            : '厘米。这里仍只画实际差距，黑点与空心点的含义保持一致。');
+          break;
+        case 'direction-far':
+          if(!direction.farUpdated) {
+            paragraph('换成参数35，回到预测图。现在三个预测都偏高。如果参数略增，预测会更高，三条差距反而分别增加这点增量的1、2、3倍。');
+            directionRule(view);
+            paragraph(directionEquation(view)+' 正号表示增大参数会使平均差距上升，所以这次应该减小。按这个方向，把35改成34。');
+          } else {
+            paragraph('把参数减小1，三个预测分别下降1、2、3厘米，向已知记录靠近。这次方向与刚才相反。');
+            directionRule(view);
+            directionError('平均差距从10变为',view,'厘米。方向来自当前预测在记录的哪一边，以及参数在计算中怎样影响预测。');
+          }
+          break;
+        case 'direction-ending':
+          paragraph('为了让预测更准，我们追踪了一个参数怎样改变三个预测，再怎样改变每条差距和平均差距。图里的线段，也就是这些计算中真正的差距。');
+          paragraph('导数把当前位置附近的影响概括成一个数。这里求的是平均差距对参数的导数：负数时先增大参数，正数时先减小，电脑就不用每轮都向两边试算。');
+          paragraph('方向知道了，还差一个决定：一次应该改多少？改得太大，会不会越过更好的位置？');
+          break;
+      }
+    }
+    function updateDirectionNav() {
+      const view=directionView();
+      switch(current()) {
+        case 'direction-purpose':next.textContent='看参数怎样影响预测 →';break;
+        case 'direction-near':
+          if(direction.experimentChanged)back.textContent='← 撤回这次改动';
+          next.textContent=direction.experimentChanged?'展开这三条差距 →':'只把21改成22';break;
+        case 'direction-gaps':next.textContent='把缩掉的三小段拼起来 →';break;
+        case 'direction-average':
+          if(direction.averageSplit)back.textContent='← 回到合计减少量';
+          next.textContent=direction.averageSplit?'不试新数，也能知道方向吗？ →':'把6平均分成3份';break;
+        case 'direction-rate':next.textContent='用这个方向改善一次预测 →';break;
+        case 'direction-apply':
+          if(direction.updated)back.textContent='← 撤回这次更新';
+          next.textContent=direction.updated?'换一条预测偏高的规则 →':'按导数方向，把22改成'+number(view.choice);break;
+        case 'direction-far':
+          if(direction.farUpdated)back.textContent='← 撤回这次更新';
+          next.textContent=direction.farUpdated?'方向知道了，一次改多少？ →':'按导数方向，把35改成'+number(view.choice);break;
+        case 'direction-ending':next.textContent='方向知道了，一次改多少？ →';break;
+      }
+    }
+    function syncDirectionValues(parameter) {
+      copy.querySelectorAll('[data-ma-direction-value]').forEach(value=>{value.textContent=number(parameter);});
+      copy.querySelectorAll('[data-ma-error-value]').forEach(value=>{value.textContent=number(score(parameter));});
+    }
+    function renderDirectionGraph() {
+      const width=Math.max(240,figure.getBoundingClientRect().width||736),view=directionView();
+      if(current()==='direction-gaps') {
+        animateDirectionLayout('extract-gaps',width,1,progress=>drawGapRows(view.distance,width,progress,21));return;
+      }
+      if(current()==='direction-average') {
+        animateDirectionLayout('average-reductions',width,direction.averageSplit?2:1,progress=>drawReductionAverage(width,progress));return;
+      }
+      if(current()==='direction-apply') {
+        animatePlot(current(),width,view.distance,parameter=>{
+          drawGapRows(parameter,width,1,view.base);syncDirectionValues(parameter);
+        });return;
+      }
+      animatePlot(current(),width,view.distance,parameter=>{
+        drawLearningGraph({...view,distance:parameter,target:view.distance,transition:parameter!==view.distance},width);
+        svg.setAttribute('data-ma-direction-parameter',String(parameter));
+        svg.setAttribute('data-ma-direction-base',String(view.base));
+        if(view.rate!==null)svg.setAttribute('data-ma-direction-derivative',String(view.rate));
+        syncDirectionValues(parameter);
+        if(current()==='direction-near'&&direction.experimentChanged) {
+          const X=seconds=>54+seconds/4.4*(width-76),Y=position=>260-position/200*227;
+          trainingRecords.forEach(row=>{
+            const change=predict(row.seconds,parameter)-predict(row.seconds,view.base);
+            text(signed(change),X(row.seconds)+9,Y(predict(row.seconds,parameter))+17,{
+              fill:accent,'font-size':12,'data-ma-prediction-change':row.seconds,'data-ma-change-value':change
+            });
+          });
+        }
+      });
+    }
+    function animateDirectionLayout(key,width,target,drawFrame) {
+      // Presentation moves existing quantities; it never updates the model.
+      // On resize/revisit, show the settled layout instead of replaying automatically.
+      if(!direction.layouts.has(key)) {
+        direction.layouts.add(key);lastPlot={scene:key,width,distance:0};
+      }
+      animatePlot(key,width,target,drawFrame,900);
+    }
+    function gapLayout(width) {
+      const left=66,right=width-64,scale=(right-left)/30;
+      return {left,right,scale,rowY:index=>64+index*80};
+    }
+    function gapResults(parameter,before) {
+      return trainingRecords.map(row=>{
+        const value=Math.abs(predict(row.seconds,parameter)-row.position);
+        const previous=Math.abs(predict(row.seconds,before)-row.position);
+        return {...row,value,previous,reduction:previous-value};
+      });
+    }
+    function drawGapRows(parameter,width,progress,before) {
+      const layout=gapLayout(width),rows=gapResults(parameter,before),mix=(a,b)=>a+(b-a)*progress;
+      if(progress<1) {
+        drawLearningGraph({...directionView(),distance:parameter},width);
+        Array.from(svg.children).forEach(child=>{if(child.getAttribute('id')!=='ma-stage-title'){child.setAttribute('opacity',String(1-progress));child.setAttribute('aria-hidden','true');}});
+        ['[data-ma-gap-time]','[data-ma-record-time]','[data-ma-prediction-time]'].forEach(selector=>{
+          svg.querySelectorAll(selector).forEach(node=>node.setAttribute('opacity','0'));
+        });
+      } else svg.replaceChildren();
+      svg.setAttribute('viewBox','0 0 '+width+' 310');svg.style.height='310px';handle.hidden=true;
+      svg.setAttribute('data-ma-chart-kind','gap-lengths');
+      svg.setAttribute('data-ma-direction-parameter',String(parameter));
+      svg.setAttribute('data-ma-gap-before',String(before));
+      svg.setAttribute('data-ma-layout-progress',String(progress));
+      const title=el('title',{id:progress<1?'ma-extracted-description':'ma-stage-title'});
+      title.textContent='将同一条规则的三条真实差距展开，长度按统一比例显示，单位厘米。参数'+number(parameter)+'。'+rows.map(row=>row.seconds+'秒：差距'+number(row.value)+'，比参数'+number(before)+'时减少'+number(row.reduction)).join('；')+'。平均差距'+number(score(parameter))+'厘米。';
+      if(progress<1)svg.children[0].textContent=title.textContent;
+      rows.forEach((row,index)=>{
+        const originalX=54+row.seconds/4.4*(width-76);
+        const originalActualY=260-row.position/200*227;
+        const originalPredictionY=260-predict(row.seconds,parameter)/200*227;
+        const x1=mix(originalX,layout.left),y1=mix(originalActualY,layout.rowY(index));
+        const x2=mix(originalX,layout.left+row.value*layout.scale),y2=mix(originalPredictionY,layout.rowY(index));
+        line(x1,y1,x2,y2,{stroke:accent,'stroke-width':3.5,'stroke-linecap':'round',
+          'data-ma-extracted-time':row.seconds,'data-ma-gap-value':row.value});
+        el('circle',{cx:x1,cy:y1,r:4.5,fill:ink,'data-ma-gap-record':row.seconds});
+        el('circle',{cx:x2,cy:y2,r:6,fill:'var(--ma-paper)',stroke:accent,'stroke-width':1.5,'data-ma-gap-prediction':row.seconds});
+        const labels=el('g',{opacity:progress,'data-ma-gap-labels':row.seconds});
+        text(row.seconds+'秒',16,layout.rowY(index)+4,{fill:muted,'font-size':12},labels);
+        if(row.reduction>0)line(layout.left+row.value*layout.scale+7,layout.rowY(index),layout.left+row.previous*layout.scale+7,layout.rowY(index),{
+          stroke:accent,'stroke-width':8,'stroke-opacity':0.25,'data-ma-removed-time':row.seconds,'data-ma-reduction-value':row.reduction
+        },labels);
+        text(row.reduction>0?number(row.previous)+' → '+number(row.value):number(row.value),width-8,layout.rowY(index)+4,{
+          'text-anchor':'end',fill:muted,'font-size':12,'data-ma-gap-label':row.seconds
+        },labels);
+      });
+    }
+    function drawReductionAverage(width,progress) {
+      const join=clamp(progress,0,1),split=clamp(progress-1,0,1);
+      const rows=gapResults(22,21),total=rows.reduce((sum,row)=>sum+row.reduction,0),mean=total/rows.length;
+      const unit=Math.min(50,(width-64)/(total+2)),left=(width-total*unit)/2,y=145;
+      const layout=gapLayout(width);
+      if(join<1) {
+        drawGapRows(22,width,1,21);
+        Array.from(svg.children).forEach(child=>{if(child.getAttribute('id')!=='ma-stage-title'){child.setAttribute('opacity',String(1-join));child.setAttribute('aria-hidden','true');}});
+        svg.querySelectorAll('[data-ma-removed-time]').forEach(node=>node.setAttribute('opacity','0'));
+      } else svg.replaceChildren();
+      svg.setAttribute('viewBox','0 0 '+width+' 310');svg.style.height='310px';
+      svg.setAttribute('data-ma-chart-kind','reduction-average');
+      svg.setAttribute('data-ma-direction-parameter','22');
+      svg.setAttribute('data-ma-average-progress',String(progress));
+      svg.setAttribute('data-ma-total-reduction',String(total));
+      svg.setAttribute('data-ma-mean-reduction',String(mean));
+      const title=el('title',{id:join<1?'ma-average-description':'ma-stage-title'});
+      title.textContent='参数由21增加到22时，三条差距分别减少'+rows.map(row=>number(row.reduction)).join('、')+'厘米；合计减少'+number(total)+'厘米，除以'+rows.length+'后，平均差距减少'+number(mean)+'厘米。当前参数仍是22。这是对减少量的拼合与均分，没有改变预测。';
+      if(join<1)svg.children[0].textContent=title.textContent;
+      let prefix=0;
+      rows.forEach((row,index)=>{
+        const sourceX=layout.left+row.value*layout.scale+7,sourceY=layout.rowY(index);
+        // The joined total stays constant while the cuts move to equal thirds.
+        // These are portions of the total reduction, not individual prediction errors.
+        const portion=row.reduction+(mean-row.reduction)*split;
+        const targetX=left+prefix*unit;
+        const x=sourceX+(targetX-sourceX)*join,cy=sourceY+(y-sourceY)*join;
+        const length=row.reduction*layout.scale*(1-join)+portion*unit*join;
+        line(x,cy,x+length,cy,{stroke:accent,'stroke-width':8,'stroke-opacity':0.7,
+          'data-ma-reduction-piece':row.seconds,'data-ma-origin-reduction':row.reduction,'data-ma-piece-value':portion});
+        text(number(portion),x+length/2,cy-25,{
+          fill:accent,'text-anchor':'middle',opacity:join,
+          'data-ma-average-share':index,'data-ma-share-value':portion
+        });
+        prefix+=portion;
+        if(index<rows.length-1)line(x+length,cy-10,x+length,cy+10,{
+          stroke:ink,opacity:join,'data-ma-average-boundary':index
+        });
+      });
+      const summary=split>0
+        ? number(total)+' ÷ '+rows.length+' = '+number(mean)+' 厘米'
+        : rows.map(row=>number(row.reduction)).join(' + ')+' = '+number(total)+' 厘米';
+      text(summary,width/2,y+65,{fill:ink,'text-anchor':'middle',opacity:join,'font-size':14});
+    }
+    function refreshDirection() {renderCopy();updateNav();renderStage();}
+    function forwardDirection() {
+      stopAutomation();ensureDirection();
+      if(current()==='direction-near'&&!direction.experimentChanged) {direction.experimentChanged=true;refreshDirection();return;}
+      if(current()==='direction-average'&&!direction.averageSplit) {direction.averageSplit=true;refreshDirection();return;}
+      if(current()==='direction-apply'&&!direction.updated) {direction.updated=true;refreshDirection();return;}
+      if(current()==='direction-far'&&!direction.farUpdated) {direction.farUpdated=true;refreshDirection();return;}
+      state.scene++;renderScene();
+    }
+    function backwardDirection() {
+      stopAutomation();ensureDirection();
+      if(current()==='direction-near'&&direction.experimentChanged) {direction.experimentChanged=false;refreshDirection();return;}
+      if(current()==='direction-average'&&direction.averageSplit) {direction.averageSplit=false;refreshDirection();return;}
+      if(current()==='direction-apply'&&direction.updated) {direction.updated=false;refreshDirection();return;}
+      if(current()==='direction-far'&&direction.farUpdated) {direction.farUpdated=false;refreshDirection();return;}
+      state.scene--;renderScene();
+    }
+    const stepNumber=value=>Math.abs(value)<1e-9?'0':Number(value.toPrecision(6)).toString();
+    function ensureStepLesson() {
+      if(!stepLesson)stepLesson={closeStep:0,scaleSmall:false,layouts:new Set(),alpha:0.25,history:[{distance:29}],cursor:0,seen:new Set(),custom:false,inputError:''};
+    }
+    function stepDemoPositions() {
+      const origin=29,small=origin-0.25*errorDerivative(origin),wide=origin-errorDerivative(origin);
+      return [origin,small,origin,wide,wide-errorDerivative(wide)];
+    }
+    function stepEvent() {return stepLesson.history[stepLesson.cursor];}
+    function stepStatus() {
+      const distance=stepEvent().distance;
+      if(score(distance)<1e-9)return 'aligned';
+      if(stepLesson.history.slice(0,stepLesson.cursor).some(event=>Math.abs(event.distance-distance)<1e-9))return 'repeat';
+      return errorDerivative(distance)===null?'corner':'ready';
+    }
+    function stepDistance() {
+      if(current()==='step-close')return stepDemoPositions()[stepLesson.closeStep];
+      if(current()==='step-practice')return stepEvent().distance;
+      return 29;
+    }
+    function stepOutput(parent,value,attribute,label) {
+      const output=document.createElement('output');output.textContent=stepNumber(value);
+      output.setAttribute(attribute,'');output.setAttribute('aria-label',label);output.setAttribute('aria-live','off');
+      parent.appendChild(output);return output;
+    }
+    function stepSummary(distance) {
+      const p=paragraph('参数 ');p.className='ma-formula';
+      stepOutput(p,distance,'data-ma-step-value','当前每秒距离参数').className='ma-parameter';
+      p.appendChild(document.createTextNode('，平均差距 '));
+      stepOutput(p,score(distance),'data-ma-step-error','当前三个预测的平均差距');
+      p.appendChild(document.createTextNode(' 厘米'));
+    }
+    function syncStepSummary(distance) {
+      copy.querySelectorAll('[data-ma-step-value]').forEach(node=>{node.textContent=stepNumber(distance);});
+      copy.querySelectorAll('[data-ma-step-error]').forEach(node=>{node.textContent=stepNumber(score(distance));});
+    }
+    function renderStepCopy() {
+      ensureStepLesson();
+      switch(current()) {
+        case 'step-purpose':
+          paragraph('我们已经能从当前计算知道往哪边改。但方向相同，一次只改一点，和一下改很多，会得到同样的结果吗？');
+          paragraph('接下来从参数29的同一条规则出发，只比较改动的幅度。仍然使用原来的记录和平均差距，前面训练好的结果会保留。');
+          break;
+        case 'step-map':
+          paragraph('参数29时，三个预测都略低于记录。当前导数为−2，告诉我们先增大参数；但它还没有决定一次增大多少。');
+          stepSummary(29);
+          paragraph('为了看清预测有没有越过记录，接下来把每条记录附近分别放大、转向，排成三行。黑点仍是记录，空心点仍是预测；向右表示位置增大，三个窗口的厘米比例相同。');
+          break;
+        case 'step-close': {
+          const introductions=[
+            '放大后，三个预测都在各自记录左侧。先让参数增加0.5，看看空心点怎样靠近黑点。',
+            '这次三个预测都靠近了记录，仍停在左侧。平均差距从2降到1，说明这一小步改善了预测。',
+            '现在明确回到同一起点29，重新比较。这次方向相同，但把参数增加2，观察最终会落在哪一侧。',
+            '这一步直接采用31。空心点穿过了黑点，落在右侧：差距先缩小、再增大，最终又回到2。起步方向正确，这次仍然走过头了。',
+            '在31，预测都偏高，导数变为+2，所以下一步减小参数。但相同幅度又把预测推回了左侧，回到29。我们遇到了重复状态。'
+          ];
+          paragraph(introductions[stepLesson.closeStep]);
+          stepSummary(stepDistance());
+          paragraph(stepLesson.closeStep===3
+            ? '画面展开的是一次改动的跨度，电脑本轮只决定采用31，没有逐个尝试动画中的中间参数。接下来按31处的导数，仍以相同幅度减小2。'
+            :stepLesson.closeStep===4
+              ? '每轮都选择当前位置下降的方向，却因为幅度过大，在记录两侧来回摆动。接下来对照刚才两次改动，看看幅度怎样进入计算。'
+              :stepLesson.closeStep===1
+                ? '为了公平比较，下一步先恢复29，再尝试更大的改动；这次恢复是重置比较实验。'
+                :stepLesson.closeStep===2
+                  ? '这里的黑点分别是50、80、110厘米的位置，三行不是同一个位置。窗口与比例保持不变，便于观察这次改动比刚才大多少。'
+                  : '这里只放大已有位置，没有再改规则。三条短线仍是实际预测与记录之间的差距。');
+          break;
+        }
+        case 'step-scale': {
+          paragraph(stepLesson.scaleSmall
+            ? '把系数1换成四分之一，也就是0.25，实际改动便从2缩成0.5。这个乘在导数前、控制改动幅度的数，叫学习率。'
+            : '暂时收起三个位置窗口，对照刚才从29出发的两次改动。下图只表示参数本身的变化：在29，导数为−2，减去这个负数，参数便增加2，得到31。');
+          const alpha=stepLesson.scaleSmall?0.25:1,rate=errorDerivative(29),p=paragraph('29 − ');p.className='ma-formula';
+          stepOutput(p,alpha,'data-ma-step-alpha','改动幅度的缩放系数').className='ma-parameter';
+          p.appendChild(document.createTextNode(' ×（'+signed(rate)+'）= '));
+          stepOutput(p,29-alpha*rate,'data-ma-step-target','本次计算的目标参数');
+          paragraph(stepLesson.scaleSmall
+            ? '新参数 = 原参数 − 学习率 × 当前导数。减号让我们朝局部下降方向改，学习率负责缩放：0.25在这里产生的是0.5的改动，不是直接增加0.25。'
+            : '箭头长度是算出的参数改动，不是导数本身。接下来保持起点29，把乘在导数前的1换成四分之一，看看箭头与结果怎样改变。');
+          break;
+        }
+        case 'step-practice': {
+          const status=stepStatus(),event=stepEvent();
+          paragraph(stepLesson.cursor===0
+            ? '现在把这个办法用于预测。先用学习率'+stepNumber(stepLesson.alpha)+'，每次从当前规则计算导数，再更新一次。选择另一种学习率时，会明确重新从29开始比较。'
+            :status==='aligned'
+              ? '本次更新的最终结果已让这些记录在数值容许精度内对齐，电脑停止继续更新。可以切换学习率1，从相同的29出发，比较另一种幅度。'
+              :status==='repeat'
+                ? '电脑回到了本次已经出现过的参数，已暂停：相同学习率会让它继续来回摆动。可以换一个幅度，从29重新比较。'
+                :status==='corner'
+                  ? '当前有预测恰好对齐，绝对差距在这里没有唯一导数。本次先停止，不把它当成零导数。'
+                  : '第'+stepLesson.cursor+'次更新使用原参数'+stepNumber(event.from)+'处的导数'+signed(event.rate)+'。现在按同样的学习率，从新位置继续计算方向。');
+          stepSummary(event.distance);renderStepControls();break;
+        }
+        case 'step-ending':
+          paragraph('现在，电脑会从当前计算得到导数，用学习率控制改动幅度，再更新参数。反复朝误差局部下降的方向调整，就是这里的一维梯度下降。');
+          paragraph('我们既看到了预测逐步对齐，也看到了因为幅度不合适而来回摆动。判断一次更新有没有变好，仍要检查真实算出的平均差距。');
+          paragraph('下一步换一组记录：如果方向和幅度都处理过，仍然有些预测对不上，会不会是规则里还有一个数被固定住了？');
+          break;
+      }
+    }
+    function renderStepControls() {
+      const p=paragraph('');p.className='ma-controls';
+      const label=document.createElement('span');label.textContent='学习率';p.appendChild(label);
+      for(const alpha of [0.25,1]) {
+        const button=document.createElement('button');button.type='button';button.textContent=String(alpha);
+        button.setAttribute('data-ma-rate-choice',String(alpha));button.setAttribute('aria-label','学习率'+alpha+'，从29重新开始');
+        button.setAttribute('aria-pressed',String(stepLesson.alpha===alpha&&!stepLesson.inputError));
+        button.addEventListener('click',()=>setStepRate(String(alpha)));p.appendChild(button);
+      }
+      if(stepLesson.custom) {
+        const field=document.createElement('label');field.textContent='其他';
+        const input=document.createElement('input');input.type='number';input.min='0.1';input.max='1.5';input.step='any';
+        input.value=String(stepLesson.alpha);input.setAttribute('data-ma-rate-input','');input.setAttribute('aria-label','学习率，0.1到1.5');
+        input.setAttribute('aria-invalid',String(Boolean(stepLesson.inputError)));input.setAttribute('aria-describedby','ma-rate-error');
+        input.addEventListener('change',()=>setStepRate(input.value));field.appendChild(input);p.appendChild(field);
+      } else if(stepLesson.seen.has(0.25)&&stepLesson.seen.has(1)) {
+        const button=document.createElement('button');button.type='button';button.textContent='试其他数值';
+        button.setAttribute('data-ma-rate-expand','');
+        button.addEventListener('click',()=>{stopAutomation();stepLesson.custom=true;refreshStep();});p.appendChild(button);
+      }
+      const error=document.createElement('span');error.className='ma-input-error';error.textContent=stepLesson.inputError;
+      error.setAttribute('id','ma-rate-error');error.setAttribute('data-ma-rate-error','');error.setAttribute('aria-live','polite');p.appendChild(error);
+    }
+    function setStepRate(raw) {
+      stopAutomation();
+      const alpha=raw.trim()===''?NaN:Number(raw);
+      if(!Number.isFinite(alpha)||alpha<0.1||alpha>1.5) {
+        stepLesson.inputError='请输入0.1到1.5之间的数；尚未应用这次输入。';
+        copy.querySelectorAll('[data-ma-rate-error]').forEach(node=>{node.textContent=stepLesson.inputError;});
+        copy.querySelectorAll('[data-ma-rate-input]').forEach(node=>node.setAttribute('aria-invalid','true'));
+        updateNav();return;
+      }
+      stepLesson.alpha=alpha;stepLesson.history=[{distance:29}];stepLesson.cursor=0;stepLesson.inputError='';refreshStep();
+    }
+    function updateStepNav() {
+      switch(current()) {
+        case 'step-purpose':next.textContent='从同一条规则出发 →';break;
+        case 'step-map':next.textContent='放大这三处差距 →';break;
+        case 'step-close':
+          if(stepLesson.closeStep>0)back.textContent='← 回到上一步';
+          next.textContent=['把29增加到29.5','回到29，比较较大改动 →','这次把29增加到31','按新方向，把31减回29','看看幅度怎样进入计算 →'][stepLesson.closeStep];break;
+        case 'step-scale':
+          if(stepLesson.scaleSmall)back.textContent='← 恢复较大改动';
+          next.textContent=stepLesson.scaleSmall?'用学习率实际训练 →':'把这次改动缩成四分之一';break;
+        case 'step-practice':
+          if(stepLesson.cursor>0)back.textContent='← 撤回一次更新';
+          if(stepLesson.inputError){next.textContent='请先修正学习率';break;}
+          next.textContent=stepStatus()==='ready'?'更新一次':'这是什么训练方法？ →';
+          automatic.hidden=stepStatus()!=='ready';automatic.textContent=autoRunning?'暂停':'自动继续';break;
+        case 'step-ending':next.textContent='重新比较改动幅度 ↻';break;
+      }
+    }
+    function renderStepGraph() {
+      const width=Math.max(240,figure.getBoundingClientRect().width||736);
+      if(current()==='step-scale') {
+        const alpha=stepLesson.scaleSmall?0.25:1,rate=errorDerivative(29);
+        animatePlot(current(),width,alpha,value=>{
+          const target=29-value*rate;drawStepArrow(width,value,target);
+          copy.querySelectorAll('[data-ma-step-alpha]').forEach(node=>{node.textContent=stepNumber(value);});
+          copy.querySelectorAll('[data-ma-step-target]').forEach(node=>{node.textContent=stepNumber(target);});
+        },900);return;
+      }
+      const distance=stepDistance();
+      if(current()==='step-close'&&!stepLesson.layouts.has('local')) {
+        stepLesson.layouts.add('local');lastPlot={scene:'step-local-layout',width,distance:0};
+        animatePlot('step-local-layout',width,1,progress=>{drawStepWindows(29,width,progress);syncStepSummary(29);},900);return;
+      }
+      if(lastPlot?.scene==='step-local-layout')lastPlot={scene:current(),width,distance:29};
+      animatePlot(current(),width,distance,parameter=>{
+        if(current()==='step-map') {
+          drawLearningGraph({distance:parameter,accepted:parameter,selected:null,trial:false},width);
+          svg.setAttribute('data-ma-step-parameter',String(parameter));
+        } else drawStepWindows(parameter,width,1);
+        syncStepSummary(parameter);
+      },900);
+    }
+    function drawStepWindows(parameter,width,progress) {
+      const left=60,right=width-20,center=(left+right)/2,scale=(right-left)/14;
+      const mix=(a,b)=>a+(b-a)*progress;
+      if(progress<1) {
+        drawLearningGraph({distance:parameter,accepted:parameter,selected:null,trial:false},width);
+        Array.from(svg.children).forEach(child=>{if(child.getAttribute('id')!=='ma-stage-title'){child.setAttribute('opacity',String(1-progress));child.setAttribute('aria-hidden','true');}});
+        ['[data-ma-gap-time]','[data-ma-record-time]','[data-ma-prediction-time]'].forEach(selector=>svg.querySelectorAll(selector).forEach(node=>node.setAttribute('opacity','0')));
+      } else svg.replaceChildren();
+      svg.setAttribute('viewBox','0 0 '+width+' 310');svg.style.height='310px';handle.hidden=true;
+      svg.setAttribute('data-ma-chart-kind','local-positions');svg.setAttribute('data-ma-step-parameter',String(parameter));
+      svg.setAttribute('data-ma-local-progress',String(progress));svg.setAttribute('data-ma-local-scale',String(scale));
+      const description='三行分别放大第1、2、3秒记录附近的位置。黑点是各自记录，空心点是预测，向右表示位置增大，各行厘米比例相同。参数'+stepNumber(parameter)+'，平均差距'+stepNumber(score(parameter))+'厘米。'+trainingRecords.map(row=>row.seconds+'秒预测'+stepNumber(predict(row.seconds,parameter))+'，记录'+row.position).join('；');
+      if(progress<1)svg.children[0].textContent=description;
+      else el('title',{id:'ma-stage-title'}).textContent=description;
+      trainingRecords.forEach((row,index)=>{
+        const y=64+80*index,sourceX=54+row.seconds/4.4*(width-76);
+        const prediction=predict(row.seconds,parameter),residual=prediction-row.position;
+        const cx=mix(sourceX,center),cy=mix(260-row.position/200*227,y);
+        const px=mix(sourceX,center+residual*scale),py=mix(260-prediction/200*227,y);
+        line(left,y,right,y,{stroke:axis,opacity:progress});
+        text(row.seconds+'秒',10,y+4,{fill:muted,'font-size':12,opacity:progress});
+        text(row.position+'厘米',center,y-18,{'text-anchor':'middle',fill:muted,'font-size':12,opacity:progress});
+        line(cx,cy,px,py,{stroke:accent,'stroke-width':3.5,'stroke-opacity':0.65,
+          'data-ma-local-gap':row.seconds,'data-ma-local-residual':residual});
+        el('circle',{cx,cy,r:4.5,fill:ink,'data-ma-local-record':row.seconds});
+        el('circle',{cx:px,cy:py,r:6,fill:'none',stroke:accent,'stroke-width':1.8,'data-ma-local-prediction':row.seconds,'data-ma-local-value':prediction});
+      });
+      line(center,281,center+scale,281,{stroke:axis,opacity:progress});
+      line(center,277,center,285,{stroke:axis,opacity:progress});line(center+scale,277,center+scale,285,{stroke:axis,opacity:progress});
+      text('1厘米',center+scale/2,304,{'text-anchor':'middle',fill:muted,'font-size':12,opacity:progress});
+    }
+    function drawStepArrow(width,alpha,target) {
+      svg.replaceChildren();svg.setAttribute('viewBox','0 0 '+width+' 310');svg.style.height='310px';handle.hidden=true;
+      svg.setAttribute('data-ma-chart-kind','parameter-step');svg.setAttribute('data-ma-step-alpha',String(alpha));
+      svg.setAttribute('data-ma-step-target',String(target));
+      el('title',{id:'ma-stage-title'}).textContent='这张图只表示参数的改动：从29出发，学习率'+stepNumber(alpha)+'，导数'+signed(errorDerivative(29))+'，目标'+stepNumber(target)+'，参数增加'+stepNumber(target-29)+'。箭头长度与实际参数增量成比例。';
+      const X=value=>32+(value-28.5)/4*(width-56),start=X(29),end=X(target),y=150;
+      line(32,y,width-24,y);line(start,y-8,start,y+8,{stroke:ink});
+      line(start,y,end,y,{stroke:accent,'stroke-width':3,'data-ma-parameter-arrow':'','data-ma-parameter-delta':target-29});
+      el('path',{d:'M '+(end-7)+' '+(y-5)+' L '+end+' '+y+' L '+(end-7)+' '+(y+5),fill:'none',stroke:accent,'stroke-width':2});
+      text('29',start,y+30,{'text-anchor':'middle',fill:muted});
+      text(stepNumber(target),end,y-22,{'text-anchor':'middle',fill:accent});
+      text('每秒距离参数',width-24,y+58,{'text-anchor':'end',fill:muted,'font-size':12});
+      text('本次增加 '+stepNumber(target-29),width/2,258,{'text-anchor':'middle',fill:ink,'font-size':15});
+    }
+    function advanceStepPractice() {
+      if(stepStatus()!=='ready'||stepLesson.inputError)return;
+      if(stepLesson.cursor===stepLesson.history.length-1) {
+        const from=stepEvent().distance,rate=errorDerivative(from);
+        stepLesson.history.push({from,rate,alpha:stepLesson.alpha,distance:from-stepLesson.alpha*rate});
+      }
+      stepLesson.cursor++;
+      if(stepStatus()!=='ready') {
+        stepLesson.seen.add(stepLesson.alpha);stopAutomation();
+      }
+    }
+    function scheduleStepPractice() {
+      autoTimer=setTimeout(()=>{
+        autoTimer=null;
+        if(!autoRunning||current()!=='step-practice'||stepLesson.inputError)return;
+        cancelPlotAnimation(true);advanceStepPractice();refreshStep();
+        if(autoRunning&&stepStatus()==='ready')scheduleStepPractice();
+      },1150);
+    }
+    function refreshStep() {renderCopy();updateNav();renderStage();}
+    function forwardStep() {
+      stopAutomation();ensureStepLesson();
+      if(current()==='step-close'&&stepLesson.closeStep<4){stepLesson.closeStep++;refreshStep();return;}
+      if(current()==='step-scale'&&!stepLesson.scaleSmall){stepLesson.scaleSmall=true;refreshStep();return;}
+      if(current()==='step-practice') {
+        if(stepLesson.inputError){copy.querySelectorAll('[data-ma-rate-input]').forEach(node=>node.focus?.());return;}
+        if(stepStatus()==='ready'){advanceStepPractice();refreshStep();return;}
+      }
+      if(current()==='step-ending'){stepLesson=null;state.scene=scenes.indexOf('step-purpose');renderScene();return;}
+      state.scene++;renderScene();
+    }
+    function backwardStep() {
+      stopAutomation();ensureStepLesson();
+      if(current()==='step-close'&&stepLesson.closeStep>0){stepLesson.closeStep--;refreshStep();return;}
+      if(current()==='step-scale'&&stepLesson.scaleSmall){stepLesson.scaleSmall=false;refreshStep();return;}
+      if(current()==='step-practice'&&stepLesson.cursor>0){stepLesson.cursor--;refreshStep();return;}
+      state.scene--;renderScene();
+    }
+    function renderScene() {
+      stopAutomation();lastPlot=null;drag=null;feedback=null;
+      if(current().startsWith('step-'))ensureStepLesson();
+      if(current().startsWith('learn-')) ensureLearning();
+      if(current().startsWith('direction-')) ensureDirection();
+      if(current()==='predict'||current()==='calculation') ensureSnapshot();
+      root.className=textOnly()?'ma-text-page':'ma-interactive-page';
+      figure.hidden=textOnly();handle.hidden=true;renderCopy();updateNav();renderStage();
+    }
+    function changeRule(value) {
+      const distance=clamp(value,5,40);
+      if(distance===state.distance) return;
+      state.distance=distance;state.adjusted=true;state.snapshot=null;state.revealed=false;state.actualResult=null;state.highlight=null;
+      // Preserve knowledge that the answer was revealed on an earlier visit.
+      copy.children[0].textContent=`当前规则在第3秒预测出${number(predict(3))}厘米，而记录是110厘米。我们先调整规则，让它更接近已知答案。`;
+      if(feedback) feedback.textContent=adjustmentFeedback();renderStage();
+    }
+    handle.addEventListener('pointerdown',event=>{
+      if(current()!=='adjust'||!geometry||event.button>0) return;
+      drag={id:event.pointerId,clientX:event.clientX,distance:state.distance,scale:geometry.scale};
+      handle.setPointerCapture(event.pointerId);event.preventDefault();
+    });
+    handle.addEventListener('pointermove',event=>{
+      if(!drag||drag.id!==event.pointerId) return;
+      changeRule(drag.distance+(event.clientX-drag.clientX)/(3*drag.scale));
+    });
+    function endDrag(event) {
+      if(!drag||drag.id!==event.pointerId) return;
+      if(handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId);drag=null;
+    }
+    handle.addEventListener('pointerup',endDrag);handle.addEventListener('pointercancel',endDrag);
+    handle.addEventListener('keydown',event=>{
+      if(current()!=='adjust') return;
+      const values={ArrowLeft:Math.ceil(state.distance)-1,ArrowRight:Math.floor(state.distance)+1,Home:5,End:40};
+      if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
+    });
+    back.addEventListener('click',()=>{
+      if(current().startsWith('step-')) {backwardStep();return;}
+      if(current().startsWith('direction-')) {backwardDirection();return;}
+      if(current().startsWith('learn-')) {backwardLearning();return;}
+      if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
+    });
+    next.addEventListener('click',()=>{
+      if(current().startsWith('step-')) {forwardStep();return;}
+      if(current().startsWith('direction-')) {forwardDirection();return;}
+      if(current().startsWith('learn-')) {forwardLearning();return;}
+      if(current()==='predict'&&!state.revealed) {
+        ensureSnapshot();state.actualResult=simulation.positionAt(4);state.revealed=true;state.seenResult=true;renderScene();return;
+      }
+      state.scene++;state.highlight=null;renderScene();
+    });
+    automatic.addEventListener('click',()=>{
+      if(current()==='step-practice') {
+        if(stepStatus()!=='ready'||stepLesson.inputError)return;
+        if(autoRunning)stopAutomation();else {autoRunning=true;scheduleStepPractice();}
+        updateNav();return;
+      }
+      if(current()!=='learn-loop'||loopEvent().phase==='done') return;
+      if(autoRunning) stopAutomation();
+      else {autoRunning=true;scheduleStep();}
+      updateNav();
+    });
+    globalThis.addEventListener?.('pagehide',stopAutomation);
+    globalThis.addEventListener?.('pageshow',()=>{stopAutomation();updateNav();});
+    globalThis.addEventListener?.('hashchange',()=>{
+      if(globalThis.location?.hash==='#act-2') {state.scene=7;renderScene();}
+      if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
+      if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
+    });
+    document.addEventListener('visibilitychange',()=>{
+      if(document.hidden) {stopAutomation();updateNav();}
+    });
+    if(globalThis.location?.hash==='#act-2') state.scene=7;
+    if(globalThis.location?.hash==='#act-3') state.scene=14;
+    if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
+    renderScene();
+    new ResizeObserver(()=>{
+      cancelPlotAnimation(true);lastPlot=null;
+      if(!textOnly())renderStage();
+    }).observe(figure);
+  })();
+  </script>
+</div>
