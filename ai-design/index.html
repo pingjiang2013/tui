@@ -67,7 +67,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-train','relay-ending'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -77,9 +77,9 @@
     const ink='var(--ma-ink)', muted='var(--ma-muted)', axis='var(--ma-axis)', accent='var(--ma-accent)';
     let geometry=null,drag=null,feedback=null,learning=null,autoTimer=null,autoRunning=false;
     let plotFrame=null,plotMotion=null,lastPlot=null;
-    let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null,outputLesson=null;
+    let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null,outputLesson=null,relayLesson=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending'].includes(current());
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending'].includes(current());
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -109,6 +109,7 @@
     }
     function renderCopy() {
       copy.replaceChildren();feedback=null;
+      if(current().startsWith('relay-')) {renderRelayCopy();return;}
       if(current().startsWith('output-')) {renderOutputCopy();return;}
       if(current().startsWith('bend-')) {renderBendCopy();return;}
       if(current().startsWith('wave-')) {renderWaveCopy();return;}
@@ -190,6 +191,7 @@
       back.disabled=state.scene===0;
       next.disabled=false;
       back.textContent='← 上一页';automatic.hidden=true;
+      if(current().startsWith('relay-')) {updateRelayNav();return;}
       if(current().startsWith('output-')) {updateOutputNav();return;}
       if(current().startsWith('bend-')) {updateBendNav();return;}
       if(current().startsWith('wave-')) {updateWaveNav();return;}
@@ -202,6 +204,7 @@
     }
     function renderStage() {
       if(textOnly()) return;
+      if(current().startsWith('relay-')) {renderRelayGraph();return;}
       if(current().startsWith('output-')) {renderOutputGraph();return;}
       if(current().startsWith('bend-')) {renderBendGraph();return;}
       if(current().startsWith('wave-')) {renderWaveGraph();return;}
@@ -1790,15 +1793,15 @@
       const knot=params.weight?-params.bias/params.weight:0;
       return [0,...(knot>0&&knot<3.5?[knot]:[]),3.5];
     }
-    function drawBendFunction(width,weight,bias,gate,activation) {
+    function drawBendFunction(width,weight,bias,gate,activation,range={min:-3,max:6,ticks:[-2,0,2,4,6]}) {
       const params={...bendConfig,weight,bias};
       svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
-      const left=54,right=width-22,top=33,bottom=260,X=t=>left+t/3.5*(right-left),Y=v=>bottom-(v+3)/9*(bottom-top);
+      const left=54,right=width-22,top=33,bottom=260,X=t=>left+t/3.5*(right-left),Y=v=>bottom-(v-range.min)/(range.max-range.min)*(bottom-top);
       svg.setAttribute('data-ma-chart-kind',activation?'activation-functions':'affine-parameters');
       svg.setAttribute('data-ma-function-weight',String(weight));svg.setAttribute('data-ma-function-bias',String(bias));svg.setAttribute('data-ma-function-gate',String(gate));
       el('title',{id:'ma-stage-title'}).textContent='横轴输入时间，纵轴激活前或激活后的函数值。乘加函数为'+number(weight)+'乘时间加'+number(bias)+'，常函数为0。'+(activation?'橙色函数在操作完成后逐点选择两者的较大值，过渡中只改变图像的应用进度。':'橙色整条直线来自当前乘数与加数。黑点是它与0的交点。');
       line(left,top,left,bottom);line(left,bottom,right,bottom);
-      [-2,0,2,4,6].forEach(value=>{line(left-4,Y(value),left,Y(value));text(String(value),left-9,Y(value)+4,{'text-anchor':'end',fill:muted,'font-size':12});});
+      range.ticks.forEach(value=>{line(left-4,Y(value),left,Y(value));text(String(value),left-9,Y(value)+4,{'text-anchor':'end',fill:muted,'font-size':12});});
       [0,1,2,3].forEach(value=>{line(X(value),bottom,X(value),bottom+5);text(String(value),X(value),bottom+23,{'text-anchor':'middle',fill:muted,'font-size':12});});
       text('函数值',left,17,{fill:muted,'font-size':12});text('时间',right,308,{'text-anchor':'end',fill:muted,'font-size':12});
       line(left,Y(0),right,Y(0),{stroke:ink,'stroke-opacity':0.45,'stroke-width':1.5,'data-ma-zero-function':''});
@@ -1943,7 +1946,7 @@
         if(outputLesson.probed)back.textContent='← 撤回这次增加';
         next.disabled=!outputLesson.probed;next.textContent=outputLesson.probed?'让电脑接着调整 →':'先点公式里的10';return;
       }
-      if(current()==='output-ending'){next.textContent='重新做这次训练 ↻';return;}
+      if(current()==='output-ending'){next.textContent='看看影响怎样穿过ReLU →';return;}
       const status=outputStatus();
       if(outputLesson.cursor>0)back.textContent='← 回退一次调整';
       next.textContent=status==='ready'?'按当前影响调整一次':'这次学会了什么？ →';
@@ -1951,21 +1954,24 @@
     }
     function drawOutputGraph(width,output) {
       drawBendComposition(width,1,{...bendConfig,output});
-      svg.style.height='370px';svg.setAttribute('viewBox','0 0 '+width+' 370');
       svg.setAttribute('data-ma-output-current',String(output));
-      const result=outputEvaluate(output),row=result.rows[2],left=54,right=width-22;
+      const result=outputEvaluate(output);drawTrainingGap(width,result.rows[2],'output');
+      const values={'data-ma-output-weight':output,'data-ma-output-loss':result.loss,'data-ma-output-error':result.rows[2].error,'data-ma-output-gradient':result.gradient};
+      Object.entries(values).forEach(([key,value])=>copy.querySelectorAll('['+key+']').forEach(node=>{node.textContent=waveNumber(value);}));
+    }
+    function drawTrainingGap(width,row,key) {
+      svg.style.height='370px';svg.setAttribute('viewBox','0 0 '+width+' 370');
+      const left=54,right=width-22;
       // Fixed magnification makes the same residual visible; it never normalizes to the current error.
       const scale=(right-left)/10,y=340,predictionX=right+row.error*scale;
       text('第3条差距（放大）',left,324,{fill:muted,'font-size':12});
-      line(predictionX,y,right,y,{stroke:accent,'stroke-width':5,'data-ma-output-gap':'','data-ma-output-gap-value':Math.abs(row.error)});
-      el('circle',{cx:predictionX,cy:y,r:5,fill:'var(--ma-paper)',stroke:accent,'stroke-width':2,'data-ma-output-gap-prediction':''});
-      el('circle',{cx:right,cy:y,r:4.5,fill:ink,'data-ma-output-gap-record':''});
+      line(predictionX,y,right,y,{stroke:accent,'stroke-width':5,['data-ma-'+key+'-gap']:'',['data-ma-'+key+'-gap-value']:Math.abs(row.error)});
+      el('circle',{cx:predictionX,cy:y,r:5,fill:'var(--ma-paper)',stroke:accent,'stroke-width':2,['data-ma-'+key+'-gap-prediction']:''});
+      el('circle',{cx:right,cy:y,r:4.5,fill:ink,['data-ma-'+key+'-gap-record']:''});
       text('0',right,364,{'text-anchor':'end',fill:muted,'font-size':12});text('差距 '+waveNumber(Math.abs(row.error)),left,364,{fill:accent,'font-size':13});
       const X=t=>54+t/3.5*(width-76),Y=v=>260-v/260*227;
-      line(X(3),Y(row.prediction),X(3),Y(row.actual),{stroke:accent,'stroke-width':4,'data-ma-output-original-gap':''});
+      line(X(3),Y(row.prediction),X(3),Y(row.actual),{stroke:accent,'stroke-width':4,['data-ma-'+key+'-original-gap']:''});
       svg.children[0].textContent+=' 下方以固定比例放大第3条差距，实际差距'+waveNumber(Math.abs(row.error))+'。';
-      const values={'data-ma-output-weight':output,'data-ma-output-loss':result.loss,'data-ma-output-error':row.error,'data-ma-output-gradient':result.gradient};
-      Object.entries(values).forEach(([key,value])=>copy.querySelectorAll('['+key+']').forEach(node=>{node.textContent=waveNumber(value);}));
     }
     function renderOutputGraph() {
       const width=Math.max(240,figure.getBoundingClientRect().width||736);
@@ -1988,7 +1994,6 @@
       stopAutomation();
       if(current()==='output-probe'&&!outputLesson.probed)return;
       if(current()==='output-train'&&outputStatus()==='ready'){advanceOutputTraining();refreshOutput();return;}
-      if(current()==='output-ending'){outputLesson=null;state.scene=scenes.indexOf('output-purpose');renderScene();return;}
       state.scene++;renderScene();
     }
     function backwardOutput() {
@@ -1997,8 +2002,150 @@
       if(current()==='output-train'&&outputLesson.cursor>0){outputLesson.cursor--;refreshOutput();return;}
       state.scene--;renderScene();
     }
+    const relayLearningRate=0.00125;
+    function relayEvaluate(bias,data=shapeRecords,params=bendConfig) {
+      const rows=data.map(row=>{
+        const calculation=bendCompute(row.seconds,1,1,{...params,bias});
+        const activationSlope=calculation.shifted>0?1:calculation.shifted<0?0:null;
+        return {...calculation,actual:row.position,error:calculation.prediction-row.position,activationSlope,
+          effect:activationSlope===null?null:params.output*activationSlope};
+      });
+      return {rows,loss:rows.reduce((sum,row)=>sum+row.error*row.error,0)/rows.length,
+        gradient:rows.some(row=>row.effect===null)?null:rows.reduce((sum,row)=>sum+2*row.error*row.effect,0)/rows.length};
+    }
+    function relayStep(bias,rate=relayLearningRate,data=shapeRecords,params=bendConfig) {
+      const result=relayEvaluate(bias,data,params);
+      return result.gradient===null?null:bias-rate*result.gradient;
+    }
+    function ensureRelayLesson() {
+      if(!relayLesson)relayLesson={changed:false,gateSeen:false,resultSeen:false,history:[-2.4],cursor:0};
+    }
+    function relayBias() {return current()==='relay-train'?relayLesson.history[relayLesson.cursor]:relayLesson.changed?-2.4:-2.5;}
+    function relayStatus() {
+      const result=relayEvaluate(relayBias());
+      if(result.loss<=outputTolerance)return 'done';
+      if(result.gradient===null)return 'corner';
+      if(result.gradient===0)return 'flat';
+      return relayLesson.cursor>=100?'limit':'ready';
+    }
+    function refreshRelay() {renderCopy();updateNav();renderStage();}
+    function relayEquation(editable=false) {
+      const p=paragraph(editable?'激活前：时间 + ':'偏置 ');p.className='ma-formula';
+      const node=editable?document.createElement('button'):document.createElement('span');
+      node.setAttribute('data-ma-relay-bias','');node.textContent=waveNumber(relayBias());node.className=editable?'ma-term ma-probe-term':'ma-parameter';
+      if(editable) {
+        node.type='button';node.disabled=relayLesson.changed;node.setAttribute('aria-label','把偏置从负2.5增加0.1，变成负2.4');
+        node.addEventListener('click',()=>{
+          if(relayLesson.changed)return;stopAutomation();relayLesson.changed=true;refreshRelay();next.focus?.();
+        });
+      }
+      p.appendChild(node);return p;
+    }
+    function renderRelayCopy() {
+      if(current()==='relay-purpose') {
+        paragraph('刚才，电脑学会了调整分支的放大程度。现在让它学习分支从哪里开始生效：只调整ReLU前面的偏置。');
+        paragraph('另开一次实验：输出权重固定为20，内部权重仍是1，偏置设为−2.5。预测为70、100、140，第三条还差10。上一轮的训练结果保留。');return;
+      }
+      if(current()==='relay-shift') {
+        paragraph(relayLesson.changed?'偏置增加0.1，激活前的整条直线上移0.1。深色窄带表示这次增加的部分；下面还没有应用ReLU。':'先观察偏置的影响。点−2.5，让它增加0.1；留意整条直线怎样变化。接下来再看哪些变化能够穿过ReLU。');
+        relayEquation(true);paragraph('这里的纵轴是激活前的函数值。常函数0保持不动；直线的零点决定分支从哪里开始生效。');return;
+      }
+      if(current()==='relay-gate') {
+        paragraph('让同一条直线经过ReLU，逐点取它与0的较大值。留意深色窄带：零线下方的变化被挡住，正的一侧保留下来。');
+        relayEquation();paragraph('第1、2秒的激活输出仍是0，第3秒从0.5变成0.6。在未跨过拐点的小范围内，未激活部分的局部影响为0，激活部分为1。');return;
+      }
+      if(current()==='relay-result') {
+        paragraph('把刚才的变化重放到完整预测中。深色窄带是新增贡献：第3秒的0.1经过输出权重20放大，成为预测增加的2，140变成142。');
+        relayEquation();paragraph('前两条仍为70、100。偏置的影响先经过ReLU，再乘20，最后加回原函数；第三条的局部影响因此是1 × 20 = 20。下方仍放大同一个差距。');return;
+      }
+      if(current()==='relay-ending') {
+        paragraph('我们把几段局部影响接起来：偏置影响激活输出，激活输出影响预测，预测再影响评分。沿途的影响相乘，就是链式法则在这里的作用。');
+        paragraph('电脑现在可以学习分支的启动位置。刚才只训练一个偏置，内部权重仍固定；以后再把同样的追踪方式扩展到更多参数和多层计算。');return;
+      }
+      const result=relayEvaluate(relayBias()),status=relayStatus(),row=result.rows[2];
+      paragraph(status==='done'?'平均平方差已小于0.001，停止调整。偏置接近−2，启动位置接近第2秒，但没有被强行设成答案。':status==='corner'?'有输入恰好落在ReLU拐点，这里的局部斜率不唯一。本演示暂停，不把它冒充为0或1。':status==='flat'?'当前输入的激活都没有传递调整方向，导数为0，但误差仍在。局部梯度无法继续改善，因此暂停。':status==='limit'?'已达到100次调整上限。保留实际参数与评分，可以逐次回退。':relayLesson.cursor===0?'沿用−2.4。第三条的局部影响20要再乘平方评分的影响，并对三条取平均。因影响被放大，学习率改用较小的0.00125。':'偏置变化先经过激活，再被20倍放大。这次用较小的学习率0.00125控制步幅，每次根据当前预测重算导数。');
+      const p=relayEquation();p.appendChild(document.createTextNode('；平均平方差 '));waveOutput(p,result.loss,'data-ma-relay-loss','平均平方差');
+      p.appendChild(document.createTextNode('（已调整 '+relayLesson.cursor+' 次）'));
+      if(result.gradient===null){paragraph('当前位置不执行更新。');return;}
+      const calculation=paragraph('');calculation.className='ma-formula';const rowNode=document.createElement('span');rowNode.style.display='block';
+      rowNode.appendChild(document.createTextNode('平均影响 = (0 + 0 + 2 × '));waveOutput(rowNode,row.error,'data-ma-relay-error','第三条有正负的偏差');
+      rowNode.appendChild(document.createTextNode(' × 20) ÷ 3 = '));waveOutput(rowNode,result.gradient,'data-ma-relay-gradient','评分对偏置的导数');calculation.appendChild(rowNode);
+      calculation.appendChild(document.createTextNode(status==='ready'?'下一次：当前偏置 − 0.00125 × 平均影响':'已停止；可以回退查看真实调整。'));
+    }
+    function updateRelayNav() {
+      if(current()==='relay-purpose'){next.textContent='先看变化怎样经过激活 →';return;}
+      if(current()==='relay-shift') {
+        next.disabled=!relayLesson.changed;next.textContent=relayLesson.changed?'让这次变化经过ReLU →':'先点公式里的−2.5';
+        if(relayLesson.changed)back.textContent='← 撤回这次增加';return;
+      }
+      if(current()==='relay-gate'){next.textContent='把留下的变化带回预测 →';return;}
+      if(current()==='relay-result'){next.textContent='让电脑接着调整偏置 →';return;}
+      if(current()==='relay-ending'){next.textContent='重新探索偏置训练 ↻';return;}
+      const status=relayStatus();if(relayLesson.cursor>0)back.textContent='← 回退一次调整';
+      next.textContent=status==='ready'?'按当前影响调整一次':'这些影响怎样接起来？ →';
+      automatic.hidden=status!=='ready'||relayLesson.cursor<1;automatic.textContent=autoRunning?'暂停':'继续调整';
+    }
+    function relayVertices(bias) {return [...new Set([0,-bias,2.5,3.5])].filter(t=>t>=0&&t<=3.5).sort((a,b)=>a-b);}
+    function drawRelayBand(width,bias,gate,composition=false) {
+      const X=t=>54+t/3.5*(width-76),Y=composition?v=>260-v/260*227:v=>260-(v+2.6)/3.8*227;
+      const value=(t,b)=>{const r=bendCompute(t,1,gate,{...bendConfig,bias:b});return composition?r.prediction:r.branch;};
+      const vertices=relayVertices(bias),lower=vertices.map(t=>[X(t),Y(value(t,-2.5))]),upper=vertices.map(t=>[X(t),Y(value(t,bias))]);
+      el('path',{d:[...lower,...upper.reverse()].map(([x,y],i)=>(i?'L ':'M ')+x+' '+y).join(' ')+' Z',fill:accent,'fill-opacity':0.48,stroke:'none','data-ma-relay-change-band':'','data-ma-relay-band-composition':String(composition)});
+    }
+    function syncRelayValues(bias) {
+      const result=relayEvaluate(bias),values={'data-ma-relay-bias':bias,'data-ma-relay-loss':result.loss,'data-ma-relay-error':result.rows[2].error,'data-ma-relay-gradient':result.gradient};
+      Object.entries(values).forEach(([key,value])=>copy.querySelectorAll('['+key+']').forEach(node=>{node.textContent=value===null?'未定义':waveNumber(value);}));
+      svg.setAttribute('data-ma-relay-current',String(bias));
+    }
+    function drawRelayFunction(width,bias,gate,activation) {
+      drawBendFunction(width,1,bias,gate,activation,{min:-2.6,max:1.2,ticks:[-2,-1,0,1]});drawRelayBand(width,bias,gate);syncRelayValues(bias);
+      svg.children[0].textContent+=' 深色窄带比较偏置负2.5与当前偏置的函数变化，不是另一次训练。';
+    }
+    function drawRelayPrediction(width,bias,compare) {
+      drawBendComposition(width,1,{...bendConfig,bias});
+      if(compare)drawRelayBand(width,bias,1,true);
+      drawTrainingGap(width,relayEvaluate(bias).rows[2],'relay');syncRelayValues(bias);
+    }
+    function renderRelayGraph() {
+      const width=Math.max(240,figure.getBoundingClientRect().width||736);
+      if(current()==='relay-shift')animatePlot(current(),width,relayBias(),bias=>drawRelayFunction(width,bias,0,false),1000);
+      if(current()==='relay-gate') {
+        if(!relayLesson.gateSeen){relayLesson.gateSeen=true;lastPlot={scene:current(),width,distance:0};}
+        animatePlot(current(),width,1,gate=>drawRelayFunction(width,relayBias(),gate,true),1100);
+      }
+      if(current()==='relay-result') {
+        if(!relayLesson.resultSeen){relayLesson.resultSeen=true;lastPlot={scene:current(),width,distance:-2.5};}
+        animatePlot(current(),width,relayBias(),bias=>drawRelayPrediction(width,bias,true),1100);
+      }
+      if(current()==='relay-train')animatePlot(current(),width,relayBias(),bias=>drawRelayPrediction(width,bias,false),800);
+    }
+    function advanceRelayTraining() {
+      if(relayStatus()!=='ready')return;
+      relayLesson.history=relayLesson.history.slice(0,relayLesson.cursor+1);relayLesson.history.push(relayStep(relayBias()));relayLesson.cursor++;
+    }
+    function scheduleRelayTraining() {
+      autoTimer=setTimeout(()=>{
+        autoTimer=null;if(!autoRunning||current()!=='relay-train')return;
+        cancelPlotAnimation(true);advanceRelayTraining();if(relayStatus()!=='ready')autoRunning=false;
+        refreshRelay();if(autoRunning)scheduleRelayTraining();
+      },950);
+    }
+    function forwardRelay() {
+      stopAutomation();
+      if(current()==='relay-shift'&&!relayLesson.changed)return;
+      if(current()==='relay-train'&&relayStatus()==='ready'){advanceRelayTraining();refreshRelay();return;}
+      if(current()==='relay-ending'){relayLesson=null;state.scene=scenes.indexOf('relay-purpose');renderScene();return;}
+      state.scene++;renderScene();
+    }
+    function backwardRelay() {
+      stopAutomation();
+      if(current()==='relay-shift'&&relayLesson.changed){relayLesson.changed=false;relayLesson.gateSeen=false;relayLesson.resultSeen=false;refreshRelay();return;}
+      if(current()==='relay-train'&&relayLesson.cursor>0){relayLesson.cursor--;refreshRelay();return;}
+      state.scene--;renderScene();
+    }
     function renderScene() {
       stopAutomation();lastPlot=null;drag=null;feedback=null;
+      if(current().startsWith('relay-'))ensureRelayLesson();
       if(current().startsWith('output-'))ensureOutputLesson();
       if(current().startsWith('bend-'))ensureBend();
       if(current().startsWith('wave-'))ensureWave();
@@ -2044,6 +2191,7 @@
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(current().startsWith('relay-')) {backwardRelay();return;}
       if(current().startsWith('output-')) {backwardOutput();return;}
       if(current().startsWith('bend-')) {backwardBend();return;}
       if(current().startsWith('wave-')) {backwardWave();return;}
@@ -2054,6 +2202,7 @@
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(current().startsWith('relay-')) {forwardRelay();return;}
       if(current().startsWith('output-')) {forwardOutput();return;}
       if(current().startsWith('bend-')) {forwardBend();return;}
       if(current().startsWith('wave-')) {forwardWave();return;}
@@ -2067,6 +2216,11 @@
       state.scene++;state.highlight=null;renderScene();
     });
     automatic.addEventListener('click',()=>{
+      if(current()==='relay-train') {
+        if(relayStatus()!=='ready'||relayLesson.cursor<1)return;
+        if(autoRunning)stopAutomation();else{cancelPlotAnimation(true);autoRunning=true;scheduleRelayTraining();}
+        updateNav();return;
+      }
       if(current()==='output-train') {
         if(outputStatus()!=='ready'||outputLesson.cursor<1)return;
         if(autoRunning)stopAutomation();else{autoRunning=true;scheduleOutputTraining();}
@@ -2094,7 +2248,7 @@
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
-      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose'}[globalThis.location?.hash];
+      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose'}[globalThis.location?.hash];
       if(chapter){state.scene=scenes.indexOf(chapter);renderScene();}
     });
     document.addEventListener('visibilitychange',()=>{
@@ -2104,7 +2258,7 @@
     if(globalThis.location?.hash==='#act-3') state.scene=14;
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
     if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
-    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose'}[globalThis.location?.hash];
+    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose'}[globalThis.location?.hash];
     if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     new ResizeObserver(()=>{
