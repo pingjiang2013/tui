@@ -56,7 +56,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -66,9 +66,9 @@
     const ink='var(--ma-ink)', muted='var(--ma-muted)', axis='var(--ma-axis)', accent='var(--ma-accent)';
     let geometry=null,drag=null,feedback=null,learning=null,autoTimer=null,autoRunning=false;
     let plotFrame=null,plotMotion=null,lastPlot=null;
-    let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null;
+    let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null,outputLesson=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending'].includes(current());
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending'].includes(current());
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -98,6 +98,7 @@
     }
     function renderCopy() {
       copy.replaceChildren();feedback=null;
+      if(current().startsWith('output-')) {renderOutputCopy();return;}
       if(current().startsWith('bend-')) {renderBendCopy();return;}
       if(current().startsWith('wave-')) {renderWaveCopy();return;}
       if(current().startsWith('bias-')) {renderBiasCopy();return;}
@@ -178,6 +179,7 @@
       back.disabled=state.scene===0;
       next.disabled=false;
       back.textContent='← 上一页';automatic.hidden=true;
+      if(current().startsWith('output-')) {updateOutputNav();return;}
       if(current().startsWith('bend-')) {updateBendNav();return;}
       if(current().startsWith('wave-')) {updateWaveNav();return;}
       if(current().startsWith('bias-')) {updateBiasNav();return;}
@@ -189,6 +191,7 @@
     }
     function renderStage() {
       if(textOnly()) return;
+      if(current().startsWith('output-')) {renderOutputGraph();return;}
       if(current().startsWith('bend-')) {renderBendGraph();return;}
       if(current().startsWith('wave-')) {renderWaveGraph();return;}
       if(current().startsWith('bias-')) {renderBiasGraph();return;}
@@ -1742,7 +1745,7 @@
           else {if(changed)back.textContent=weightMode?'← 撤回权重变化':'← 撤回偏置变化';next.disabled=!changed;next.textContent=changed?'把同一个改动用回预测 →':weightMode?'先点公式里的1':'先点公式里的−2';}
           break;
         }
-        case 'bend-ending':next.textContent='重新探索这段分支 ↻';break;
+        case 'bend-ending':next.textContent='让电脑调整输出权重 →';break;
       }
     }
     function drawBendPlot(width,amount,gate,selected=null) {
@@ -1848,7 +1851,6 @@
         if(!bend.parameterPreview)bend.parameterPreview=true;else{bend.neuronStage++;bend.parameterPreview=false;}
         refreshBend();return;
       }
-      if(current()==='bend-ending'){bend=null;state.scene=scenes.indexOf('bend-purpose');renderScene();return;}
       state.scene++;renderScene();
     }
     function backwardBend() {
@@ -1865,8 +1867,128 @@
       }
       state.scene--;renderScene();
     }
+    const outputLearningRate=0.5,outputTolerance=0.001;
+    function outputEvaluate(output,data=shapeRecords,params=bendConfig) {
+      const rows=data.map(row=>{
+        const calculation=bendCompute(row.seconds,1,1,{...params,output});
+        return {...calculation,actual:row.position,error:calculation.prediction-row.position};
+      });
+      return {rows,loss:rows.reduce((sum,row)=>sum+row.error*row.error,0)/rows.length,
+        gradient:rows.reduce((sum,row)=>sum+2*row.error*row.activated,0)/rows.length};
+    }
+    function outputStep(output,rate=outputLearningRate,data=shapeRecords,params=bendConfig) {
+      return output-rate*outputEvaluate(output,data,params).gradient;
+    }
+    function ensureOutputLesson() {
+      if(!outputLesson)outputLesson={probed:false,history:[11],cursor:0};
+    }
+    function outputWeight() {return current()==='output-probe'?(outputLesson.probed?11:10):outputLesson.history[outputLesson.cursor];}
+    function outputStatus() {
+      if(outputEvaluate(outputWeight()).loss<=outputTolerance)return 'done';
+      return outputLesson.cursor>=100?'limit':'ready';
+    }
+    function refreshOutput() {renderCopy();updateNav();renderStage();}
+    function outputEquation(probe) {
+      const p=paragraph('预测 = 40 + 时间 × 30 + ');p.className='ma-formula';
+      const node=document.createElement(probe?'button':'span');node.className=probe?'ma-term ma-probe-term':'ma-parameter';
+      node.setAttribute('data-ma-output-weight','');node.textContent=waveNumber(outputWeight());
+      if(probe) {
+        node.type='button';node.disabled=outputLesson.probed;node.setAttribute('aria-label','把输出权重从10增加到11');
+        node.addEventListener('click',()=>{
+          if(outputLesson.probed)return;stopAutomation();outputLesson.probed=true;refreshOutput();next.focus?.();
+        });
+      }
+      p.appendChild(node);p.appendChild(document.createTextNode(' × ReLU(时间 − 2)'));
+      return p;
+    }
+    function renderOutputCopy() {
+      if(current()==='output-purpose') {
+        paragraph('刚才，分支里的数字都是我们选的。现在让电脑自己调整输出权重，学习这条分支该为预测补充多少。');
+        paragraph('另开一次实验：把输出权重从20设为10，其他数字固定。预测变成70、100、140，第三条还差10。前面的手动实验与训练记录都保留。');return;
+      }
+      if(current()==='output-ending') {
+        paragraph('电脑已经能根据平方评分调整分支的输出权重。前两条的分支输出是0，没有推动这个权重变化；第三条预测偏低，推动它增大。达到容许误差后停止，参数没有被强制设成20。');
+        paragraph('这次只学会调整分支的放大程度，仍不能改变它从哪里开始生效。下一步：误差怎样穿过ReLU，影响前面的偏置和权重？');return;
+      }
+      if(current()==='output-probe') {
+        paragraph(outputLesson.probed?'同一个权重增加1，前两条仍是70、100，第三条从140变成141。神经元在这三个输入下输出0、0、1，所以预测分别增加0、0、1。':'先看这个权重影响了什么。点公式中的10，让它增加1；观察补充函数、合成函数，以及第三条差距的变化。');
+        outputEquation(true);
+        paragraph('灰线是原函数，橙色面积是分支的补充。下方把第三条差距按固定比例放大；与上图是同一个差距，没有另做一次调整。');return;
+      }
+      const value=outputWeight(),result=outputEvaluate(value),row=result.rows[2],status=outputStatus();
+      paragraph(status==='done'?'平均平方差已小于0.001，停止调整。图中仍保留真实剩余差距；接近记录不代表参数恰好等于20。':status==='limit'?'已达到本次实验的100次调整上限，停止继续。可以逐次回退检查真实记录。':outputLesson.cursor===0?'继续用平均平方差评分。前两条的影响为0；第三条按“2 × 有正负的偏差 × 分支输出”计算，再除以记录数3，得到评分对输出权重的导数。':'每次根据当前预测重算导数，再以学习率0.5调整。完整曲线和放大的差距同步变化；可以逐次回退。');
+      const p=paragraph('输出权重 ');p.className='ma-formula';waveOutput(p,value,'data-ma-output-weight','输出权重').className='ma-parameter';
+      p.appendChild(document.createTextNode('；平均平方差 '));waveOutput(p,result.loss,'data-ma-output-loss','平均平方差');
+      p.appendChild(document.createTextNode('（已调整 '+outputLesson.cursor+' 次）'));
+      const calculation=paragraph('');calculation.className='ma-formula';
+      const influence=document.createElement('span');influence.style.display='block';
+      influence.appendChild(document.createTextNode('平均影响 = (0 + 0 + 2 × '));waveOutput(influence,row.error,'data-ma-output-error','第三条有正负的偏差');
+      influence.appendChild(document.createTextNode(' × 1) ÷ 3 = '));waveOutput(influence,result.gradient,'data-ma-output-gradient','评分对输出权重的导数');calculation.appendChild(influence);
+      calculation.appendChild(document.createTextNode(status==='ready'?'下一次：当前权重 − 0.5 × 平均影响（学习率仍控制步幅）':'已停止；可以回退查看每次真实调整。'));
+    }
+    function updateOutputNav() {
+      if(current()==='output-purpose'){next.textContent='先看权重影响什么 →';return;}
+      if(current()==='output-probe') {
+        if(outputLesson.probed)back.textContent='← 撤回这次增加';
+        next.disabled=!outputLesson.probed;next.textContent=outputLesson.probed?'让电脑接着调整 →':'先点公式里的10';return;
+      }
+      if(current()==='output-ending'){next.textContent='重新做这次训练 ↻';return;}
+      const status=outputStatus();
+      if(outputLesson.cursor>0)back.textContent='← 回退一次调整';
+      next.textContent=status==='ready'?'按当前影响调整一次':'这次学会了什么？ →';
+      automatic.hidden=status!=='ready'||outputLesson.cursor<1;automatic.textContent=autoRunning?'暂停':'继续调整';
+    }
+    function drawOutputGraph(width,output) {
+      drawBendComposition(width,1,{...bendConfig,output});
+      svg.style.height='370px';svg.setAttribute('viewBox','0 0 '+width+' 370');
+      svg.setAttribute('data-ma-output-current',String(output));
+      const result=outputEvaluate(output),row=result.rows[2],left=54,right=width-22;
+      // Fixed magnification makes the same residual visible; it never normalizes to the current error.
+      const scale=(right-left)/10,y=340,predictionX=right+row.error*scale;
+      text('第3条差距（放大）',left,324,{fill:muted,'font-size':12});
+      line(predictionX,y,right,y,{stroke:accent,'stroke-width':5,'data-ma-output-gap':'','data-ma-output-gap-value':Math.abs(row.error)});
+      el('circle',{cx:predictionX,cy:y,r:5,fill:'var(--ma-paper)',stroke:accent,'stroke-width':2,'data-ma-output-gap-prediction':''});
+      el('circle',{cx:right,cy:y,r:4.5,fill:ink,'data-ma-output-gap-record':''});
+      text('0',right,364,{'text-anchor':'end',fill:muted,'font-size':12});text('差距 '+waveNumber(Math.abs(row.error)),left,364,{fill:accent,'font-size':13});
+      const X=t=>54+t/3.5*(width-76),Y=v=>260-v/260*227;
+      line(X(3),Y(row.prediction),X(3),Y(row.actual),{stroke:accent,'stroke-width':4,'data-ma-output-original-gap':''});
+      svg.children[0].textContent+=' 下方以固定比例放大第3条差距，实际差距'+waveNumber(Math.abs(row.error))+'。';
+      const values={'data-ma-output-weight':output,'data-ma-output-loss':result.loss,'data-ma-output-error':row.error,'data-ma-output-gradient':result.gradient};
+      Object.entries(values).forEach(([key,value])=>copy.querySelectorAll('['+key+']').forEach(node=>{node.textContent=waveNumber(value);}));
+    }
+    function renderOutputGraph() {
+      const width=Math.max(240,figure.getBoundingClientRect().width||736);
+      animatePlot(current(),width,outputWeight(),value=>drawOutputGraph(width,value),800);
+    }
+    function advanceOutputTraining() {
+      if(outputStatus()!=='ready')return;
+      const value=outputStep(outputWeight());
+      outputLesson.history=outputLesson.history.slice(0,outputLesson.cursor+1);outputLesson.history.push(value);outputLesson.cursor++;
+    }
+    function scheduleOutputTraining() {
+      autoTimer=setTimeout(()=>{
+        autoTimer=null;if(!autoRunning||current()!=='output-train')return;
+        cancelPlotAnimation(true);advanceOutputTraining();
+        if(outputStatus()!=='ready')autoRunning=false;
+        refreshOutput();if(autoRunning)scheduleOutputTraining();
+      },950);
+    }
+    function forwardOutput() {
+      stopAutomation();
+      if(current()==='output-probe'&&!outputLesson.probed)return;
+      if(current()==='output-train'&&outputStatus()==='ready'){advanceOutputTraining();refreshOutput();return;}
+      if(current()==='output-ending'){outputLesson=null;state.scene=scenes.indexOf('output-purpose');renderScene();return;}
+      state.scene++;renderScene();
+    }
+    function backwardOutput() {
+      stopAutomation();
+      if(current()==='output-probe'&&outputLesson.probed){outputLesson.probed=false;refreshOutput();return;}
+      if(current()==='output-train'&&outputLesson.cursor>0){outputLesson.cursor--;refreshOutput();return;}
+      state.scene--;renderScene();
+    }
     function renderScene() {
       stopAutomation();lastPlot=null;drag=null;feedback=null;
+      if(current().startsWith('output-'))ensureOutputLesson();
       if(current().startsWith('bend-'))ensureBend();
       if(current().startsWith('wave-'))ensureWave();
       if(current().startsWith('bias-'))ensureBiasLesson();
@@ -1911,6 +2033,7 @@
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(current().startsWith('output-')) {backwardOutput();return;}
       if(current().startsWith('bend-')) {backwardBend();return;}
       if(current().startsWith('wave-')) {backwardWave();return;}
       if(current().startsWith('bias-')) {backwardBias();return;}
@@ -1920,6 +2043,7 @@
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(current().startsWith('output-')) {forwardOutput();return;}
       if(current().startsWith('bend-')) {forwardBend();return;}
       if(current().startsWith('wave-')) {forwardWave();return;}
       if(current().startsWith('bias-')) {forwardBias();return;}
@@ -1932,6 +2056,11 @@
       state.scene++;state.highlight=null;renderScene();
     });
     automatic.addEventListener('click',()=>{
+      if(current()==='output-train') {
+        if(outputStatus()!=='ready'||outputLesson.cursor<1)return;
+        if(autoRunning)stopAutomation();else{autoRunning=true;scheduleOutputTraining();}
+        updateNav();return;
+      }
       if(current()==='wave-train') {
         if(waveTrainStatus()!=='ready'||wave.cursor<2)return;
         if(autoRunning)stopAutomation();else{autoRunning=true;scheduleWaveTraining();}
@@ -1954,7 +2083,7 @@
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
-      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron'}[globalThis.location?.hash];
+      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose'}[globalThis.location?.hash];
       if(chapter){state.scene=scenes.indexOf(chapter);renderScene();}
     });
     document.addEventListener('visibilitychange',()=>{
@@ -1964,7 +2093,7 @@
     if(globalThis.location?.hash==='#act-3') state.scene=14;
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
     if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
-    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron'}[globalThis.location?.hash];
+    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose'}[globalThis.location?.hash];
     if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     new ResizeObserver(()=>{

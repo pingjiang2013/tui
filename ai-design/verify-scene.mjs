@@ -35,9 +35,9 @@ function mount(width,hash='',program=script,motion=false) {
   const timers=new Map(),frames=new Map(),documentEvents={},pageEvents={},location={hash},evaluations=[],derivativeInputs=[];let timerId=0,frameId=0,frameTime=0,resizeCallback;
   const document={hidden:false,getElementById:id=>id==='minimal-ai-scene'?root:null,createElement:tag=>new Element(tag),createElementNS:(_,tag)=>new Element(tag),createTextNode:value=>Object.assign(new Element('#text'),{textContent:value}),addEventListener:(name,callback)=>{documentEvents[name]=callback;}};
   const motionPlatform=motion?{performance:{now:()=>frameTime},requestAnimationFrame:callback=>{frames.set(++frameId,callback);return frameId;},cancelAnimationFrame:id=>frames.delete(id),matchMedia:()=>({matches:motion==='reduce'})}:{};
-  let waveMath,bendMath;
-  vm.runInNewContext(program,{document,ResizeObserver:class{constructor(callback){resizeCallback=callback;}observe(){}},Math,Number,String,location,__captureWaveMath:value=>{waveMath=value;},__captureBendMath:value=>{bendMath=value;},__recordParameter:value=>evaluations.push(value),__recordDerivative:value=>derivativeInputs.push(value),setTimeout:callback=>{timers.set(++timerId,callback);return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,callback)=>{pageEvents[name]=callback;},...motionPlatform});
-  return {root,copy,figure,svg,handle,back,next,automatic,timers,frames,evaluations,derivativeInputs,waveMath,bendMath,
+  let waveMath,bendMath,outputMath;
+  vm.runInNewContext(program,{document,ResizeObserver:class{constructor(callback){resizeCallback=callback;}observe(){}},Math,Number,String,location,__captureWaveMath:value=>{waveMath=value;},__captureBendMath:value=>{bendMath=value;},__captureOutputMath:value=>{outputMath=value;},__recordParameter:value=>evaluations.push(value),__recordDerivative:value=>derivativeInputs.push(value),setTimeout:callback=>{timers.set(++timerId,callback);return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,callback)=>{pageEvents[name]=callback;},...motionPlatform});
+  return {root,copy,figure,svg,handle,back,next,automatic,timers,frames,evaluations,derivativeInputs,waveMath,bendMath,outputMath,
     advance(){next.fire('click');},retreat(){back.fire('click');},key(key){handle.fire('keydown',{key});},
     goToChapter(number){location.hash='#act-'+number;pageEvents.hashchange();},
     tick(){const [id,callback]=timers.entries().next().value;timers.delete(id);callback();},
@@ -958,8 +958,8 @@ for(const width of [736,360,280]) {
  parameter(app,'bias');app.advance();app.advance();assertComposition(app,width,1,1,-2,1);
  chooseBendInput(app,3);assertComposition(app,width,1,1,-2,3);chooseBendInput(app,2.5);assertComposition(app,width,1,1,-2,2.5);assert.match(app.copy.textContent,/125/);assert.match(app.copy.textContent,/尚未核对/);
  app.retreat();assertComposition(app,width,1,1,-1);app.retreat();assertFunction(app,width,1,-1);app.retreat();assertFunction(app,width,1,-2);app.retreat();assertComposition(app,width,1,2,-2);app.retreat();assertFunction(app,width,2,-2);app.retreat();assertFunction(app,width,1,-2);
- parameter(app,'weight');app.advance();app.advance();parameter(app,'bias');app.advance();app.advance();app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/手动/);app.advance();app.advance();assertBendPlot(app,width,0,0);
- app.goToChapter(11);assertFunction(app,width,1,-2,0,true);app.goToChapter(12);assertFunction(app,width,1,-2);
+ parameter(app,'weight');app.advance();app.advance();parameter(app,'bias');app.advance();app.advance();app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/手动/);app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/另开一次实验/);app.advance();assert.equal(Number(app.svg.getAttribute('data-ma-output-current')),10);
+ app.goToChapter(11);assertFunction(app,width,1,-2,1,true);app.goToChapter(12);assertComposition(app,width,1,1,-2,2.5);
  console.log('PASS width='+width+': whole-function max, pointwise composition, contribution area, weight/bias interventions, explicit resets, rollback and unseen prediction');
 }
 for(const width of [736,360,280]) {
@@ -970,3 +970,62 @@ for(const width of [736,360,280]) {
 }
 const reducedFunctions=mount(280,'#act-11',script,'reduce');reducedFunctions.advance();assertFunction(reducedFunctions,280,1,-2,1,true);reducedFunctions.advance();reducedFunctions.advance();assertComposition(reducedFunctions,280,1);reducedFunctions.advance();parameter(reducedFunctions,'weight');assertFunction(reducedFunctions,280,2,-2);reducedFunctions.advance();reducedFunctions.advance();parameter(reducedFunctions,'bias');assertFunction(reducedFunctions,280,1,-1);assert.equal(reducedFunctions.frames.size,0);
 console.log('PASS function motion: actual intermediate values, area preservation, reduced motion, interruption and navigation cancellation');
+
+const outputProgram=script.replace('    const waveChapter=','    globalThis.__captureOutputMath({evaluate:outputEvaluate,step:outputStep});\n    const waveChapter=');
+const outputMath=mount(360,'#act-13',outputProgram).outputMath;
+for(const value of [10,11,17,20,24]) {
+  const result=outputMath.evaluate(value);close(result.loss,(value-20)**2/3);close(result.gradient,2*(value-20)/3);
+  close(outputMath.step(value),value-0.5*result.gradient);
+  const h=1e-4,numerical=(outputMath.evaluate(value+h).loss-outputMath.evaluate(value-h).loss)/(2*h);
+  assert.ok(Math.abs(numerical-result.gradient)<1e-7);
+}
+const outputAlternative=[{seconds:1,position:1},{seconds:1.5,position:4},{seconds:3.5,position:8}],outputParams={base:-2,slope:2,weight:0.5,bias:-0.3};
+const alternativeResult=outputMath.evaluate(1.7,outputAlternative,outputParams),delta=1e-4;
+const numericalOutput=(outputMath.evaluate(1.7+delta,outputAlternative,outputParams).loss-outputMath.evaluate(1.7-delta,outputAlternative,outputParams).loss)/(2*delta);
+assert.ok(Math.abs(alternativeResult.gradient-numericalOutput)<1e-7);
+close(outputMath.step(1.7,0.07,outputAlternative,outputParams),1.7-0.07*alternativeResult.gradient);
+console.log('PASS output math: analytic gradient, independent finite difference, alternate records/branch parameters, no fixed-target training');
+
+function assertOutputGraph(app,width,value,training=false) {
+  close(app.svg.getAttribute('data-ma-output-current'),value);close(app.svg.getAttribute('data-ma-composition-output'),value);
+  const result=outputMath.evaluate(value),X=t=>54+t/3.5*(width-76),Y=v=>260-v/260*227;
+  const curve=points(app.svg.querySelectorAll('[data-ma-composed-function]')[0]);
+  [0,2,3.5].forEach((t,i)=>{close(curve[i][0],X(t));close(curve[i][1],Y(40+30*t+value*Math.max(0,t-2)));});
+  app.svg.querySelectorAll('[data-ma-composition-input]').forEach((node,i)=>{
+    close(node.getAttribute('data-ma-composition-prediction'),result.rows[i].prediction);close(node.getAttribute('cy'),Y(result.rows[i].prediction));
+  });
+  const gap=app.svg.querySelectorAll('[data-ma-output-gap]')[0],right=width-22;
+  close(gap.getAttribute('data-ma-output-gap-value'),Math.abs(result.rows[2].error));close(gap.getAttribute('x1'),right+result.rows[2].error*(width-76)/10);close(gap.getAttribute('x2'),right);
+  const originalGap=app.svg.querySelectorAll('[data-ma-output-original-gap]')[0];close(originalGap.getAttribute('y1'),Y(result.rows[2].prediction));close(originalGap.getAttribute('y2'),Y(150));
+  const displayed=Number(app.copy.querySelectorAll('[data-ma-output-weight]')[0].textContent);assert.ok(Math.abs(displayed-value)<0.000051);
+  if(training)for(const [attr,expected] of [['data-ma-output-loss',result.loss],['data-ma-output-error',result.rows[2].error],['data-ma-output-gradient',result.gradient]])assert.ok(Math.abs(Number(app.copy.querySelectorAll('['+attr+']')[0].textContent)-expected)<0.000051);
+  assert.ok(app.copy.children.length<=3);assert.equal(app.handle.hidden,true);
+}
+function outputProbe(app) {const button=app.copy.querySelectorAll('[data-ma-output-weight]')[0];assert.equal(button.disabled,false);button.fire('click');}
+function enterOutputTrain(app,width) {
+  assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/另开一次实验/);app.advance();assertOutputGraph(app,width,10);
+  assert.equal(app.next.disabled,true);app.advance();assertOutputGraph(app,width,10);outputProbe(app);assertOutputGraph(app,width,11);app.advance();assertOutputGraph(app,width,11,true);
+}
+for(const width of [736,360,280]) {
+  const app=mount(width,'#act-13');enterOutputTrain(app,width);assert.equal(app.automatic.hidden,true);
+  app.advance();assertOutputGraph(app,width,14,true);assert.equal(app.automatic.hidden,false);
+  app.retreat();assertOutputGraph(app,width,11,true);app.retreat();assertOutputGraph(app,width,11);app.retreat();assertOutputGraph(app,width,10);
+  outputProbe(app);app.advance();app.advance();assertOutputGraph(app,width,14,true);
+  app.automatic.fire('click');assert.equal(app.timers.size,1);app.tick();assertOutputGraph(app,width,16,true);
+  app.automatic.fire('click');assert.equal(app.timers.size,0);app.retreat();assertOutputGraph(app,width,14,true);app.advance();assertOutputGraph(app,width,16,true);
+  app.automatic.fire('click');let count=0;while(app.timers.size&&count++<100)app.tick();assert.ok(count<100);assert.equal(app.timers.size,0);
+  const final=Number(app.svg.getAttribute('data-ma-output-current'));assert.ok(final<20&&final>19.9);assert.ok(outputMath.evaluate(final).loss<=0.001);assert.ok(outputMath.evaluate(final).loss>0);assertOutputGraph(app,width,final,true);assert.equal(app.automatic.hidden,true);
+  app.retreat();assert.ok(outputMath.evaluate(Number(app.svg.getAttribute('data-ma-output-current'))).loss>0.001);app.advance();assertOutputGraph(app,width,final,true);
+  app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/穿过ReLU/);app.advance();assert.equal(app.figure.hidden,true);app.advance();assertOutputGraph(app,width,10);
+  app.goToChapter(11);assertFunction(app,width,1,-2,0,true);app.goToChapter(13);assert.equal(app.figure.hidden,true);
+  console.log('PASS output width='+width+': explicit reset, real +1, scaled residual, single-step/auto training, pause, per-round rollback, tolerance stop without snapping and isolated replay');
+}
+for(const width of [736,360,280]) {
+  const app=mount(width,'#act-13',script,true);app.advance();outputProbe(app);app.frame(400);assertOutputGraph(app,width,10.5);app.resize();assertOutputGraph(app,width,11);assert.equal(app.frames.size,0);
+  app.advance();app.advance();app.frame(400);assertOutputGraph(app,width,12.5,true);app.hide();assertOutputGraph(app,width,14,true);assert.equal(app.frames.size,0);app.show();
+  app.automatic.fire('click');app.tick();app.frame(400);assertOutputGraph(app,width,15,true);app.automatic.fire('click');assertOutputGraph(app,width,16,true);assert.equal(app.timers.size,0);assert.equal(app.frames.size,0);
+  app.retreat();app.frame(400);assertOutputGraph(app,width,15,true);app.goToChapter(12);assert.equal(app.frames.size,0);assert.equal(app.timers.size,0);assertFunction(app,width,1,-2);
+  app.goToChapter(13);app.advance();assertOutputGraph(app,width,11);app.advance();assertOutputGraph(app,width,14,true);app.automatic.fire('click');app.leave();assert.equal(app.timers.size,0);app.resume();assert.equal(app.timers.size,0);
+}
+const reducedOutput=mount(280,'#act-13',script,'reduce');enterOutputTrain(reducedOutput,280);reducedOutput.advance();assertOutputGraph(reducedOutput,280,14,true);assert.equal(reducedOutput.frames.size,0);
+console.log('PASS output motion: one parameter drives all curves, residual and live numbers; interruption, resize, visibility, navigation and reduced motion');

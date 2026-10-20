@@ -4,7 +4,7 @@
 
 在线体验：<https://pingjiang2013.github.io/tui/ai-design/>
 
-目前包含十二幕：
+目前包含十三幕：
 
 1. 根据已有记录做出预测。
 2. 衡量预测差距，让电脑自己调整。
@@ -18,12 +18,15 @@
 10. 为直线加入补充项，观察一处改善怎样弄坏另一处。
 11. 在常函数0与直线之间逐点取较大值，再把补充函数逐点叠到原函数上，理解ReLU与拐点。
 12. 点击数字改变权重和偏置，观察整条直线及完整预测的变化，理解第一个神经元。
+13. 将输出权重明确设为10，点击增加1，再让电脑通过平方评分实际训练这个权重。
 
 可直接访问 [第二幕](https://pingjiang2013.github.io/tui/ai-design/#act-2)、[第三幕](https://pingjiang2013.github.io/tui/ai-design/#act-3)、[第四幕](https://pingjiang2013.github.io/tui/ai-design/#act-4)、[第五幕](https://pingjiang2013.github.io/tui/ai-design/#act-5)。
 
 新增入口：[第六幕](https://pingjiang2013.github.io/tui/ai-design/#act-6)、[第七幕](https://pingjiang2013.github.io/tui/ai-design/#act-7)、[第八幕](https://pingjiang2013.github.io/tui/ai-design/#act-8)、[第九幕](https://pingjiang2013.github.io/tui/ai-design/#act-9)。
 
 神经元分支：[第十幕](https://pingjiang2013.github.io/tui/ai-design/#act-10)、[第十一幕](https://pingjiang2013.github.io/tui/ai-design/#act-11)、[第十二幕](https://pingjiang2013.github.io/tui/ai-design/#act-12)。
+
+输出权重训练：[第十三幕](https://pingjiang2013.github.io/tui/ai-design/#act-13)。
 
 ## 本地开发
 
@@ -57,3 +60,5 @@ GitHub Pages 从仓库的 `master` 分支根目录发布，本项目位于 `ai-d
 平方评分训练从相同参数出发，可比较学习率0.05与0.25。自动继续每次推进20个实际轮次，保存每轮并支持逐轮回退；平均平方差不超过0.01时停止，不将参数吸附到答案。第九幕最多执行3000轮真实更新，并通过相邻增量证明直线无法完全拟合新记录。
 
 第十至十二幕手动构造一个ReLU分支，所有输出实时计算；尚未训练这个神经元的参数。权重1→2改变斜率，偏置−2→−1改变激活前的统一偏移；两个独立实验都展示对完整预测的影响。第2.5秒的125明确标为尚无记录核对的预测。函数取较大值与贡献面积叠加的过渡用于解释计算，不代表训练。
+
+第十三幕固定内部权重1、偏置−2，只训练输出权重。明确从10开始，手动10→11后接续训练；平均平方差的解析导数与学习率0.5决定每次真实更新。完整函数和固定比例放大的第三条差距同步变化。首次单步后开放连续调整与暂停，保存每轮供回退，平均平方差不超过0.001时停止，不吸附到20。内部权重与偏置的训练尚未实现。
