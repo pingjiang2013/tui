@@ -1,0 +1,79 @@
+.attention-inspection {
+  margin-top: 12px;
+  border: 1px solid #e0e8d4;
+  border-radius: 6px;
+  background: #f8fbf2;
+  padding: 12px 14px;
+  color: #7b8f68;
+  font-size: 11px;
+}
+.attention-inspection summary {
+  cursor: pointer;
+  color: #67804f;
+}
+.attention-inspection h4 {
+  font-size: 12px;
+  font-weight: 500;
+  color: #66814e;
+  margin-top: 17px;
+}
+.attention-inspection p {
+  margin-top: 8px;
+  line-height: 2;
+  overflow-wrap: anywhere;
+}
+.attention-inspection code {
+  background: #edf3e3;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: Consolas, monospace;
+  font-size: 11px;
+  color: #648049;
+}
+.attention-inspection strong {
+  color: #668249;
+  font-family: Consolas, monospace;
+  font-weight: 500;
+}
+@media (max-width: 680px) {
+  .attention-inspection {
+    padding: 11px;
+    font-size: 10px;
+  }
+  .attention-inspection code {
+    font-size: 10px;
+  }
+}
+.unseen-prediction {
+  margin: 5px 20px 15px;
+  padding: 14px 16px;
+  background: #f0f5e8;
+  border: 1px solid #dfe8d1;
+  border-radius: 6px;
+  color: #758c60;
+}
+.unseen-prediction > span {
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+.unseen-prediction p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  flex-wrap: wrap;
+  margin-top: 7px;
+}
+.unseen-prediction strong {
+  color: #58773e;
+  font-size: 19px;
+  font-weight: 500;
+  font-family: "DM Sans", sans-serif;
+}
+.unseen-prediction small {
+  display: block;
+  color: #889b76;
+  font-size: 10px;
+  margin-top: 8px;
+  line-height: 1.9;
+}

@@ -1,0 +1,5 @@
+{
+  "routes": 33,
+  "result": "passed",
+  "method": "React server rendering; browser layout, events, and Worker execution remain separate checks"
+}

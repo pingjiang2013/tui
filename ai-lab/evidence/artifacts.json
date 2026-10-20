@@ -1,0 +1,34 @@
+{
+  "sourceSHA256": "f094576b975e400fa2fbbca85d9bd9b2c208f45ceea9ed7827dd3f6f54f3e3b5",
+  "sourceBuildParity": true,
+  "checkpointSourceParity": true,
+  "pretrainedSteps": 1200,
+  "preview": "http://127.0.0.1:4173/",
+  "resources": [
+    {
+      "path": "./assets/index-DZeCrJs4.js",
+      "status": 200,
+      "bytes": 333109
+    },
+    {
+      "path": "./assets/index-CGfyYO8R.css",
+      "status": 200,
+      "bytes": 56475
+    },
+    {
+      "path": "./python/engine.py",
+      "status": 200,
+      "bytes": 23237
+    },
+    {
+      "path": "./models/tiny-pretrained.json",
+      "status": 200,
+      "bytes": 430503
+    },
+    {
+      "path": "./assets/python.worker-B7haRAMi.js",
+      "status": 200,
+      "bytes": 1341
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "name": "inside-ai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "build:pages": "tsc --noEmit && vite build --outDir ../ai-lab-preview --emptyOutDir && node scripts/clean-pages.mjs",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "node --test tests/*.test.mjs",
+    "test:math": "node scripts/run-math.mjs",
+    "typecheck": "tsc --noEmit",
+    "test:code": "node scripts/check-code.mjs",
+    "test:pages": "node scripts/check-pages.mjs",
+    "test:wasm": "node scripts/check-wasm.mjs"
+  },
+  "dependencies": {
+    "@codemirror/lang-python": "^6.2.0",
+    "@codemirror/view": "^6.36.0",
+    "codemirror": "^6.0.1",
+    "lucide-react": "^0.468.0",
+    "pyodide": "0.27.7",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.4.0",
+    "prettier": "^3.9.10",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.0"
+  }
+}

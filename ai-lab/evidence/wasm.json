@@ -1,0 +1,12 @@
+{
+  "runtime": "Pyodide 0.27.7 + NumPy",
+  "mathTests": 20,
+  "environment": "Node WebAssembly; not a browser rendering test",
+  "coldRuntimeMs": 2415.4006,
+  "attentionP95Ms": 10.317900000000009,
+  "training20StepsMs": 1065.0445999999997,
+  "validationBefore": 4.701842115976465,
+  "validationAfter": 3.8280236181986345,
+  "checkpointValidation": 4.281360177830692,
+  "inspectMs": 11.320300000000316
+}
