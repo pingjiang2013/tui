@@ -696,6 +696,38 @@ function assertProbeGeometry(app,expected,loss='mae') {
   assert.equal(app.svg.querySelectorAll('[data-ma-effect-trace]').length,0);
   assert.ok(app.copy.children.length<=3);return evaluation;
 }
+function assertCancellationGeometry(app,width,progress) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'prediction-cancellation');
+  close(app.svg.getAttribute('data-ma-cancel-progress'),progress);
+  const a=Number(app.svg.getAttribute('data-ma-cancel-a')),b=Number(app.svg.getAttribute('data-ma-cancel-b')),unit=Number(app.svg.getAttribute('data-ma-cancel-unit'));
+  close(app.copy.querySelectorAll('[data-ma-interval-a]')[0].textContent,Number(a.toFixed(4)));
+  close(app.copy.querySelectorAll('[data-ma-interval-b]')[0].textContent,Number(b.toFixed(4)));
+  const meeting=Math.min(1,progress/0.6),fading=Math.max(0,Math.min(1,(progress-0.6)/0.22)),remaining=Math.max(0,Math.min(1,(progress-0.82)/0.18));
+  const pairs=app.svg.querySelectorAll('[data-ma-cancel-pair]');assert.equal(pairs.length,2);
+  pairs.forEach((pair,index)=>{
+    const i=index+1,top=28+index*140,bottom=78+index*140,middle=(top+bottom)/2;
+    close(pair.getAttribute('data-ma-cancel-before'),b+i*a);close(pair.getAttribute('data-ma-cancel-after'),b+(i+1)*a);
+    close(pair.getAttribute('data-ma-increment-value'),a);close(pair.getAttribute('data-ma-actual-increment'),index===0?30:50);
+    const shared=pair.querySelectorAll('[data-ma-shared-block]');assert.equal(shared.length,2*(i+1));
+    for(const row of ['later','earlier']) {
+      const terms=shared.filter(node=>node.getAttribute('data-ma-shared-row')===row);
+      close(terms.reduce((sum,node)=>sum+Number(node.getAttribute('data-ma-shared-value')),0),b+i*a);
+    }
+    shared.forEach(block=>{
+      const term=Number(block.getAttribute('data-ma-shared-index')),value=term===0?b:a,row=block.getAttribute('data-ma-shared-row'),y=row==='later'?top:bottom;
+      close(block.getAttribute('opacity'),1-fading);
+      const rect=block.querySelectorAll('[data-ma-shared-rectangle]')[0];
+      close(rect.getAttribute('width'),value*unit);close(rect.getAttribute('y'),y+(middle-y)*meeting);
+      const match=shared.find(other=>other.getAttribute('data-ma-shared-index')===String(term)&&other.getAttribute('data-ma-shared-row')!==row);
+      close(rect.getAttribute('x'),match.querySelectorAll('[data-ma-shared-rectangle]')[0].getAttribute('x'));
+    });
+    const survivor=pair.querySelectorAll('[data-ma-surviving-block]')[0],initialX=60+b*unit+i*a*unit+(i+1)*3;
+    close(survivor.getAttribute('width'),a*unit);close(survivor.getAttribute('data-ma-surviving-value'),a);
+    close(survivor.getAttribute('x'),initialX+(60-initialX)*remaining);close(survivor.getAttribute('y'),top+(middle-top)*remaining);
+    assert.ok(Number(survivor.getAttribute('x'))+a*unit<=width-20+1e-8);
+  });
+  assert.ok(app.copy.children.length<=3);
+}
 function assertBalanceGeometry(app,width,progress) {
   assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'balancing-line');
   close(app.svg.getAttribute('data-ma-balance-progress'),progress);
@@ -773,8 +805,8 @@ for(const width of [736,360,280]) {
   app.advance();app.advance();const shapeData=[70,100,150].map((position,index)=>({seconds:index+1,position}));
   const fitted=waveModel(app,width,shapeData);assert.ok(Math.abs(fitted.a-40)<1e-5);assert.ok(Math.abs(fitted.b-80/3)<1e-5);
   assert.ok(Math.abs(Number(app.svg.getAttribute('data-ma-wave-loss'))-200/9)<1e-8);
-  app.advance();assert.deepEqual(app.svg.querySelectorAll('[data-ma-actual-increment]').map(n=>Number(n.getAttribute('data-ma-increment-value'))),[30,50]);
-  app.svg.querySelectorAll('[data-ma-model-increment]').forEach(n=>assert.ok(Math.abs(Number(n.getAttribute('data-ma-increment-value'))-40)<1e-5));
+  app.advance();assertCancellationGeometry(app,width,0);app.advance();assertCancellationGeometry(app,width,1);
+  app.retreat();assertCancellationGeometry(app,width,0);app.advance();assertCancellationGeometry(app,width,1);
   app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.match(app.copy.textContent,/两个数各自该改多少/);
   console.log('PASS width='+width+': direct parameter increments, real line comparison at constant MAE, extracted gaps and square scoring, simultaneous updates, real training and linear-model limitation');
 }
@@ -798,6 +830,19 @@ close(interpolated.a,expected.a);close(interpolated.b,expected.b);
 movingTrain.automatic.fire('click');assert.equal(movingTrain.frames.size,0);assert.equal(movingTrain.timers.size,0);
 movingTrain.automatic.fire('click');movingTrain.goToSecond();assert.equal(movingTrain.timers.size,0);assert.equal(movingTrain.frames.size,0);
 const reducedWave=mount(280,'#act-9',script,'reduce');reducedWave.advance();assert.equal(reducedWave.frames.size,0);
+reducedWave.advance();assertCancellationGeometry(reducedWave,280,0);reducedWave.advance();assertCancellationGeometry(reducedWave,280,1);
+assert.equal(reducedWave.frames.size,0);
+for(const width of [736,360,280]) {
+  const cancellation=mount(width,'#act-9',script,true);cancellation.advance();cancellation.advance();
+  assertCancellationGeometry(cancellation,width,0);cancellation.advance();cancellation.frame(600);assertCancellationGeometry(cancellation,width,0.5);
+  cancellation.frame(240);assertCancellationGeometry(cancellation,width,0.784);
+  cancellation.frame(240);assertCancellationGeometry(cancellation,width,0.972);
+  cancellation.frame(120);assertCancellationGeometry(cancellation,width,1);assert.equal(cancellation.frames.size,0);
+  cancellation.retreat();cancellation.frame(600);assertCancellationGeometry(cancellation,width,0.5);
+  cancellation.hide();assertCancellationGeometry(cancellation,width,0);assert.equal(cancellation.frames.size,0);cancellation.show();
+  cancellation.advance();cancellation.frame(600);cancellation.resize();assertCancellationGeometry(cancellation,width,1);assert.equal(cancellation.frames.size,0);
+  cancellation.retreat();cancellation.goToSecond();assert.equal(cancellation.frames.size,0);
+}
 for(const width of [736,360,280]) {
   const movingScore=mount(width,'#act-7',script,true);
   assertBalanceGeometry(movingScore,width,0);movingScore.advance();movingScore.frame(550);assertBalanceGeometry(movingScore,width,0.5);

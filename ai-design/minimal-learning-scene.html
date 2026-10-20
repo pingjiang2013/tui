@@ -1194,7 +1194,7 @@
     function ensureWave() {
       if(!wave)wave={probes:{mae:{history:[{...waveStart}],keys:[],cursor:0},mse:{history:[{...waveStart}],keys:[],cursor:0}},
         balanced:false,scoreOpened:false,compared:false,returned:false,joint:false,squared:false,cut:false,narrow:false,
-        alpha:0.05,history:[{...waveStart}],cursor:0,rateOpen:false,shapeHistory:[{a:30,b:40}],shapeTrained:false};
+        alpha:0.05,history:[{...waveStart}],cursor:0,rateOpen:false,shapeHistory:[{a:30,b:40}],shapeTrained:false,intervalCancelled:false};
     }
     function waveHistoryParams(history,cursor) {
       const i=clamp(Math.floor(cursor),0,history.length-1),j=Math.min(i+1,history.length-1);
@@ -1347,14 +1347,22 @@
             : '换一组记录：第1、2、3秒为70、100、150。现在已经会训练两个参数，先让电脑继续调整这条直线，看看能否全部对齐。');
           waveSummary(wave.shapeTrained?wave.shapeHistory.at(-1):wave.shapeHistory[0],'mse',shapeRecords);
           paragraph(wave.shapeTrained
-            ? '先不归因于学习率。下一张图只比较相邻输入增加1时，记录和预测各增加多少；这次画的是相邻增量，不是预测与记录的差距。'
+            ? '先不归因于学习率。接下来把相邻两次预测拆开相减，看看直线每次能增加多少，再与记录要求的30和50比较。'
             : '起始规则40＋时间×30对上前两条，第三条仍偏低。下一次操作会执行真实的多轮梯度更新，不播放预设参数。');
           break;
-        case 'wave-intervals':
-          paragraph('输入同样增加1，记录的输出先增加30，再增加50；直线的预测却两次都增加同一个数。相加的起始值会在相减时抵消。');
-          waveSummary(wave.shapeHistory.at(-1),'mse',shapeRecords);
-          paragraph('因此，无论怎样调整这两个参数，一条直线都无法同时满足“增加30”和“增加50”。这揭示了规则形状的局限，不能靠更多训练解决。');
+        case 'wave-intervals': {
+          const params=wave.shapeHistory.at(-1);
+          paragraph(wave.intervalCancelled
+            ? '两次相减，都只剩一块橙色：一份每秒距离。相同的起始值被拿掉了，共有的橙色部分也被拿掉了。'
+            : '记录70→100→150，先增加30、再增加50。直线的预测为什么每次增加相同的数？把相邻两次预测相减，看看共有的部分去了哪里。');
+          const p=paragraph('预测 = ');p.className='ma-formula';
+          waveOutput(p,params.b,'data-ma-interval-b','起始值').style.color=muted;
+          p.appendChild(document.createTextNode(' + 时间 × '));waveOutput(p,params.a,'data-ma-interval-a','每秒距离').className='ma-parameter';
+          paragraph(wave.intervalCancelled
+            ? '起始值怎么调，都会在相减时消失；每秒距离换成别的数，两次剩下的仍然相同。因此，一条直线无法同时做到先增加30、再增加50。'
+            : '灰块是起始值，每个橙块是一份每秒距离。把两次预测中相同的块对齐、一起拿掉。');
           break;
+        }
         case 'wave-ending':
           paragraph('我们已经会追踪多个参数、选择评分方式，并让电脑根据实际导数反复训练。也看见了训练方法与模型能表达什么，是两个不同的问题。');
           paragraph('接下来，要给规则增加一种能改变形状的计算：让某一部分只在部分输入范围起作用，再从中理解激活函数与神经元。');
@@ -1391,8 +1399,10 @@
           automatic.hidden=wave.cursor<2||waveTrainStatus()!=='ready';automatic.textContent=autoRunning?'暂停':'自动继续（每次20轮）';break;
         case 'wave-shape':
           if(wave.shapeTrained)back.textContent='← 回到训练前';
-          next.textContent=wave.shapeTrained?'提取两段相邻增量 →':'实际训练这条直线';break;
-        case 'wave-intervals':next.textContent='需要怎样的新规则？ →';break;
+          next.textContent=wave.shapeTrained?'拆开相邻两次预测 →':'实际训练这条直线';break;
+        case 'wave-intervals':
+          if(wave.intervalCancelled)back.textContent='← 放回共有部分';
+          next.textContent=wave.intervalCancelled?'需要怎样的新规则？ →':'相减，移去共有部分';break;
         case 'wave-ending':next.textContent='重新探索这四个单元 ↻';break;
       }
     }
@@ -1501,20 +1511,41 @@
         text(d+' + '+waveNumber(d-h)+' = '+waveNumber(2*d-h),left,y+35,{'font-size':14,'data-ma-normalized-result':d,'data-ma-normalized-value':2*d-h});
       });
     }
-    function drawWaveIntervals(width) {
+    function drawWaveIntervals(width,progress) {
       svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
-      svg.setAttribute('data-ma-chart-kind','adjacent-increments');
-      const params=wave.shapeHistory.at(-1),evaluation=waveCompute(shapeRecords,params),scale=(width-115)/55,left=70;
-      el('title',{id:'ma-stage-title'}).textContent='现在比较相邻位置增加量，不是预测误差。输入每次增加1，记录先增加30再增加50；直线预测两次都增加'+waveNumber(params.a)+'。';
-      for(let i=0;i<2;i++) {
-        const y=65+i*140,actual=shapeRecords[i+1].position-shapeRecords[i].position,predicted=evaluation.rows[i+1].prediction-evaluation.rows[i].prediction;
-        text((i+1)+'→'+(i+2)+'秒',12,y-22,{fill:muted,'font-size':12});
-        line(left,y,left+actual*scale,y,{stroke:ink,'stroke-width':7,'data-ma-actual-increment':i,'data-ma-increment-value':actual});
-        text(String(actual),left+actual*scale+8,y+4,{'font-size':12});
-        line(left,y+34,left+predicted*scale,y+34,{stroke:accent,'stroke-width':7,'data-ma-model-increment':i,'data-ma-increment-value':predicted});
-        text(waveNumber(predicted),left+predicted*scale+8,y+38,{'font-size':12,fill:accent});
+      const params=wave.shapeHistory.at(-1),evaluation=waveCompute(shapeRecords,params);
+      const left=60,gap=3,height=28,unit=(width-80-3*gap)/(params.b+3*params.a);
+      const meeting=clamp(progress/0.6,0,1),fading=clamp((progress-0.6)/0.22,0,1),remaining=clamp((progress-0.82)/0.18,0,1);
+      svg.setAttribute('data-ma-chart-kind','prediction-cancellation');svg.setAttribute('data-ma-cancel-progress',String(progress));
+      svg.setAttribute('data-ma-cancel-a',String(params.a));svg.setAttribute('data-ma-cancel-b',String(params.b));svg.setAttribute('data-ma-cancel-unit',String(unit));
+      el('title',{id:'ma-stage-title'}).textContent='把相邻预测作减法。灰色块是相同的起始值，橙色块每块是一份每秒距离'+waveNumber(params.a)+'。第2秒减第1秒，起始值与一块橙色抵消；第3秒减第2秒，起始值与两块橙色抵消。两次都只剩一块。记录要求增加30与50，直线的预测两次却都增加'+waveNumber(params.a)+'。动画只重排相同计算中的部分，不更新参数。';
+      for(let i=1;i<=2;i++) {
+        const top=28+(i-1)*140,bottom=78+(i-1)*140,middle=(top+bottom)/2;
+        const before=evaluation.rows[i-1].prediction,after=evaluation.rows[i].prediction;
+        const group=el('g',{'data-ma-cancel-pair':i,'data-ma-cancel-before':before,'data-ma-cancel-after':after,
+          'data-ma-model-increment':i,'data-ma-increment-value':after-before,'data-ma-actual-increment':shapeRecords[i].position-shapeRecords[i-1].position});
+        text((i+1)+'秒',8,top+19,{fill:muted,'font-size':13,opacity:1-fading},group);
+        text('− '+i+'秒',8,bottom+19,{fill:muted,'font-size':13,opacity:1-fading},group);
+        let x=left;
+        for(let term=0;term<=i;term++) {
+          const isStart=term===0,value=isStart?params.b:params.a,blockWidth=value*unit;
+          for(const [row,y] of [['later',top],['earlier',bottom]]) {
+            const termGroup=el('g',{opacity:1-fading,'data-ma-shared-block':i+'-'+row+'-'+term,'data-ma-shared-index':term,
+              'data-ma-shared-value':value,'data-ma-shared-row':row},group);
+            const position=y+(middle-y)*meeting;
+            el('rect',{x,y:position,width:blockWidth,height,rx:3,fill:isStart?axis:accent,'fill-opacity':isStart?0.45:0.2,
+              stroke:isStart?axis:accent,'stroke-width':1.2,'data-ma-shared-rectangle':''},termGroup);
+            text(isStart?'起点':number(value),x+blockWidth/2,position+19,{'text-anchor':'middle',fill:isStart?muted:accent,
+              'font-size':isStart?Math.min(14,(blockWidth-4)/2):17},termGroup);
+          }
+          x+=blockWidth+gap;
+        }
+        const extraX=x+(left-x)*remaining,extraY=top+(middle-top)*remaining;
+        el('rect',{x:extraX,y:extraY,width:params.a*unit,height,rx:3,fill:accent,'fill-opacity':0.2,stroke:accent,'stroke-width':1.5,
+          'data-ma-surviving-block':i,'data-ma-surviving-value':params.a},group);
+        text(number(params.a),extraX+params.a*unit/2,extraY+19,{'text-anchor':'middle',fill:accent,'font-size':17},group);
+        text(i+'→'+(i+1)+'秒',8,middle+19,{fill:muted,'font-size':13,opacity:remaining},group);
       }
-      text('深色是记录，橙色是同一条直线的预测',width/2,302,{'text-anchor':'middle',fill:muted,'font-size':11});
     }
     function renderWaveGraph() {
       const width=Math.max(240,figure.getBoundingClientRect().width||736);
@@ -1533,7 +1564,7 @@
         case 'wave-normalize':animatePlot(current(),width,wave.narrow?0.1:0.5,h=>drawWaveNormalized(width,h),800);break;
         case 'wave-train':animatePlot(current(),width,wave.cursor,index=>{waveDrawModel(waveHistoryParams(wave.history,index),width);svg.setAttribute('data-ma-wave-frame-round',String(index));},800);break;
         case 'wave-shape':animatePlot(current(),width,wave.shapeTrained?wave.shapeHistory.length-1:0,index=>waveDrawModel(waveHistoryParams(wave.shapeHistory,index),width,shapeRecords),1000);break;
-        case 'wave-intervals':drawWaveIntervals(width);break;
+        case 'wave-intervals':animatePlot(current(),width,wave.intervalCancelled?1:0,progress=>drawWaveIntervals(width,progress),1200);break;
       }
     }
     function waveAdvanceTrain(count=1) {
@@ -1574,6 +1605,7 @@
       if(current()==='wave-normalize'&&!wave.narrow){wave.narrow=true;refreshWave();return;}
       if(current()==='wave-train'&&waveTrainStatus()==='ready'){waveAdvanceTrain();refreshWave();return;}
       if(current()==='wave-shape'&&!wave.shapeTrained){trainWaveShape();refreshWave();return;}
+      if(current()==='wave-intervals'&&!wave.intervalCancelled){wave.intervalCancelled=true;refreshWave();return;}
       if(current()==='wave-ending'){wave=null;state.scene=scenes.indexOf('wave-multi-purpose');renderScene();return;}
       state.scene++;renderScene();
     }
@@ -1591,6 +1623,7 @@
       if(current()==='wave-normalize'&&wave.narrow){wave.narrow=false;refreshWave();return;}
       if(current()==='wave-train'&&wave.cursor>0){wave.cursor--;refreshWave();return;}
       if(current()==='wave-shape'&&wave.shapeTrained){wave.shapeTrained=false;refreshWave();return;}
+      if(current()==='wave-intervals'&&wave.intervalCancelled){wave.intervalCancelled=false;refreshWave();return;}
       state.scene--;renderScene();
     }
     function renderScene() {

@@ -14,7 +14,7 @@
 6. 点击参数数字让它增加1，直接观察预测和差距，再理解梯度与共同更新。
 7. 转动同一条预测线，观察平均差距不变，再提取差距并展开面积，理解平方评分的取舍。
 8. 从窄条面积理解平方评分的导数，再实际训练两个参数。
-9. 提取相邻增量，说明直线模型的表达局限。
+9. 用共有色块对齐相消，直观看见相邻预测之差为何相同，理解直线模型的局限。
 
 可直接访问 [第二幕](https://pingjiang2013.github.io/tui/ai-design/#act-2)、[第三幕](https://pingjiang2013.github.io/tui/ai-design/#act-3)、[第四幕](https://pingjiang2013.github.io/tui/ai-design/#act-4)、[第五幕](https://pingjiang2013.github.io/tui/ai-design/#act-5)。
 
