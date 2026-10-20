@@ -40,7 +40,7 @@ function mount(width,hash='',program=script,motion=false) {
     advance(){next.fire('click');},retreat(){back.fire('click');},key(key){handle.fire('keydown',{key});},
     tick(){const [id,callback]=timers.entries().next().value;timers.delete(id);callback();},
     frame(milliseconds=210){frameTime+=milliseconds;const callbacks=[...frames.values()];frames.clear();callbacks.forEach(callback=>callback(frameTime));},
-    hide(){document.hidden=true;documentEvents.visibilitychange();},show(){document.hidden=false;},leave(){pageEvents.pagehide();},resume(){pageEvents.pageshow();},resize(){resizeCallback();},goToSecond(){location.hash='#act-2';pageEvents.hashchange();},goToThird(){location.hash='#act-3';pageEvents.hashchange();},goToFourth(){location.hash='#act-4';pageEvents.hashchange();}
+    hide(){document.hidden=true;documentEvents.visibilitychange();},show(){document.hidden=false;},leave(){pageEvents.pagehide();},resume(){pageEvents.pageshow();},resize(){resizeCallback();},goToSecond(){location.hash='#act-2';pageEvents.hashchange();},goToThird(){location.hash='#act-3';pageEvents.hashchange();},goToFourth(){location.hash='#act-4';pageEvents.hashchange();},goToFifth(){location.hash='#act-5';pageEvents.hashchange();}
   };
 }
 
@@ -508,7 +508,8 @@ for(const width of [736,360,280]) {
   for(let i=0;i<5;i++)app.advance();
   assert.match(app.copy.textContent,/对齐/);assert.equal(app.automatic.hidden,true);
   app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/一维梯度下降/);
-  app.advance();assert.equal(app.figure.hidden,true);app.advance();assertStepSummary(app,29);
+  app.advance();assert.equal(app.figure.hidden,false);assert.match(app.copy.textContent,/这次不知道起始位置/);
+  app.retreat();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/一维梯度下降/);
   console.log('PASS width='+width+': fourth-act handoff, zoom, overshoot, same-start comparison, scaled update, real convergence/cycles, custom validation and reset');
 }
 for(const width of [736,360,280]) {
@@ -569,6 +570,77 @@ automaticCycle.automatic.fire('click');let stepTicks=0;
 while(automaticCycle.timers.size&&stepTicks++<10)automaticCycle.tick();
 assert.equal(stepTicks,2);assert.equal(automaticCycle.timers.size,0);assert.match(automaticCycle.copy.textContent,/已经出现过/);
 console.log('PASS fourth act: alternate-data updates, no fabricated zero derivative, reduced motion, automatic repeat detection');
+function assertBiasGeometry(app,width,offset=20,slope=30) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'time-position-bias');
+  close(app.svg.getAttribute('data-ma-bias-offset'),offset);close(app.svg.getAttribute('data-ma-bias-slope'),slope);
+  const X=t=>54+t/4.4*(width-76),Y=p=>260-p/200*227;
+  const actual=[80,110,140],values=actual.map((_,index)=>offset+(index+1)*slope);
+  const records=app.svg.querySelectorAll('[data-ma-bias-record]'),points=app.svg.querySelectorAll('[data-ma-bias-prediction]'),gaps=app.svg.querySelectorAll('[data-ma-bias-gap]');
+  assert.equal(records.length,3,'the starting position is not an observed record');
+  points.forEach((point,index)=>{
+    close(point.getAttribute('cx'),X(index+1));close(point.getAttribute('cy'),Y(values[index]));
+    close(point.getAttribute('data-ma-bias-value'),values[index]);
+    close(records[index].getAttribute('cy'),Y(actual[index]));
+    close(gaps[index].getAttribute('y1'),Y(actual[index]));close(gaps[index].getAttribute('y2'),Y(values[index]));
+  });
+  const model=app.svg.querySelectorAll('[data-ma-bias-line]')[0];
+  close(model.getAttribute('y1'),Y(offset));close(model.getAttribute('y2'),Y(offset+4.4*slope));
+  close(app.copy.querySelectorAll('[data-ma-bias-offset]')[0].textContent,Number(offset.toFixed(1)));
+  close(app.copy.querySelectorAll('[data-ma-bias-slope]')[0].textContent,Number(slope.toFixed(1)));
+  const error=actual.reduce((sum,value,index)=>sum+Math.abs(values[index]-value),0)/3;
+  close(app.copy.querySelectorAll('[data-ma-bias-error]')[0].textContent,Number(error.toFixed(1)));
+  assert.ok(app.copy.children.length<=3);assert.equal(app.automatic.hidden,true);
+  return values;
+}
+for(const width of [736,360,280]) {
+  const app=mount(width,'#act-5');
+  assertBiasGeometry(app,width);assert.match(app.copy.textContent,/这次不知道起始位置/);assert.equal(app.handle.hidden,true);
+  app.advance();assertBiasGeometry(app,width,20,40);
+  app.advance();assertBiasGeometry(app,width,20,45);
+  app.retreat();assertBiasGeometry(app,width,20,40);
+  app.advance();app.advance();const before=assertBiasGeometry(app,width);
+  assert.equal(app.handle.hidden,false);assert.equal(app.handle.getAttribute('aria-orientation'),'vertical');
+  const scale=227/200;
+  // Drag the line itself; the existing native handle owns pointer capture.
+  app.svg.querySelectorAll('[data-ma-bias-drag]')[0].fire('pointerdown',{pointerId:5,clientY:200,button:0});
+  app.handle.fire('pointermove',{pointerId:5,clientY:200-30*scale});
+  app.handle.fire('pointerup',{pointerId:5});
+  const after=assertBiasGeometry(app,width,50,30);
+  assert.deepEqual(after.map((value,index)=>value-before[index]),[30,30,30]);
+  assert.match(app.copy.textContent,/三个预测同时对齐/);
+  app.key('ArrowUp');assertBiasGeometry(app,width,51);assert.match(app.copy.textContent,/偏高/);
+  app.key('ArrowDown');assertBiasGeometry(app,width,50);
+  app.key('Home');assertBiasGeometry(app,width,0);
+  app.key('End');assertBiasGeometry(app,width,80);
+  app.key('PageDown');assertBiasGeometry(app,width,75);
+  // Every prediction point supports the same whole-model drag, not only the handle.
+  app.svg.querySelectorAll('[data-ma-bias-prediction]')[0].fire('pointerdown',{pointerId:6,clientY:100,button:0});
+  app.handle.fire('pointermove',{pointerId:6,clientY:100+25*scale});
+  app.handle.fire('pointercancel',{pointerId:6});assertBiasGeometry(app,width,50);
+  app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/两个可调整的数/);
+  app.retreat();assertBiasGeometry(app,width,50);
+  app.advance();app.advance();assertBiasGeometry(app,width);
+  const short=mount(width,'#act-5');for(let i=0;i<4;i++)short.advance();
+  assert.equal(short.figure.hidden,true,'four advances reach the short ending without extra text-only steps');
+  console.log('PASS width='+width+': short fifth act, real alignment attempts, parallel shift, line/point dragging, keyboard, boundaries, revisit and replay');
+}
+const biasMotion=mount(360,'#act-5',script,true);
+biasMotion.advance();biasMotion.frame(350);assertBiasGeometry(biasMotion,360,20,35);
+biasMotion.frame(350);assertBiasGeometry(biasMotion,360,20,40);
+biasMotion.advance();biasMotion.frame(350);assertBiasGeometry(biasMotion,360,20,42.5);
+biasMotion.hide();assertBiasGeometry(biasMotion,360,20,45);assert.equal(biasMotion.frames.size,0);biasMotion.show();
+biasMotion.retreat();biasMotion.goToFourth();assert.equal(biasMotion.frames.size,0);
+biasMotion.goToFifth();biasMotion.advance();biasMotion.advance();assertBiasGeometry(biasMotion,360,20,30);
+biasMotion.handle.fire('pointerdown',{pointerId:7,clientY:100,button:0});
+biasMotion.goToFourth();biasMotion.handle.fire('pointermove',{pointerId:7,clientY:20});
+biasMotion.goToFifth();biasMotion.advance();assertBiasGeometry(biasMotion,360,20,30);
+biasMotion.handle.fire('pointerdown',{pointerId:8,clientY:100,button:0});biasMotion.hide();biasMotion.show();
+biasMotion.handle.fire('pointermove',{pointerId:8,clientY:50});assertBiasGeometry(biasMotion,360,20,30);
+biasMotion.goToSecond();for(let i=0;i<4;i++)biasMotion.retreat();
+assert.equal(biasMotion.handle.getAttribute('aria-orientation'),'horizontal');assert.equal(biasMotion.handle.getAttribute('aria-valuemax'),'40');
+const biasReduced=mount(360,'#act-5',script,'reduce');biasReduced.advance();assertBiasGeometry(biasReduced,360,20,40);
+assert.equal(biasReduced.frames.size,0);
+console.log('PASS fifth act: actual animated trial values, hidden-page settling, cancelled drag/navigation, reduced motion');
 assert.ok(!fragment.includes('完成题数'));
 assert.ok(!fragment.includes('教学样本'));
 assert.ok(!fragment.includes('<pre'));

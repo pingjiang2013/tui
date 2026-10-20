@@ -4,14 +4,15 @@
 
 在线体验：<https://pingjiang2013.github.io/tui/ai-design/>
 
-目前包含四幕：
+目前包含五幕：
 
 1. 根据已有记录做出预测。
 2. 衡量预测差距，让电脑自己调整。
 3. 追踪参数怎样影响平均差距，理解导数给出的方向。
 4. 观察越过与摆动，理解学习率并实际训练。
+5. 尝试对齐新记录，再通过整体平移理解第二个参数。
 
-可直接访问 [第二幕](https://pingjiang2013.github.io/tui/ai-design/#act-2)、[第三幕](https://pingjiang2013.github.io/tui/ai-design/#act-3)、[第四幕](https://pingjiang2013.github.io/tui/ai-design/#act-4)。
+可直接访问 [第二幕](https://pingjiang2013.github.io/tui/ai-design/#act-2)、[第三幕](https://pingjiang2013.github.io/tui/ai-design/#act-3)、[第四幕](https://pingjiang2013.github.io/tui/ai-design/#act-4)、[第五幕](https://pingjiang2013.github.io/tui/ai-design/#act-5)。
 
 ## 本地开发
 

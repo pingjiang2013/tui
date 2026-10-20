@@ -11,6 +11,7 @@
     #minimal-ai-scene svg { display:block; width:100%; height:265px; overflow:hidden; }
     #minimal-ai-scene .ma-handle { position:absolute; width:34px; height:34px; padding:0; transform:translate(-50%,-50%); border:2px solid var(--ma-accent); border-radius:50%; background:var(--ma-paper); cursor:ew-resize; touch-action:none; }
     #minimal-ai-scene .ma-handle::after { content:""; position:absolute; left:11px; top:11px; width:8px; height:8px; border-radius:50%; background:var(--ma-accent); pointer-events:none; }
+    #minimal-ai-scene .ma-handle[aria-orientation="vertical"] { cursor:ns-resize; }
     #minimal-ai-scene button:focus-visible { outline:2px solid var(--ma-ink); outline-offset:5px; }
     #minimal-ai-scene .ma-formula { font-variant-numeric:tabular-nums; }
     #minimal-ai-scene .ma-parameter { color:var(--ma-accent); font-weight:500; padding:0 3px; font-variant-numeric:tabular-nums; }
@@ -52,7 +53,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -62,9 +63,9 @@
     const ink='var(--ma-ink)', muted='var(--ma-muted)', axis='var(--ma-axis)', accent='var(--ma-accent)';
     let geometry=null,drag=null,feedback=null,learning=null,autoTimer=null,autoRunning=false;
     let plotFrame=null,plotMotion=null,lastPlot=null;
-    let direction=null,stepLesson=null;
+    let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending'].includes(current());
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending'].includes(current());
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -94,6 +95,7 @@
     }
     function renderCopy() {
       copy.replaceChildren();feedback=null;
+      if(current().startsWith('bias-')) {renderBiasCopy();return;}
       if(current().startsWith('step-')) {renderStepCopy();return;}
       if(current().startsWith('direction-')) {renderDirectionCopy();return;}
       if(current().startsWith('learn-')) {renderLearningCopy();return;}
@@ -170,6 +172,7 @@
     function updateNav() {
       back.disabled=state.scene===0;
       back.textContent='← 上一页';automatic.hidden=true;
+      if(current().startsWith('bias-')) {updateBiasNav();return;}
       if(current().startsWith('step-')) {updateStepNav();return;}
       if(current().startsWith('direction-')) {updateDirectionNav();return;}
       if(current().startsWith('learn-')) {updateLearningNav();return;}
@@ -178,6 +181,7 @@
     }
     function renderStage() {
       if(textOnly()) return;
+      if(current().startsWith('bias-')) {renderBiasGraph();return;}
       if(current().startsWith('step-')) {renderStepGraph();return;}
       if(current().startsWith('direction-')) {renderDirectionGraph();return;}
       if(current().startsWith('learn-')) {renderLearningGraph();return;}
@@ -209,6 +213,8 @@
       });
       handle.hidden=current()!=='adjust';
       if(current()==='adjust') {
+        handle.setAttribute('aria-orientation','horizontal');handle.setAttribute('aria-valuemin','5');handle.setAttribute('aria-valuemax','40');
+        handle.setAttribute('aria-label','调整预测规则中每秒前进的距离');
         [1,2,3].forEach(seconds=>{
           const position=predict(seconds);
           line(X(position),trackY+31,X(position),predictedY-8,{stroke:axis});
@@ -475,6 +481,7 @@
     function stopAutomation() {
       if(autoTimer!==null) clearTimeout(autoTimer);
       autoTimer=null;autoRunning=false;
+      if(drag){if(handle.hasPointerCapture(drag.id))handle.releasePointerCapture(drag.id);drag=null;}
       cancelPlotAnimation(true);
     }
     function scheduleStep() {
@@ -926,7 +933,7 @@
           if(stepLesson.inputError){next.textContent='请先修正学习率';break;}
           next.textContent=stepStatus()==='ready'?'更新一次':'这是什么训练方法？ →';
           automatic.hidden=stepStatus()!=='ready';automatic.textContent=autoRunning?'暂停':'自动继续';break;
-        case 'step-ending':next.textContent='重新比较改动幅度 ↻';break;
+        case 'step-ending':next.textContent='看看另一组记录 →';break;
       }
     }
     function renderStepGraph() {
@@ -1026,7 +1033,6 @@
         if(stepLesson.inputError){copy.querySelectorAll('[data-ma-rate-input]').forEach(node=>node.focus?.());return;}
         if(stepStatus()==='ready'){advanceStepPractice();refreshStep();return;}
       }
-      if(current()==='step-ending'){stepLesson=null;state.scene=scenes.indexOf('step-purpose');renderScene();return;}
       state.scene++;renderScene();
     }
     function backwardStep() {
@@ -1036,8 +1042,131 @@
       if(current()==='step-practice'&&stepLesson.cursor>0){stepLesson.cursor--;refreshStep();return;}
       state.scene--;renderScene();
     }
+    // A separate task: there is no observed starting position in this dataset.
+    const biasRecords=[1,2,3].map(seconds=>({seconds,position:50+30*seconds}));
+    function ensureBiasLesson() {if(!biasLesson)biasLesson={trial:0,offset:20};}
+    const biasPredict=(time,offset,slope)=>offset+time*slope;
+    const biasScore=(offset,slope)=>biasRecords.reduce((sum,row)=>sum+Math.abs(biasPredict(row.seconds,offset,slope)-row.position),0)/biasRecords.length;
+    function biasSlope() {
+      if(current()!=='bias-observe'||biasLesson.trial===0)return 30;
+      const row=biasRecords[biasLesson.trial===1?2:1];
+      return (row.position-20)/row.seconds;
+    }
+    function biasFeedback() {
+      if(biasScore(biasLesson.offset,30)<1e-9)return '三个预测同时对齐了。这个数在每次预测里都只加一次，所以它增加多少，所有预测就一起增加多少。';
+      return '这个数在每次预测里都只加一次，所以改多少，所有预测就一起移动多少。现在预测都'+(biasPredict(1,biasLesson.offset,30)<biasRecords[0].position?'偏低，可以再向上移。':'偏高，可以向下移。');
+    }
+    function renderBiasCopy() {
+      if(current()==='bias-ending') {
+        paragraph('规则里现在有两个可调整的数：乘在时间上的数，改变预测增长的快慢；相加的起始值，让所有预测一起平移。');
+        paragraph('它们都是模型的参数。下一步，再让电脑判断这两个数各自应该怎样改。');
+        return;
+      }
+      paragraph(current()==='bias-observe'
+        ? '换一组记录：这次不知道起始位置，先继续假设它是20。新记录比原来的三个预测都高30；我们想让同一条规则符合这些记录。'
+        : '回到每秒距离30。这次开放原来固定为20的起始值。上下拖动橙线或圆点，让三个预测一起靠近记录；倾斜程度保持不变。');
+      const p=paragraph('预测位置 = ');p.className='ma-formula';
+      const offset=stepOutput(p,current()==='bias-shift'?biasLesson.offset:20,'data-ma-bias-offset','规则中的起始值');
+      offset.className=current()==='bias-shift'?'ma-parameter':'';
+      p.appendChild(document.createTextNode(' + 时间 × '));
+      const slope=stepOutput(p,biasSlope(),'data-ma-bias-slope','规则中的每秒距离');
+      slope.className=current()==='bias-observe'?'ma-parameter':'';
+      p.appendChild(document.createTextNode('；平均差距 '));
+      stepOutput(p,biasScore(current()==='bias-shift'?biasLesson.offset:20,biasSlope()),'data-ma-bias-error','三个预测的平均差距');
+      p.appendChild(document.createTextNode(' 厘米'));
+      feedback=paragraph(current()==='bias-observe'
+        ? [
+          '三条差距一样长。先用已有的办法，只改每秒距离，让第3条预测对齐。',
+          '第3条对齐了，前两条仍偏低。再让第2条对齐，看看其他预测怎样变。',
+          '对齐第2条，又让第3条偏高。改这个数，三个预测会移动不同距离；但这次需要的是一起移动相同距离。'
+        ][biasLesson.trial]
+        :biasFeedback());
+    }
+    function updateBiasNav() {
+      if(current()==='bias-observe') {
+        if(biasLesson.trial>0)back.textContent='← 撤回这次调整';
+        next.textContent=['让第3条预测对齐','改为让第2条预测对齐','回到原规则，试试整体平移 →'][biasLesson.trial];
+      } else if(current()==='bias-shift')next.textContent='两个数各自控制什么？ →';
+      else next.textContent='再试一次整体平移 ↻';
+    }
+    function syncBiasValues(offset,slope) {
+      copy.querySelectorAll('[data-ma-bias-offset]').forEach(node=>{node.textContent=number(offset);});
+      copy.querySelectorAll('[data-ma-bias-slope]').forEach(node=>{node.textContent=number(slope);});
+      copy.querySelectorAll('[data-ma-bias-error]').forEach(node=>{node.textContent=number(biasScore(offset,slope));});
+    }
+    function renderBiasGraph() {
+      const width=Math.max(240,figure.getBoundingClientRect().width||736);
+      if(current()==='bias-observe')animatePlot(current(),width,biasSlope(),slope=>{
+        drawBiasGraph(20,slope,width);syncBiasValues(20,slope);
+      },700);
+      else {drawBiasGraph(biasLesson.offset,30,width);syncBiasValues(biasLesson.offset,30);}
+    }
+    function drawBiasGraph(offset,slope,width) {
+      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
+      svg.setAttribute('data-ma-chart-kind','time-position-bias');svg.setAttribute('data-ma-bias-offset',String(offset));svg.setAttribute('data-ma-bias-slope',String(slope));
+      const left=54,right=width-22,top=33,bottom=260;
+      const X=time=>left+time/4.4*(right-left),Y=position=>bottom-position/200*(bottom-top);
+      biasGeometry={width,scale:(bottom-top)/200,X,Y};
+      el('title',{id:'ma-stage-title'}).textContent='新任务：横轴时间，纵轴位置，只有第1、2、3秒的记录，没有起始位置记录。预测规则为'+number(offset)+'加时间乘'+number(slope)+'。'+biasRecords.map(row=>row.seconds+'秒预测'+number(biasPredict(row.seconds,offset,slope))+'，记录'+row.position).join('；')+'。平均差距'+number(biasScore(offset,slope))+'厘米。';
+      line(left,top,left,bottom);line(left,bottom,right,bottom);
+      [0,50,100,150,200].forEach(position=>{
+        line(left-5,Y(position),left,Y(position));text(String(position),left-10,Y(position)+4,{'text-anchor':'end',fill:muted,'font-size':12});
+      });
+      [0,1,2,3,4].forEach(time=>{
+        line(X(time),bottom,X(time),bottom+5);text(String(time),X(time),bottom+23,{'text-anchor':'middle',fill:muted,'font-size':12});
+      });
+      text('位置（厘米）',left,17,{fill:muted,'font-size':12});text('时间（秒）',right,308,{'text-anchor':'end',fill:muted,'font-size':12});
+      const defs=el('defs'),clip=el('clipPath',{id:'ma-bias-clip'},defs);
+      el('rect',{x:left-8,y:top-8,width:right-left+16,height:bottom-top+16},clip);
+      const marks=el('g',{'clip-path':'url(#ma-bias-clip)'});
+      const attrs={x1:X(0),y1:Y(offset),x2:X(4.4),y2:Y(biasPredict(4.4,offset,slope))};
+      if(current()==='bias-shift') {
+        const hit=el('line',{...attrs,stroke:'transparent','stroke-width':24,'pointer-events':'stroke',style:'cursor:ns-resize;touch-action:none','data-ma-bias-drag':''},marks);
+        hit.addEventListener('pointerdown',beginBiasDrag);
+      }
+      const model=el('line',{...attrs,stroke:accent,'stroke-width':2.5,'data-ma-bias-line':''},marks);
+      if(current()==='bias-shift'){model.style.touchAction='none';model.style.cursor='ns-resize';model.addEventListener('pointerdown',beginBiasDrag);}
+      biasRecords.forEach(row=>{
+        const value=biasPredict(row.seconds,offset,slope);
+        line(X(row.seconds),Y(row.position),X(row.seconds),Y(value),{stroke:accent,'stroke-width':3.5,'stroke-opacity':0.6,'data-ma-bias-gap':row.seconds},marks);
+        el('circle',{cx:X(row.seconds),cy:Y(row.position),r:4.5,fill:ink,'data-ma-bias-record':row.seconds},marks);
+        const point=el('circle',{cx:X(row.seconds),cy:Y(value),r:6,fill:'none',stroke:accent,'stroke-width':1.5,'data-ma-bias-prediction':row.seconds,'data-ma-bias-value':value},marks);
+        if(current()==='bias-shift'){point.setAttribute('pointer-events','all');point.style.touchAction='none';point.style.cursor='ns-resize';point.addEventListener('pointerdown',beginBiasDrag);}
+      });
+      if(current()==='bias-shift') {
+        handle.hidden=false;handle.style.left=X(2)+'px';handle.style.top=Y(biasPredict(2,offset,slope))+'px';
+        handle.setAttribute('aria-orientation','vertical');handle.setAttribute('aria-valuemin','0');handle.setAttribute('aria-valuemax','80');
+        handle.setAttribute('aria-label','上下平移全部预测，按1厘米调整起始值');handle.setAttribute('aria-valuenow',String(offset));
+        handle.setAttribute('aria-valuetext','起始值'+number(offset)+'厘米，平均差距'+number(biasScore(offset,slope))+'厘米');
+      }
+    }
+    function beginBiasDrag(event) {
+      if(current()!=='bias-shift'||!biasGeometry||event.button>0)return;
+      stopAutomation();drag={kind:'bias',id:event.pointerId,clientY:event.clientY,offset:biasLesson.offset,scale:biasGeometry.scale};
+      handle.setPointerCapture(event.pointerId);event.preventDefault();
+    }
+    function changeBiasOffset(value) {
+      const offset=clamp(Math.round(value),0,80);
+      if(offset===biasLesson.offset)return;
+      biasLesson.offset=offset;syncBiasValues(offset,30);
+      if(feedback)feedback.textContent=biasFeedback();
+      drawBiasGraph(offset,30,biasGeometry.width);
+    }
+    function forwardBias() {
+      stopAutomation();
+      if(current()==='bias-observe'&&biasLesson.trial<2){biasLesson.trial++;renderCopy();updateNav();renderStage();return;}
+      if(current()==='bias-observe')biasLesson.offset=20;
+      if(current()==='bias-ending'){biasLesson=null;state.scene=scenes.indexOf('bias-observe');renderScene();return;}
+      state.scene++;renderScene();
+    }
+    function backwardBias() {
+      stopAutomation();
+      if(current()==='bias-observe'&&biasLesson.trial>0){biasLesson.trial--;renderCopy();updateNav();renderStage();return;}
+      state.scene--;renderScene();
+    }
     function renderScene() {
       stopAutomation();lastPlot=null;drag=null;feedback=null;
+      if(current().startsWith('bias-'))ensureBiasLesson();
       if(current().startsWith('step-'))ensureStepLesson();
       if(current().startsWith('learn-')) ensureLearning();
       if(current().startsWith('direction-')) ensureDirection();
@@ -1054,12 +1183,14 @@
       if(feedback) feedback.textContent=adjustmentFeedback();renderStage();
     }
     handle.addEventListener('pointerdown',event=>{
+      if(current()==='bias-shift'){beginBiasDrag(event);return;}
       if(current()!=='adjust'||!geometry||event.button>0) return;
       drag={id:event.pointerId,clientX:event.clientX,distance:state.distance,scale:geometry.scale};
       handle.setPointerCapture(event.pointerId);event.preventDefault();
     });
     handle.addEventListener('pointermove',event=>{
       if(!drag||drag.id!==event.pointerId) return;
+      if(drag.kind==='bias'){changeBiasOffset(drag.offset-(event.clientY-drag.clientY)/drag.scale);return;}
       changeRule(drag.distance+(event.clientX-drag.clientX)/(3*drag.scale));
     });
     function endDrag(event) {
@@ -1068,17 +1199,23 @@
     }
     handle.addEventListener('pointerup',endDrag);handle.addEventListener('pointercancel',endDrag);
     handle.addEventListener('keydown',event=>{
+      if(current()==='bias-shift') {
+        const b=biasLesson.offset,values={ArrowUp:b+1,ArrowDown:b-1,PageUp:b+5,PageDown:b-5,Home:0,End:80};
+        if(event.key in values){event.preventDefault();changeBiasOffset(values[event.key]);}return;
+      }
       if(current()!=='adjust') return;
       const values={ArrowLeft:Math.ceil(state.distance)-1,ArrowRight:Math.floor(state.distance)+1,Home:5,End:40};
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(current().startsWith('bias-')) {backwardBias();return;}
       if(current().startsWith('step-')) {backwardStep();return;}
       if(current().startsWith('direction-')) {backwardDirection();return;}
       if(current().startsWith('learn-')) {backwardLearning();return;}
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(current().startsWith('bias-')) {forwardBias();return;}
       if(current().startsWith('step-')) {forwardStep();return;}
       if(current().startsWith('direction-')) {forwardDirection();return;}
       if(current().startsWith('learn-')) {forwardLearning();return;}
@@ -1104,6 +1241,7 @@
       if(globalThis.location?.hash==='#act-2') {state.scene=7;renderScene();}
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
+      if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
     });
     document.addEventListener('visibilitychange',()=>{
       if(document.hidden) {stopAutomation();updateNav();}
@@ -1111,6 +1249,7 @@
     if(globalThis.location?.hash==='#act-2') state.scene=7;
     if(globalThis.location?.hash==='#act-3') state.scene=14;
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
+    if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
     renderScene();
     new ResizeObserver(()=>{
       cancelPlotAnimation(true);lastPlot=null;
