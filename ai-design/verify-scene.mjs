@@ -1065,6 +1065,7 @@ function assertRelayFunction(app,width,bias,gate=0,activation=false) {
   assert.ok(app.copy.children.length<=3);assert.equal(app.handle.hidden,true);
 }
 function assertRelayPrediction(app,width,bias,compare=false,training=false) {
+  if(training){assert.equal(app.copy.querySelectorAll('[data-ma-relay-gradient]').length,1);assertRelayFocus(app,width,bias);return;}
   close(app.svg.getAttribute('data-ma-relay-current'),bias);close(app.svg.getAttribute('data-ma-composition-bias'),bias);close(app.svg.getAttribute('data-ma-composition-output'),20);
   const result=relayMath.evaluate(bias),X=t=>54+t/3.5*(width-76),Y=v=>260-v/260*227,curve=points(app.svg.querySelectorAll('[data-ma-composed-function]')[0]);
   [0,-bias,3.5].forEach((t,i)=>{close(curve[i][0],X(t));close(curve[i][1],Y(40+30*t+20*Math.max(0,t+bias)));});
@@ -1074,6 +1075,25 @@ function assertRelayPrediction(app,width,bias,compare=false,training=false) {
   assert.ok(Math.abs(Number(app.copy.querySelectorAll('[data-ma-relay-bias]')[0].textContent)-bias)<0.000051);
   if(training)for(const [attr,expected] of [['data-ma-relay-loss',result.loss],['data-ma-relay-error',result.rows[2].error],['data-ma-relay-gradient',result.gradient]])assert.ok(Math.abs(Number(app.copy.querySelectorAll('['+attr+']')[0].textContent)-expected)<0.000051);
   assert.ok(app.copy.children.length<=3);
+}
+function assertRelayFocus(app,width,bias,focus=1,review=0) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),review>0?'relay-prediction-review':'relay-activation-focus');close(app.svg.getAttribute('data-ma-relay-current'),bias);
+  close(app.svg.getAttribute('data-ma-relay-focus'),focus);close(app.svg.getAttribute('data-ma-relay-review'),review);
+  const minX=1.8*focus*(1-review),maxX=(3.5-0.9*focus)*(1-review)+3.5*review,minY=(-2.6+2.5*focus)*(1-review),maxY=(1.2-0.5*focus)*(1-review)+260*review;
+  for(const [attr,value] of Object.entries({'min-x':minX,'max-x':maxX,'min-y':minY,'max-y':maxY}))close(app.svg.getAttribute('data-ma-relay-'+attr),value);
+  const X=t=>54+(t-minX)/(maxX-minX)*(width-76),Y=v=>260-(v-minY)/(maxY-minY)*227,value=t=>(1-review)*Math.max(0,t+bias)+review*(40+30*t+20*Math.max(0,t+bias));
+  const vertices=[minX,...(-bias>minX&&-bias<maxX?[-bias]:[]),maxX],curve=points(app.svg.querySelectorAll('[data-ma-relay-focus-curve]')[0]);
+  assert.equal(curve.length,vertices.length);curve.forEach(([x,y],i)=>{close(x,X(vertices[i]));close(y,Y(value(vertices[i])));});
+  const knot=app.svg.querySelectorAll('[data-ma-relay-knot]')[0];close(knot.getAttribute('data-ma-relay-knot'),-bias);close(knot.getAttribute('cx'),X(-bias));close(knot.getAttribute('cy'),Y(value(-bias)));
+  assert.equal(app.svg.querySelectorAll('[data-ma-relay-gap]').length,0);assert.equal(app.svg.querySelectorAll('[data-ma-composed-function]').length,0);
+  const clips=app.svg.querySelectorAll('[clip-path]');assert.equal(clips.length,1);assert.equal(clips[0].getAttribute('clip-path'),'url(#ma-relay-focus-clip)');
+  app.svg.querySelectorAll('[data-ma-relay-review-record]').forEach(node=>{const t=Number(node.getAttribute('data-ma-relay-review-record')),actual={1:70,2:100,3:150}[t];close(node.getAttribute('cx'),X(t));close(node.getAttribute('cy'),Y((1-review)*(actual-40-30*t)/20+review*actual));});
+  assert.ok(Math.abs(Number(app.copy.querySelectorAll('[data-ma-relay-bias]')[0].textContent)-bias)<0.000051);
+  if(app.copy.querySelectorAll('[data-ma-relay-gradient]').length) {
+    const result=relayMath.evaluate(bias);
+    for(const [attr,expected] of [['data-ma-relay-loss',result.loss],['data-ma-relay-error',result.rows[2].error],['data-ma-relay-gradient',result.gradient]])assert.ok(Math.abs(Number(app.copy.querySelectorAll('['+attr+']')[0].textContent)-expected)<0.000051);
+  }
+  assert.ok(app.copy.children.length<=3);assert.equal(app.handle.hidden,true);
 }
 function relayProbe(app) {const button=app.copy.querySelectorAll('[data-ma-relay-bias]')[0];assert.equal(button.disabled,false);button.fire('click');}
 for(const width of [736,360,280]) {
@@ -1087,14 +1107,14 @@ for(const width of [736,360,280]) {
   app.automatic.fire('click');let rounds=0;while(app.timers.size&&rounds++<100)app.tick();assert.ok(rounds<100);
   const final=Number(app.svg.getAttribute('data-ma-relay-current'));assert.ok(final<-2&&final>-2.01);assert.ok(relayMath.evaluate(final).loss>0&&relayMath.evaluate(final).loss<=0.001);assertRelayPrediction(app,width,final,false,true);assert.equal(app.automatic.hidden,true);
   app.retreat();assert.ok(relayMath.evaluate(Number(app.svg.getAttribute('data-ma-relay-current'))).loss>0.001);app.advance();assertRelayPrediction(app,width,final,false,true);
-  app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/链式法则/);app.advance();assert.equal(app.figure.hidden,true);app.advance();assertRelayFunction(app,width,-2.5);
+  app.advance();assert.equal(app.figure.hidden,false);assertRelayPrediction(app,width,final);assert.match(app.copy.textContent,/链式法则/);assert.ok(app.copy.textContent.includes(String(Number(relayMath.evaluate(final).rows[2].prediction.toFixed(4)))));app.advance();assert.equal(app.figure.hidden,true);app.advance();assertRelayFunction(app,width,-2.5);
   app.goToChapter(13);assert.equal(app.figure.hidden,true);app.advance();assertOutputGraph(app,width,10);app.goToChapter(14);app.advance();assertRelayFunction(app,width,-2.5);
   console.log('PASS relay width='+width+': explicit experiment, +0.1, blocked/preserved function differences, 20-fold contribution, true bias training, rollback, tolerance and isolated replay');
 }
 for(const width of [736,360,280]) {
   const app=mount(width,'#act-14',script,true);app.advance();relayProbe(app);app.frame(500);assertRelayFunction(app,width,-2.45);app.resize();assertRelayFunction(app,width,-2.4);
   app.advance();app.frame(550);assertRelayFunction(app,width,-2.4,0.5,true);app.hide();assertRelayFunction(app,width,-2.4,1,true);app.show();
-  app.advance();assertRelayPrediction(app,width,-2.5,true);app.frame(550);assertRelayPrediction(app,width,-2.45,true);app.advance();assertRelayPrediction(app,width,-2.4,false,true);assert.equal(app.frames.size,0);
+  app.advance();assertRelayPrediction(app,width,-2.5,true);app.frame(550);assertRelayPrediction(app,width,-2.45,true);app.advance();assertRelayFocus(app,width,-2.4,0);app.frame(600);assertRelayFocus(app,width,-2.4,0.5);app.resize();assertRelayFocus(app,width,-2.4);assert.equal(app.frames.size,0);
   const first=relayMath.step(-2.4);app.advance();app.frame(400);assertRelayPrediction(app,width,(-2.4+first)/2,false,true);app.automatic.fire('click');assertRelayPrediction(app,width,first,false,true);
   app.tick();app.frame(400);assertRelayPrediction(app,width,(first+relayMath.step(first))/2,false,true);app.goToChapter(13);assert.equal(app.frames.size,0);assert.equal(app.timers.size,0);
   app.goToChapter(14);app.advance();assertRelayFunction(app,width,-2.4);app.advance();assertRelayFunction(app,width,-2.4,1,true);app.advance();assertRelayPrediction(app,width,-2.4,true);app.advance();assertRelayPrediction(app,width,relayMath.step(first),false,true);
@@ -1102,3 +1122,20 @@ for(const width of [736,360,280]) {
 }
 const reducedRelay=mount(280,'#act-14',script,'reduce');reducedRelay.advance();relayProbe(reducedRelay);reducedRelay.advance();assertRelayFunction(reducedRelay,280,-2.4,1,true);reducedRelay.advance();assertRelayPrediction(reducedRelay,280,-2.4,true);reducedRelay.advance();reducedRelay.advance();assertRelayPrediction(reducedRelay,280,relayMath.step(-2.4),false,true);assert.equal(reducedRelay.frames.size,0);
 console.log('PASS relay motion: computed difference polygons and local gates, fixed magnification, live gradient, interruption, navigation and reduced motion');
+
+for(const width of [736,360,280]) {
+  const app=mount(width,'#act-14',script,true);app.advance();relayProbe(app);app.advance();app.advance();app.advance();
+  assertRelayFocus(app,width,-2.4,0);app.frame(600);assertRelayFocus(app,width,-2.4,0.5);assert.match(app.copy.textContent,/已调整 0 次/);
+  // Clicking during the camera move settles it first, then executes exactly one real update.
+  const first=relayMath.step(-2.4);app.advance();assertRelayFocus(app,width,-2.4);app.frame(400);assertRelayFocus(app,width,(-2.4+first)/2);app.hide();assertRelayFocus(app,width,first);app.show();
+  const displacement=(first+2.4)*(width-76)/0.8;assert.ok(displacement>30,'first update remains visible even in the narrowest layout');
+  app.automatic.fire('click');while(app.timers.size)app.tick();app.hide();app.show();
+  const final=Number(app.svg.getAttribute('data-ma-relay-current'));assertRelayFocus(app,width,final);
+  app.advance();assertRelayFocus(app,width,final,1,0);app.frame(600);assertRelayFocus(app,width,final,1,0.5);assert.equal(app.timers.size,0);
+  assert.ok(app.copy.textContent.includes(String(Number(relayMath.evaluate(final).rows[2].prediction.toFixed(4)))));
+  app.resize();assertRelayPrediction(app,width,final);assert.equal(app.frames.size,0);
+  app.retreat();assertRelayFocus(app,width,final);app.advance();assertRelayPrediction(app,width,final);
+  app.goToChapter(13);assert.equal(app.frames.size,0);assert.equal(app.timers.size,0);
+}
+const hiddenFocus=mount(280,'#act-14',script,true);hiddenFocus.advance();relayProbe(hiddenFocus);hiddenFocus.advance();hiddenFocus.advance();hiddenFocus.advance();hiddenFocus.hide();assertRelayFocus(hiddenFocus,280,-2.4);assert.equal(hiddenFocus.frames.size,0);
+console.log('PASS bias focus: fixed training bounds, visible true displacement, zero training during zoom/review, real final prediction, interrupted camera motion and rollback');
