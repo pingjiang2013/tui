@@ -1646,7 +1646,7 @@
       return {input,weighted,shifted,activated,branch,extra,base,prediction:base+extra};
     }
     function ensureBend() {
-      if(!bend)bend={added:false,clipped:false,resultSeen:false,trace:0,input:1};
+      if(!bend)bend={added:false,clipped:false,stacked:false,neuronStage:0,weightChanged:false,biasChanged:false,parameterPreview:false,input:1};
     }
     function bendBaseEquation(extra=false) {
       const p=paragraph('预测 = 40 + 时间 × 30');p.className='ma-formula';
@@ -1655,6 +1655,22 @@
         waveOutput(p,20,'data-ma-bend-output-weight','补充分支的乘数').className='ma-parameter';
         p.appendChild(document.createTextNode(' ×（时间 − 2）'));
       }
+    }
+    function bendParameterValues() {
+      return {...bendConfig,weight:bend.neuronStage===0&&bend.weightChanged?2:1,bias:bend.neuronStage===1&&bend.biasChanged?-1:-2};
+    }
+    function refreshBend() {renderCopy();updateNav();renderStage();}
+    function bendParameterEquation(weightMode) {
+      const p=paragraph('激活前：');p.className='ma-formula';
+      if(!weightMode)p.appendChild(document.createTextNode('1 × 时间 + '));
+      const changed=weightMode?bend.weightChanged:bend.biasChanged,key=weightMode?'weight':'bias';
+      const button=document.createElement('button');button.type='button';button.className='ma-term ma-probe-term';button.disabled=changed;
+      button.textContent=String(weightMode?(changed?2:1):(changed?-1:-2));
+      button.setAttribute('data-ma-bend-parameter',key);button.setAttribute('aria-label',weightMode?'把输入乘数从1增加到2':'把加数从负2增加到负1');
+      button.addEventListener('click',()=>{
+        if(changed)return;stopAutomation();if(weightMode)bend.weightChanged=true;else bend.biasChanged=true;refreshBend();next.focus?.();
+      });p.appendChild(button);
+      if(weightMode)p.appendChild(document.createTextNode(' × 时间 − 2'));
     }
     function renderBendCopy() {
       switch(current()) {
@@ -1673,40 +1689,42 @@
           break;
         case 'bend-gate':
           paragraph(bend.clipped
-            ? '第1秒的−1停在0；第2秒仍是0，第3秒仍是1。再乘20，补充量就成为0、0、20，正好保留前两条，只改善第三条。'
-            : '先单独看“时间−2”。三个输入得到−1、0、1。我们只希望超过2的那一部分生效，所以让负数停在0，正数原样保留。');
-          paragraph('下图三行分别对应第1、2、3秒，数轴表示这个中间结果，不是预测位置。');
+            ? '橙色保留了两条函数中更高的部分：第2秒之前取常数0，之后沿“时间−2”增长。负的一侧不再扣减，正的一侧保持原来的增长。'
+            : '把“时间−2”画成一条直线，再画一条始终为0的常函数。我们希望补充量不会是负数：对每个时间，选择两条图像中更高的那个值。');
+          paragraph(bend.clipped?'这种取较大值的计算写作max(0, 时间−2)，也叫ReLU激活函数。拐点来自常函数与直线的交点。':'点击后观察整段图像：零线下方的部分会被常数0替代，零线上方的部分保持不变。');
           break;
         case 'bend-result':
-          paragraph('把处理用回预测：第一条回到70，后两条保持100、150。拐点出现在第2秒，此前每秒增加30，此后增加50。');
-          paragraph('“负数取0，正数原样保留”叫ReLU激活函数，拐点来自这一步。接下来拆开分支，认识它怎样组成一个神经元。');
+          paragraph(bend.stacked
+            ? '灰色原函数没有改变。橙色面积叠到它上面后，实线就是两个函数逐点相加的结果；虚线仍标出补充函数。补充为0的范围，原预测保持不变。'
+            : '先将激活后的分支乘20，得到橙色补充函数。灰色是原函数40＋时间×30。相加时，要把同一时间处的两个高度叠起来。');
+          const sum=paragraph(bend.stacked?'第3秒：130 + 20 = 150；第1秒：70 + 0 = 70':'补充函数 = 20 × max(0, 时间−2)');sum.className='ma-formula';
+          paragraph(bend.stacked?'合成函数在第2秒拐弯，此前每秒增加30，此后增加50。接下来看看分支里的乘数与加数怎样控制它的形状。':'点击后，整块橙色贡献会按每个输入对应的原函数高度向上叠加；这不是把整条曲线平移同一个距离。');
           break;
         case 'bend-neuron': {
-          const r=bendCompute(bend.input);
-          if(bend.trace===0) {
-            paragraph('跟着第'+number(r.input)+'秒的输入，追踪补充分支。它会先做乘加，再经过激活，最后把结果作为补充加回预测。');
-            const p=paragraph('输入：'+number(r.input));p.className='ma-formula';
-            paragraph('先看“输入 × 1 − 2”怎样移动这个数。');
-          } else if(bend.trace===1) {
-            paragraph('先乘1，再减2。这个乘数叫权重，加上的−2叫偏置；它们决定送进激活函数之前的数。');
-            const p=paragraph(number(r.input)+' × 1 − 2 = '+number(r.shifted));p.className='ma-formula';
-            paragraph(r.shifted<0?'结果是负数。下一步按刚才的规则，让它停在0。':'结果非负，下一步经过ReLU时会保留原值。');
-          } else if(bend.trace===2) {
-            paragraph((r.shifted<0?'经过ReLU，负数变成0。':'经过ReLU，这个非负数保持原值。')+'输入先乘权重、加偏置，再经过激活，这一小段计算就是一个最简单的神经元。');
-            const p=paragraph('ReLU（'+number(r.shifted)+'）= '+number(r.activated));p.className='ma-formula';
-            paragraph('神经元输出的是这段分支的结果。接下来将它乘20，作为补充加回原来的预测。');
+          if(bend.neuronStage<2) {
+            const weightMode=bend.neuronStage===0,changed=weightMode?bend.weightChanged:bend.biasChanged;
+            if(bend.parameterPreview) {
+              const params=bendParameterValues();
+              paragraph(weightMode?'把权重2用回完整预测。灰色原函数没动，分支随输入增长得更快，橙色合成曲线也更陡。':'把偏置−1用回完整预测。补充从第1秒之后就开始，原先则从第2秒之后才开始；门槛之前的原预测保持不变。');
+              const p=paragraph('预测 = 40 + 时间 × 30 + 20 × ReLU('+params.weight+' × 时间 '+(params.bias<0?'− '+Math.abs(params.bias):'+ '+params.bias)+')');p.className='ma-formula';
+              paragraph(weightMode?'第二、三条预测现在偏高。权重可调不代表越大越好，以后还要用误差学习合适的值。':'权重仍是1，后段增长速度仍是每秒50。偏置改变的是激活开始的位置；它在激活前平移直线，经过激活后只在相应范围产生影响。');
+            } else {
+              paragraph(weightMode?'这组数由我们手选。要让模型学习分支形状，就得让乘数和加数可调。先固定−2，点1改成2。':'回到乘数1。只做乘法时，直线必过0；要把分支的启动位置移开，就需要一个能独立调整的加数。点−2，让它变成−1。');
+              bendParameterEquation(weightMode);
+              paragraph(changed?(weightMode?'输入同样增加1，乘加结果从增加1变成增加2。这个乘数给输入的影响分配“轻重”，所以叫权重，图上的斜率也随之增大。':'直线每个位置都增加1，斜率不变。这个与输入无关的统一偏移叫偏置；零点从2移到1，经过ReLU后，激活开始的位置也跟着改变。'):'这里看激活前的整条直线，黑点标出它与0的交点。观察图像的变化，再把同一个参数用回完整预测。');
+            }
           } else {
-            paragraph(r.extra===0?'分支输出0，原预测不变。换个输入，看看它何时生效。':'高亮短段是分支的补充量。换输入时，整个计算都会重算。');
+            const r=bendCompute(bend.input);
+            paragraph('恢复权重1、偏置−2。乘加再激活构成一个神经元；输出端的权重20，决定这条分支对最终预测的贡献大小。');
             const p=paragraph(number(r.input)+' × 1 − 2 = '+number(r.shifted)+' → ReLU = '+number(r.activated));p.className='ma-formula';
             const row=document.createElement('span');row.style.display='block';row.textContent='40 + 30 × '+number(r.input)+' + 20 × '+number(r.activated)+' = '+number(r.prediction);p.appendChild(row);
             const controls=paragraph('换个输入：');controls.className='ma-controls';
             for(const input of [1,3,2.5]) {
               const button=document.createElement('button');button.type='button';button.textContent=input+'秒';
               button.setAttribute('data-ma-bend-input',String(input));button.setAttribute('aria-pressed',String(bend.input===input));
-              button.addEventListener('click',()=>{stopAutomation();bend.input=input;renderCopy();updateNav();renderStage();Array.from(copy.querySelectorAll('[data-ma-bend-input]')).find(node=>Number(node.getAttribute('data-ma-bend-input'))===input)?.focus?.();});
-              controls.appendChild(button);
+              button.addEventListener('click',()=>{stopAutomation();bend.input=input;refreshBend();Array.from(copy.querySelectorAll('[data-ma-bend-input]')).find(node=>Number(node.getAttribute('data-ma-bend-input'))===input)?.focus?.();});controls.appendChild(button);
             }
-            const note=document.createElement('span');note.textContent=bend.input===2.5?'第2.5秒没有记录，'+number(r.prediction)+'是尚未核对的预测。':'这个时刻有记录，可以核对当前预测。';controls.appendChild(note);
+            const note=document.createElement('span');note.textContent=bend.input===2.5?'第2.5秒没有记录，'+number(r.prediction)+'是尚未核对的预测。':'灰线是原函数，虚线是补充，实线是两者之和。';controls.appendChild(note);
           }
           break;
         }
@@ -1723,12 +1741,18 @@
           if(bend.added)back.textContent='← 撤回补充项';
           next.textContent=bend.added?'让负的部分停在0 →':'加入这段补充';break;
         case 'bend-gate':
-          if(bend.clipped)back.textContent='← 恢复负值';
-          next.textContent=bend.clipped?'把处理用回预测 →':'让负数停在0';break;
-        case 'bend-result':next.textContent='跟着一个输入计算 →';break;
-        case 'bend-neuron':
-          if(bend.trace)back.textContent='← 撤回一步计算';
-          next.textContent=['计算输入 × 1 − 2','经过ReLU','把输出加回预测','这一步获得了什么？ →'][bend.trace];break;
+          if(bend.clipped)back.textContent='← 只看原来的直线';
+          next.textContent=bend.clipped?'把分支20倍后加回原函数 →':'对每个输入取较大的函数值';break;
+        case 'bend-result':
+          if(bend.stacked)back.textContent='← 分开两条函数';
+          next.textContent=bend.stacked?'怎样控制这个分支的形状？ →':'逐点叠加到原函数';break;
+        case 'bend-neuron': {
+          if(bend.neuronStage===2){back.textContent='← 再看偏置的影响';next.textContent='这一步获得了什么？ →';break;}
+          const weightMode=bend.neuronStage===0,changed=weightMode?bend.weightChanged:bend.biasChanged;
+          if(bend.parameterPreview) {back.textContent='← 回到激活前的直线';next.textContent=weightMode?'再单独改变加数 →':'恢复参数，认识神经元 →';}
+          else {if(changed)back.textContent=weightMode?'← 撤回权重变化':'← 撤回偏置变化';next.disabled=!changed;next.textContent=changed?'把同一个改动用回预测 →':weightMode?'先点公式里的1':'先点公式里的−2';}
+          break;
+        }
         case 'bend-ending':next.textContent='重新探索这段分支 ↻';break;
       }
     }
@@ -1759,61 +1783,97 @@
       }
       copy.querySelectorAll('[data-ma-bend-output-weight]').forEach(node=>{node.textContent=number(20*amount);});
     }
-    function drawBendGate(width,progress) {
-      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
-      svg.setAttribute('data-ma-chart-kind','positive-part');svg.setAttribute('data-ma-bend-gate',String(progress));
-      const left=58,right=width-24,X=v=>left+(v+1.5)/3*(right-left);
-      el('title',{id:'ma-stage-title'}).textContent='三行先计算时间减2，分别为负1、0、1。负值向0移动，非负值保持不动。这个移动是应用截断的教学过渡，不是训练轮次。';
-      line(X(0),32,X(0),265,{stroke:axis,'stroke-dasharray':'4 5'});
-      for(const [index,input] of [1,2,3].entries()) {
-        const y=64+index*80,r=bendCompute(input,1,progress);
-        line(left,y,right,y,{stroke:axis});text(input+'秒',8,y+5,{fill:muted,'font-size':13});
-        el('circle',{cx:X(r.branch),cy:y,r:7,fill:accent,'data-ma-gated-input':input,'data-ma-gated-raw':r.shifted,'data-ma-gated-value':r.branch});
-        if(progress===0||progress===1)text(number(r.branch),X(r.branch),y-18,{'text-anchor':'middle',fill:accent,'font-size':18});
-      }
-      [-1,0,1].forEach(value=>text(String(value),X(value),292,{'text-anchor':'middle',fill:muted,'font-size':14}));
+    function bendVertices(params) {
+      const knot=params.weight?-params.bias/params.weight:0;
+      return [0,...(knot>0&&knot<3.5?[knot]:[]),3.5];
     }
-    function drawBendTrace(width,phase) {
-      const r=bendCompute(bend.input);
-      if(bend.trace===3){drawBendPlot(width,1,1,bend.input);svg.setAttribute('data-ma-bend-trace',String(bend.trace));return;}
+    function drawBendFunction(width,weight,bias,gate,activation) {
+      const params={...bendConfig,weight,bias};
       svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
-      const left=35,right=width-25,X=v=>left+(v+2)/6*(right-left),y=158;
-      const value=phase<=1?r.input+(r.shifted-r.input)*phase:r.shifted+(r.activated-r.shifted)*(phase-1);
-      svg.setAttribute('data-ma-chart-kind','neuron-number');svg.setAttribute('data-ma-bend-trace',String(bend.trace));
-      svg.setAttribute('data-ma-bend-motion-phase',String(phase));svg.setAttribute('data-ma-bend-token',String(value));
-      el('title',{id:'ma-stage-title'}).textContent='跟踪输入'+r.input+'。乘1减2的结果'+r.shifted+'，经过ReLU得到'+r.activated+'。圆点沿数轴移动以解释运算，移动途中的位置不是一次新的算法输出。';
-      if(bend.trace===2)el('rect',{x:left,y:y-40,width:X(0)-left,height:80,fill:axis,'fill-opacity':0.18});
-      line(left,y,right,y);line(X(0),y-48,X(0),y+48,{stroke:axis,'stroke-dasharray':'4 4'});
-      for(let tick=-2;tick<=4;tick++){line(X(tick),y-5,X(tick),y+5);text(String(tick),X(tick),y+28,{'text-anchor':'middle',fill:muted,'font-size':13});}
-      el('circle',{cx:X(value),cy:y,r:9,fill:accent,'data-ma-neuron-token':''});
-      if(Math.abs(phase-Math.round(phase))<1e-8)text(number(value),X(value),y-25,{'text-anchor':'middle',fill:accent,'font-size':25});
+      const left=54,right=width-22,top=33,bottom=260,X=t=>left+t/3.5*(right-left),Y=v=>bottom-(v+3)/9*(bottom-top);
+      svg.setAttribute('data-ma-chart-kind',activation?'activation-functions':'affine-parameters');
+      svg.setAttribute('data-ma-function-weight',String(weight));svg.setAttribute('data-ma-function-bias',String(bias));svg.setAttribute('data-ma-function-gate',String(gate));
+      el('title',{id:'ma-stage-title'}).textContent='横轴输入时间，纵轴激活前或激活后的函数值。乘加函数为'+number(weight)+'乘时间加'+number(bias)+'，常函数为0。'+(activation?'橙色函数在操作完成后逐点选择两者的较大值，过渡中只改变图像的应用进度。':'橙色整条直线来自当前乘数与加数。黑点是它与0的交点。');
+      line(left,top,left,bottom);line(left,bottom,right,bottom);
+      [-2,0,2,4,6].forEach(value=>{line(left-4,Y(value),left,Y(value));text(String(value),left-9,Y(value)+4,{'text-anchor':'end',fill:muted,'font-size':12});});
+      [0,1,2,3].forEach(value=>{line(X(value),bottom,X(value),bottom+5);text(String(value),X(value),bottom+23,{'text-anchor':'middle',fill:muted,'font-size':12});});
+      text('函数值',left,17,{fill:muted,'font-size':12});text('时间',right,308,{'text-anchor':'end',fill:muted,'font-size':12});
+      line(left,Y(0),right,Y(0),{stroke:ink,'stroke-opacity':0.45,'stroke-width':1.5,'data-ma-zero-function':''});
+      text('常函数0',right,Y(0)-10,{'text-anchor':'end',fill:muted,'font-size':13});
+      if(activation)line(X(0),Y(bias),X(3.5),Y(weight*3.5+bias),{stroke:muted,'stroke-dasharray':'5 5','stroke-width':1.5,'data-ma-raw-function':''});
+      const vertices=bendVertices(params);
+      el('path',{d:vertices.map((input,i)=>(i?'L ':'M ')+X(input)+' '+Y(bendCompute(input,1,activation?gate:0,params).branch)).join(' '),fill:'none',stroke:accent,'stroke-width':3,'data-ma-active-function':''});
+      const knot=weight?-bias/weight:0;
+      if(knot>=0&&knot<=3.5)el('circle',{cx:X(knot),cy:Y(0),r:4.5,fill:ink,'data-ma-function-zero':knot});
+      copy.querySelectorAll('[data-ma-bend-parameter]').forEach(button=>{button.textContent=number(button.getAttribute('data-ma-bend-parameter')==='weight'?weight:bias);});
+    }
+    function drawBendComposition(width,progress,params=bendConfig,selected=null) {
+      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
+      const left=54,right=width-22,top=33,bottom=260,max=260,X=t=>left+t/3.5*(right-left),Y=v=>bottom-v/max*(bottom-top);
+      svg.setAttribute('data-ma-chart-kind','function-composition');svg.setAttribute('data-ma-stack-progress',String(progress));
+      svg.setAttribute('data-ma-composition-weight',String(params.weight));svg.setAttribute('data-ma-composition-bias',String(params.bias));svg.setAttribute('data-ma-composition-output',String(params.output));
+      el('title',{id:'ma-stage-title'}).textContent='同一坐标中的函数组合。灰线是原函数40加30乘时间，虚线是20倍激活分支，橙色实线在叠加完成后为两者之和。橙色面积的高度是每个输入的补充量；叠加过渡只重排贡献面积，参数不在训练。';
+      line(left,top,left,bottom);line(left,bottom,right,bottom);
+      [0,50,100,150,200,250].forEach(value=>{line(left-4,Y(value),left,Y(value));text(String(value),left-9,Y(value)+4,{'text-anchor':'end',fill:muted,'font-size':12});});
+      [0,1,2,3].forEach(value=>{line(X(value),bottom,X(value),bottom+5);text(String(value),X(value),bottom+23,{'text-anchor':'middle',fill:muted,'font-size':12});});
+      text('位置 / 补充量（厘米）',left,17,{fill:muted,'font-size':12});text('时间（秒）',right,308,{'text-anchor':'end',fill:muted,'font-size':12});
+      const rows=bendVertices(params).map(input=>bendCompute(input,1,1,params));
+      const path=values=>values.map((point,i)=>(i?'L ':'M ')+X(point.input)+' '+Y(point.value)).join(' ');
+      const lower=rows.map(row=>({input:row.input,value:progress*row.base})),upper=rows.map(row=>({input:row.input,value:progress*row.base+row.extra}));
+      el('path',{d:path([...lower,...upper.slice().reverse()])+' Z',fill:accent,'fill-opacity':0.18,stroke:'none','data-ma-contribution-band':''});
+      el('path',{d:path(rows.map(row=>({input:row.input,value:row.base}))),fill:'none',stroke:muted,'stroke-width':2,'data-ma-original-function':''});
+      if(progress>0)el('path',{d:path(rows.map(row=>({input:row.input,value:row.extra}))),fill:'none',stroke:accent,'stroke-width':1.6,'stroke-dasharray':'5 5',opacity:progress,'data-ma-contribution-function':''});
+      el('path',{d:path(upper),fill:'none',stroke:accent,'stroke-width':3,'data-ma-composed-function':''});
+      shapeRecords.forEach(row=>{
+        const r=bendCompute(row.seconds,1,1,params),position=progress*r.base+r.extra;
+        el('circle',{cx:X(row.seconds),cy:Y(position),r:6,fill:'none',stroke:accent,'stroke-width':1.7,
+          'data-ma-composition-input':row.seconds,'data-ma-composition-position':position,'data-ma-composition-prediction':r.prediction,'data-ma-composition-extra':r.extra});
+        el('circle',{cx:X(row.seconds),cy:Y(row.position),r:4.5,fill:ink,'data-ma-composition-record':row.seconds});
+      });
+      if(selected!==null) {
+        const r=bendCompute(selected,1,1,params);
+        line(X(selected),Y(r.base),X(selected),Y(r.prediction),{stroke:accent,'stroke-width':6,'stroke-opacity':0.6,'data-ma-bend-contribution':selected,'data-ma-bend-extra':r.extra});
+        el('circle',{cx:X(selected),cy:Y(r.prediction),r:9,fill:'none',stroke:accent,'stroke-width':2,'data-ma-bend-selected':selected,'data-ma-bend-selected-value':r.prediction});
+        svg.setAttribute('data-ma-bend-selected-known',String(shapeRecords.some(row=>row.seconds===selected)));
+      }
     }
     function renderBendGraph() {
       const width=Math.max(240,figure.getBoundingClientRect().width||736);
       if(current()==='bend-repair')animatePlot(current(),width,bend.added?1:0,amount=>drawBendPlot(width,amount,0),1000);
-      if(current()==='bend-gate')animatePlot(current(),width,bend.clipped?1:0,progress=>drawBendGate(width,progress),1000);
-      if(current()==='bend-result') {
-        if(!bend.resultSeen){bend.resultSeen=true;lastPlot={scene:current(),width,distance:0};}
-        animatePlot(current(),width,1,progress=>drawBendPlot(width,1,progress),1100);
-      }
+      if(current()==='bend-gate')animatePlot(current(),width,bend.clipped?1:0,progress=>drawBendFunction(width,1,-2,progress,true),1000);
+      if(current()==='bend-result')animatePlot(current(),width,bend.stacked?1:0,progress=>drawBendComposition(width,progress),1200);
       if(current()==='bend-neuron') {
-        if(bend.trace===3){cancelPlotAnimation();lastPlot=null;drawBendTrace(width,3);}
-        else animatePlot(current(),width,bend.trace,phase=>drawBendTrace(width,phase),900);
+        if(bend.neuronStage===2){cancelPlotAnimation();lastPlot=null;drawBendComposition(width,1,bendConfig,bend.input);}
+        else if(bend.parameterPreview){cancelPlotAnimation();lastPlot=null;drawBendComposition(width,1,bendParameterValues());}
+        else if(bend.neuronStage===0)animatePlot('bend-weight',width,bend.weightChanged?2:1,weight=>drawBendFunction(width,weight,-2,0,false),1000);
+        else animatePlot('bend-bias',width,bend.biasChanged?-1:-2,bias=>drawBendFunction(width,1,bias,0,false),1000);
       }
     }
     function forwardBend() {
       stopAutomation();
-      if(current()==='bend-repair'&&!bend.added){bend.added=true;renderCopy();updateNav();renderStage();return;}
-      if(current()==='bend-gate'&&!bend.clipped){bend.clipped=true;renderCopy();updateNav();renderStage();return;}
-      if(current()==='bend-neuron'&&bend.trace<3){bend.trace++;renderCopy();updateNav();renderStage();return;}
+      if(current()==='bend-repair'&&!bend.added){bend.added=true;refreshBend();return;}
+      if(current()==='bend-gate'&&!bend.clipped){bend.clipped=true;refreshBend();return;}
+      if(current()==='bend-result'&&!bend.stacked){bend.stacked=true;refreshBend();return;}
+      if(current()==='bend-neuron'&&bend.neuronStage<2) {
+        const changed=bend.neuronStage===0?bend.weightChanged:bend.biasChanged;if(!changed)return;
+        if(!bend.parameterPreview)bend.parameterPreview=true;else{bend.neuronStage++;bend.parameterPreview=false;}
+        refreshBend();return;
+      }
       if(current()==='bend-ending'){bend=null;state.scene=scenes.indexOf('bend-purpose');renderScene();return;}
       state.scene++;renderScene();
     }
     function backwardBend() {
       stopAutomation();
-      if(current()==='bend-repair'&&bend.added){bend.added=false;renderCopy();updateNav();renderStage();return;}
-      if(current()==='bend-gate'&&bend.clipped){bend.clipped=false;renderCopy();updateNav();renderStage();return;}
-      if(current()==='bend-neuron'&&bend.trace>0){bend.trace--;renderCopy();updateNav();renderStage();return;}
+      if(current()==='bend-repair'&&bend.added){bend.added=false;refreshBend();return;}
+      if(current()==='bend-gate'&&bend.clipped){bend.clipped=false;refreshBend();return;}
+      if(current()==='bend-result'&&bend.stacked){bend.stacked=false;refreshBend();return;}
+      if(current()==='bend-neuron') {
+        if(bend.parameterPreview){bend.parameterPreview=false;refreshBend();return;}
+        if(bend.neuronStage===2){bend.neuronStage=1;bend.parameterPreview=true;refreshBend();return;}
+        if(bend.neuronStage===1&&bend.biasChanged){bend.biasChanged=false;refreshBend();return;}
+        if(bend.neuronStage===1){bend.neuronStage=0;bend.parameterPreview=true;refreshBend();return;}
+        if(bend.weightChanged){bend.weightChanged=false;refreshBend();return;}
+      }
       state.scene--;renderScene();
     }
     function renderScene() {

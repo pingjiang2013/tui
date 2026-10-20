@@ -919,54 +919,54 @@ function assertBendPlot(app,width,amount,gate,selected=null) {
   }
   assert.ok(app.copy.children.length<=3);assert.equal(app.automatic.hidden,true);assert.equal(app.handle.hidden,true);
 }
-function assertBendGate(app,width,progress) {
-  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'positive-part');close(app.svg.getAttribute('data-ma-bend-gate'),progress);
-  const X=value=>58+(value+1.5)/3*(width-82),points=app.svg.querySelectorAll('[data-ma-gated-input]');assert.equal(points.length,3);
-  points.forEach((point,index)=>{
-    const raw=index-1,value=raw<0?raw*(1-progress):raw;
-    close(point.getAttribute('data-ma-gated-raw'),raw);close(point.getAttribute('data-ma-gated-value'),value);
-    close(point.getAttribute('cx'),X(value));close(point.getAttribute('cy'),64+index*80);
-  });
+function points(node) {const values=node.getAttribute('d').match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi).map(Number);return Array.from({length:values.length/2},(_,i)=>values.slice(i*2,i*2+2));}
+function assertFunction(app,width,weight,bias,gate=0,activation=false) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),activation?'activation-functions':'affine-parameters');
+  close(app.svg.getAttribute('data-ma-function-weight'),weight);close(app.svg.getAttribute('data-ma-function-bias'),bias);close(app.svg.getAttribute('data-ma-function-gate'),gate);
+  const X=t=>54+t/3.5*(width-76),Y=v=>260-(v+3)/9*227,knot=-bias/weight;
+  const zero=app.svg.querySelectorAll('[data-ma-zero-function]')[0];close(zero.getAttribute('y1'),Y(0));close(zero.getAttribute('y2'),Y(0));
+  assert.equal(app.svg.querySelectorAll('[data-ma-raw-function]').length,activation?1:0);
+  const vertices=[0,knot,3.5],curve=points(app.svg.querySelectorAll('[data-ma-active-function]')[0]);
+  assert.equal(curve.length,3);curve.forEach(([x,y],i)=>{const t=vertices[i],raw=weight*t+bias;close(x,X(t));close(y,Y(raw+(Math.max(0,raw)-raw)*(activation?gate:0)));});
+  const root=app.svg.querySelectorAll('[data-ma-function-zero]')[0];close(root.getAttribute('cx'),X(knot));close(root.getAttribute('cy'),Y(0));
+  assert.equal(app.handle.hidden,true);assert.ok(app.copy.children.length<=3);
 }
-function assertNeuronMotion(app,width,phase,input=1) {
-  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'neuron-number');close(app.svg.getAttribute('data-ma-bend-motion-phase'),phase);
-  const r=bendMath.compute(input),expected=phase<=1?input+(r.shifted-input)*phase:r.shifted+(r.activated-r.shifted)*(phase-1);
-  close(app.svg.getAttribute('data-ma-bend-token'),expected);
-  close(app.svg.querySelectorAll('[data-ma-neuron-token]')[0].getAttribute('cx'),35+(expected+2)/6*(width-60));
+function assertComposition(app,width,progress,weight=1,bias=-2,selected=null) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'function-composition');close(app.svg.getAttribute('data-ma-stack-progress'),progress);
+  close(app.svg.getAttribute('data-ma-composition-weight'),weight);close(app.svg.getAttribute('data-ma-composition-bias'),bias);
+  const X=t=>54+t/3.5*(width-76),Y=v=>260-v/260*227,vertices=[0,-bias/weight,3.5],extra=t=>20*Math.max(0,weight*t+bias);
+  for(const [attr,value] of [['data-ma-original-function',t=>40+30*t],['data-ma-composed-function',t=>progress*(40+30*t)+extra(t)]]) {
+    const curve=points(app.svg.querySelectorAll('['+attr+']')[0]);assert.equal(curve.length,3);curve.forEach(([x,y],i)=>{close(x,X(vertices[i]));close(y,Y(value(vertices[i])));});
+  }
+  const band=points(app.svg.querySelectorAll('[data-ma-contribution-band]')[0]);
+  const area=Math.abs(band.reduce((sum,p,i)=>{const q=band[(i+1)%band.length];return sum+p[0]*q[1]-q[0]*p[1];},0))/2;
+  close(area,0.5*(3.5+bias/weight)*extra(3.5)*(width-76)/3.5*227/260);
+  assert.equal(app.svg.querySelectorAll('[data-ma-composition-record]').length,3);
+  app.svg.querySelectorAll('[data-ma-composition-input]').forEach(node=>{const t=Number(node.getAttribute('data-ma-composition-input')),base=40+30*t;close(node.getAttribute('data-ma-composition-prediction'),base+extra(t));close(node.getAttribute('data-ma-composition-extra'),extra(t));close(node.getAttribute('cx'),X(t));close(node.getAttribute('cy'),Y(progress*base+extra(t)));});
+  if(selected!==null) {const node=app.svg.querySelectorAll('[data-ma-bend-selected]')[0];close(node.getAttribute('cx'),X(selected));close(node.getAttribute('cy'),Y(40+30*selected+extra(selected)));assert.equal(app.svg.getAttribute('data-ma-bend-selected-known'),String([1,2,3].includes(selected)));}
 }
-function chooseBendInput(app,input) {
-  const choice=app.copy.querySelectorAll('[data-ma-bend-input]').find(button=>Number(button.getAttribute('data-ma-bend-input'))===input);
-  assert.ok(choice);choice.fire('click');assert.equal(app.copy.querySelectorAll('[data-ma-bend-input]').find(button=>Number(button.getAttribute('data-ma-bend-input'))===input).getAttribute('aria-pressed'),'true');
+function parameter(app,key) {const button=app.copy.querySelectorAll('[data-ma-bend-parameter]').find(node=>node.getAttribute('data-ma-bend-parameter')===key);assert.ok(button);assert.equal(button.disabled,false);button.fire('click');}
+function chooseBendInput(app,input) {const button=app.copy.querySelectorAll('[data-ma-bend-input]').find(node=>Number(node.getAttribute('data-ma-bend-input'))===input);assert.ok(button);button.fire('click');}
+for(const width of [736,360,280]) {
+ const app=mount(width,'#act-10');assert.equal(app.figure.hidden,true);app.advance();assertBendPlot(app,width,0,0);app.advance();assertBendPlot(app,width,1,0);
+ app.advance();assertFunction(app,width,1,-2,0,true);app.advance();assertFunction(app,width,1,-2,1,true);app.retreat();assertFunction(app,width,1,-2,0,true);app.advance();app.advance();
+ assertComposition(app,width,0);app.advance();assertComposition(app,width,1);app.retreat();assertComposition(app,width,0);app.advance();app.advance();
+ assertFunction(app,width,1,-2);assert.equal(app.next.disabled,true);app.advance();assertFunction(app,width,1,-2);
+ parameter(app,'weight');assertFunction(app,width,2,-2);app.retreat();assertFunction(app,width,1,-2);parameter(app,'weight');app.advance();assertComposition(app,width,1,2,-2);
+ app.retreat();assertFunction(app,width,2,-2);app.advance();app.advance();assertFunction(app,width,1,-2);
+ parameter(app,'bias');assertFunction(app,width,1,-1);app.advance();assertComposition(app,width,1,1,-1);app.retreat();assertFunction(app,width,1,-1);app.retreat();assertFunction(app,width,1,-2);
+ parameter(app,'bias');app.advance();app.advance();assertComposition(app,width,1,1,-2,1);
+ chooseBendInput(app,3);assertComposition(app,width,1,1,-2,3);chooseBendInput(app,2.5);assertComposition(app,width,1,1,-2,2.5);assert.match(app.copy.textContent,/125/);assert.match(app.copy.textContent,/尚未核对/);
+ app.retreat();assertComposition(app,width,1,1,-1);app.retreat();assertFunction(app,width,1,-1);app.retreat();assertFunction(app,width,1,-2);app.retreat();assertComposition(app,width,1,2,-2);app.retreat();assertFunction(app,width,2,-2);app.retreat();assertFunction(app,width,1,-2);
+ parameter(app,'weight');app.advance();app.advance();parameter(app,'bias');app.advance();app.advance();app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/手动/);app.advance();app.advance();assertBendPlot(app,width,0,0);
+ app.goToChapter(11);assertFunction(app,width,1,-2,0,true);app.goToChapter(12);assertFunction(app,width,1,-2);
+ console.log('PASS width='+width+': whole-function max, pointwise composition, contribution area, weight/bias interventions, explicit resets, rollback and unseen prediction');
 }
 for(const width of [736,360,280]) {
-  const app=mount(width,'#act-10');assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/训练前/);
-  app.advance();assertBendPlot(app,width,0,0);app.advance();assertBendPlot(app,width,1,0);
-  app.retreat();assertBendPlot(app,width,0,0);app.advance();app.advance();assertBendGate(app,width,0);
-  app.advance();assertBendGate(app,width,1);app.retreat();assertBendGate(app,width,0);app.advance();app.advance();
-  assertBendPlot(app,width,1,1);assert.match(app.copy.textContent,/ReLU激活函数/);
-  app.advance();assertNeuronMotion(app,width,0);app.advance();assertNeuronMotion(app,width,1);assert.match(app.copy.textContent,/权重/);
-  app.advance();assertNeuronMotion(app,width,2);assert.match(app.copy.textContent,/神经元/);
-  app.advance();assertBendPlot(app,width,1,1,1);chooseBendInput(app,3);assertBendPlot(app,width,1,1,3);
-  chooseBendInput(app,2.5);assertBendPlot(app,width,1,1,2.5);assert.match(app.copy.textContent,/第2.5秒没有记录，125是尚未核对的预测/);
-  app.retreat();assertNeuronMotion(app,width,2,2.5);assert.match(app.copy.textContent,/非负数保持原值/);
-  app.retreat();assertNeuronMotion(app,width,1,2.5);assert.match(app.copy.textContent,/结果非负/);
-  app.retreat();assertNeuronMotion(app,width,0,2.5);assert.match(app.copy.textContent,/第2.5秒/);
-  app.advance();app.advance();app.advance();app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/手动设置/);
-  app.advance();app.advance();assertBendPlot(app,width,0,0);
-  app.goToChapter(11);assertBendGate(app,width,0);app.goToChapter(12);assertNeuronMotion(app,width,0);
-  console.log('PASS width='+width+': three-unit handoff, real supplement failure, clamp and kink, neuron trace, input switching, unseen-result labeling, rollback and replay');
+ const app=mount(width,'#act-11',script,true);app.advance();app.frame(500);assertFunction(app,width,1,-2,0.5,true);app.resize();assertFunction(app,width,1,-2,1,true);
+ app.advance();assertComposition(app,width,0);app.advance();app.frame(600);assertComposition(app,width,0.5);app.hide();assertComposition(app,width,1);app.show();
+ app.advance();parameter(app,'weight');app.frame(500);assertFunction(app,width,1.5,-2);app.advance();assertComposition(app,width,1,2,-2);assert.equal(app.frames.size,0);
+ app.advance();parameter(app,'bias');app.frame(500);assertFunction(app,width,1,-1.5);app.hide();assertFunction(app,width,1,-1);app.show();app.goToChapter(11);assert.equal(app.frames.size,0);assertFunction(app,width,1,-2,1,true);
 }
-for(const width of [736,360,280]) {
-  const motion=mount(width,'#act-10',script,true);motion.advance();motion.advance();motion.frame(500);assertBendPlot(motion,width,0.5,0);
-  motion.advance();assertBendGate(motion,width,0);assert.equal(motion.frames.size,0);motion.advance();motion.frame(500);assertBendGate(motion,width,0.5);
-  motion.resize();assertBendGate(motion,width,1);assert.equal(motion.frames.size,0);
-  motion.advance();assertBendPlot(motion,width,1,0);motion.frame(550);assertBendPlot(motion,width,1,0.5);
-  motion.hide();assertBendPlot(motion,width,1,1);assert.equal(motion.frames.size,0);motion.show();
-  motion.advance();motion.advance();motion.frame(450);assertNeuronMotion(motion,width,0.5);motion.frame(450);assertNeuronMotion(motion,width,1);
-  motion.advance();motion.frame(450);assertNeuronMotion(motion,width,1.5);motion.hide();assertNeuronMotion(motion,width,2);motion.show();
-  motion.retreat();motion.frame(450);assertNeuronMotion(motion,width,1.5);motion.goToChapter(11);assert.equal(motion.frames.size,0);assertBendGate(motion,width,1);
-}
-const reducedBend=mount(280,'#act-11',script,'reduce');reducedBend.advance();assertBendGate(reducedBend,280,1);
-reducedBend.advance();assertBendPlot(reducedBend,280,1,1);reducedBend.goToChapter(12);reducedBend.advance();assertNeuronMotion(reducedBend,280,1);
-reducedBend.advance();assertNeuronMotion(reducedBend,280,2);assert.equal(reducedBend.frames.size,0);
-console.log('PASS branch motion: computed curves, number-line transitions, reduced motion, interruption, resize and navigation cancellation');
+const reducedFunctions=mount(280,'#act-11',script,'reduce');reducedFunctions.advance();assertFunction(reducedFunctions,280,1,-2,1,true);reducedFunctions.advance();reducedFunctions.advance();assertComposition(reducedFunctions,280,1);reducedFunctions.advance();parameter(reducedFunctions,'weight');assertFunction(reducedFunctions,280,2,-2);reducedFunctions.advance();reducedFunctions.advance();parameter(reducedFunctions,'bias');assertFunction(reducedFunctions,280,1,-1);assert.equal(reducedFunctions.frames.size,0);
+console.log('PASS function motion: actual intermediate values, area preservation, reduced motion, interruption and navigation cancellation');
