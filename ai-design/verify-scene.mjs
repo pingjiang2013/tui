@@ -35,10 +35,11 @@ function mount(width,hash='',program=script,motion=false) {
   const timers=new Map(),frames=new Map(),documentEvents={},pageEvents={},location={hash},evaluations=[],derivativeInputs=[];let timerId=0,frameId=0,frameTime=0,resizeCallback;
   const document={hidden:false,getElementById:id=>id==='minimal-ai-scene'?root:null,createElement:tag=>new Element(tag),createElementNS:(_,tag)=>new Element(tag),createTextNode:value=>Object.assign(new Element('#text'),{textContent:value}),addEventListener:(name,callback)=>{documentEvents[name]=callback;}};
   const motionPlatform=motion?{performance:{now:()=>frameTime},requestAnimationFrame:callback=>{frames.set(++frameId,callback);return frameId;},cancelAnimationFrame:id=>frames.delete(id),matchMedia:()=>({matches:motion==='reduce'})}:{};
-  let waveMath;
-  vm.runInNewContext(program,{document,ResizeObserver:class{constructor(callback){resizeCallback=callback;}observe(){}},Math,Number,String,location,__captureWaveMath:value=>{waveMath=value;},__recordParameter:value=>evaluations.push(value),__recordDerivative:value=>derivativeInputs.push(value),setTimeout:callback=>{timers.set(++timerId,callback);return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,callback)=>{pageEvents[name]=callback;},...motionPlatform});
-  return {root,copy,figure,svg,handle,back,next,automatic,timers,frames,evaluations,derivativeInputs,waveMath,
+  let waveMath,bendMath;
+  vm.runInNewContext(program,{document,ResizeObserver:class{constructor(callback){resizeCallback=callback;}observe(){}},Math,Number,String,location,__captureWaveMath:value=>{waveMath=value;},__captureBendMath:value=>{bendMath=value;},__recordParameter:value=>evaluations.push(value),__recordDerivative:value=>derivativeInputs.push(value),setTimeout:callback=>{timers.set(++timerId,callback);return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,callback)=>{pageEvents[name]=callback;},...motionPlatform});
+  return {root,copy,figure,svg,handle,back,next,automatic,timers,frames,evaluations,derivativeInputs,waveMath,bendMath,
     advance(){next.fire('click');},retreat(){back.fire('click');},key(key){handle.fire('keydown',{key});},
+    goToChapter(number){location.hash='#act-'+number;pageEvents.hashchange();},
     tick(){const [id,callback]=timers.entries().next().value;timers.delete(id);callback();},
     frame(milliseconds=210){frameTime+=milliseconds;const callbacks=[...frames.values()];frames.clear();callbacks.forEach(callback=>callback(frameTime));},
     hide(){document.hidden=true;documentEvents.visibilitychange();},show(){document.hidden=false;},leave(){pageEvents.pagehide();},resume(){pageEvents.pageshow();},resize(){resizeCallback();},goToSecond(){location.hash='#act-2';pageEvents.hashchange();},goToThird(){location.hash='#act-3';pageEvents.hashchange();},goToFourth(){location.hash='#act-4';pageEvents.hashchange();},goToFifth(){location.hash='#act-5';pageEvents.hashchange();}
@@ -807,7 +808,7 @@ for(const width of [736,360,280]) {
   assert.ok(Math.abs(Number(app.svg.getAttribute('data-ma-wave-loss'))-200/9)<1e-8);
   app.advance();assertCancellationGeometry(app,width,0);app.advance();assertCancellationGeometry(app,width,1);
   app.retreat();assertCancellationGeometry(app,width,0);app.advance();assertCancellationGeometry(app,width,1);
-  app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.match(app.copy.textContent,/两个数各自该改多少/);
+  app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.match(app.copy.textContent,/保留已经正确的预测/);
   console.log('PASS width='+width+': direct parameter increments, real line comparison at constant MAE, extracted gaps and square scoring, simultaneous updates, real training and linear-model limitation');
 }
 const movingWave=mount(360,'#act-6',script,true);
@@ -882,3 +883,90 @@ for(const [actualDistance,expectedDistance,expectedError] of [[16,16,0],[27.5,27
   console.log(`PASS alternate data: actual=${actualDistance}, learned=${expectedDistance}, mean gap=${expectedError}`);
 }
 console.log('PASS: approved example and narrative replace the old lesson; no code screen.');
+const capturedBend=script.replace('    const waveChapter=', '    globalThis.__captureBendMath({compute:bendCompute});\n    const waveChapter=');
+assert.notEqual(capturedBend,script);
+const bendMath=mount(360,'#act-10',capturedBend).bendMath;
+for(const input of [-1,0,1,2,2.5,3,4]) {
+  close(bendMath.compute(input,0,0).prediction,40+30*input);
+  close(bendMath.compute(input,1,0).prediction,50*input);
+  close(bendMath.compute(input).prediction,input<=2?40+30*input:50*input);
+}
+const newInput=bendMath.compute(2.5);close(newInput.shifted,0.5);close(newInput.activated,0.5);close(newInput.base,115);close(newInput.extra,10);close(newInput.prediction,125);
+const alternateNeuron={base:10,slope:2,weight:2,bias:-3,output:4};
+close(bendMath.compute(1,1,1,alternateNeuron).prediction,12);close(bendMath.compute(2,1,1,alternateNeuron).prediction,18);
+console.log('PASS neuron math: affine-only composition remains linear, ReLU gives the exact piecewise rule, unseen-input computation and alternate parameters');
+function assertBendPlot(app,width,amount,gate,selected=null) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'bent-prediction');
+  close(app.svg.getAttribute('data-ma-bend-amount'),amount);close(app.svg.getAttribute('data-ma-bend-gate'),gate);
+  const X=t=>54+t/3.5*(width-76),Y=p=>260-p/200*227;
+  const records=app.svg.querySelectorAll('[data-ma-bend-record]'),predictions=app.svg.querySelectorAll('[data-ma-bend-prediction]'),gaps=app.svg.querySelectorAll('[data-ma-bend-gap]');
+  assert.equal(records.length,3);assert.equal(predictions.length,3);assert.equal(gaps.length,3);
+  predictions.forEach((point,index)=>{
+    const t=index+1,r=bendMath.compute(t,amount,gate),actual=[70,100,150][index];
+    close(point.getAttribute('data-ma-bend-value'),r.prediction);close(point.getAttribute('cx'),X(t));close(point.getAttribute('cy'),Y(r.prediction));
+    close(records[index].getAttribute('cy'),Y(actual));close(gaps[index].getAttribute('y1'),Y(actual));close(gaps[index].getAttribute('y2'),Y(r.prediction));
+  });
+  const curve=app.svg.querySelectorAll('[data-ma-bend-curve]');assert.equal(curve.length,1);
+  const vertices=curve[0].getAttribute('d').match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi).map(Number);
+  [0,2,3.5].forEach((input,index)=>{close(vertices[index*2],X(input));close(vertices[index*2+1],Y(bendMath.compute(input,amount,gate).prediction));});
+  app.copy.querySelectorAll('[data-ma-bend-output-weight]').forEach(node=>close(node.textContent,Number((20*amount).toFixed(1))));
+  if(selected!==null) {
+    const r=bendMath.compute(selected),point=app.svg.querySelectorAll('[data-ma-bend-selected]')[0],contribution=app.svg.querySelectorAll('[data-ma-bend-contribution]')[0];
+    close(point.getAttribute('cx'),X(selected));close(point.getAttribute('cy'),Y(r.prediction));close(point.getAttribute('data-ma-bend-selected-value'),r.prediction);
+    close(contribution.getAttribute('data-ma-bend-extra'),r.extra);close(contribution.getAttribute('y1'),Y(r.base));close(contribution.getAttribute('y2'),Y(r.prediction));
+    assert.equal(app.svg.getAttribute('data-ma-bend-selected-known'),String([1,2,3].includes(selected)));
+    assert.ok(!records.some(point=>Number(point.getAttribute('data-ma-bend-record'))===2.5),'never invent a record for the new input');
+  }
+  assert.ok(app.copy.children.length<=3);assert.equal(app.automatic.hidden,true);assert.equal(app.handle.hidden,true);
+}
+function assertBendGate(app,width,progress) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'positive-part');close(app.svg.getAttribute('data-ma-bend-gate'),progress);
+  const X=value=>58+(value+1.5)/3*(width-82),points=app.svg.querySelectorAll('[data-ma-gated-input]');assert.equal(points.length,3);
+  points.forEach((point,index)=>{
+    const raw=index-1,value=raw<0?raw*(1-progress):raw;
+    close(point.getAttribute('data-ma-gated-raw'),raw);close(point.getAttribute('data-ma-gated-value'),value);
+    close(point.getAttribute('cx'),X(value));close(point.getAttribute('cy'),64+index*80);
+  });
+}
+function assertNeuronMotion(app,width,phase,input=1) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'neuron-number');close(app.svg.getAttribute('data-ma-bend-motion-phase'),phase);
+  const r=bendMath.compute(input),expected=phase<=1?input+(r.shifted-input)*phase:r.shifted+(r.activated-r.shifted)*(phase-1);
+  close(app.svg.getAttribute('data-ma-bend-token'),expected);
+  close(app.svg.querySelectorAll('[data-ma-neuron-token]')[0].getAttribute('cx'),35+(expected+2)/6*(width-60));
+}
+function chooseBendInput(app,input) {
+  const choice=app.copy.querySelectorAll('[data-ma-bend-input]').find(button=>Number(button.getAttribute('data-ma-bend-input'))===input);
+  assert.ok(choice);choice.fire('click');assert.equal(app.copy.querySelectorAll('[data-ma-bend-input]').find(button=>Number(button.getAttribute('data-ma-bend-input'))===input).getAttribute('aria-pressed'),'true');
+}
+for(const width of [736,360,280]) {
+  const app=mount(width,'#act-10');assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/训练前/);
+  app.advance();assertBendPlot(app,width,0,0);app.advance();assertBendPlot(app,width,1,0);
+  app.retreat();assertBendPlot(app,width,0,0);app.advance();app.advance();assertBendGate(app,width,0);
+  app.advance();assertBendGate(app,width,1);app.retreat();assertBendGate(app,width,0);app.advance();app.advance();
+  assertBendPlot(app,width,1,1);assert.match(app.copy.textContent,/ReLU激活函数/);
+  app.advance();assertNeuronMotion(app,width,0);app.advance();assertNeuronMotion(app,width,1);assert.match(app.copy.textContent,/权重/);
+  app.advance();assertNeuronMotion(app,width,2);assert.match(app.copy.textContent,/神经元/);
+  app.advance();assertBendPlot(app,width,1,1,1);chooseBendInput(app,3);assertBendPlot(app,width,1,1,3);
+  chooseBendInput(app,2.5);assertBendPlot(app,width,1,1,2.5);assert.match(app.copy.textContent,/第2.5秒没有记录，125是尚未核对的预测/);
+  app.retreat();assertNeuronMotion(app,width,2,2.5);assert.match(app.copy.textContent,/非负数保持原值/);
+  app.retreat();assertNeuronMotion(app,width,1,2.5);assert.match(app.copy.textContent,/结果非负/);
+  app.retreat();assertNeuronMotion(app,width,0,2.5);assert.match(app.copy.textContent,/第2.5秒/);
+  app.advance();app.advance();app.advance();app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/手动设置/);
+  app.advance();app.advance();assertBendPlot(app,width,0,0);
+  app.goToChapter(11);assertBendGate(app,width,0);app.goToChapter(12);assertNeuronMotion(app,width,0);
+  console.log('PASS width='+width+': three-unit handoff, real supplement failure, clamp and kink, neuron trace, input switching, unseen-result labeling, rollback and replay');
+}
+for(const width of [736,360,280]) {
+  const motion=mount(width,'#act-10',script,true);motion.advance();motion.advance();motion.frame(500);assertBendPlot(motion,width,0.5,0);
+  motion.advance();assertBendGate(motion,width,0);assert.equal(motion.frames.size,0);motion.advance();motion.frame(500);assertBendGate(motion,width,0.5);
+  motion.resize();assertBendGate(motion,width,1);assert.equal(motion.frames.size,0);
+  motion.advance();assertBendPlot(motion,width,1,0);motion.frame(550);assertBendPlot(motion,width,1,0.5);
+  motion.hide();assertBendPlot(motion,width,1,1);assert.equal(motion.frames.size,0);motion.show();
+  motion.advance();motion.advance();motion.frame(450);assertNeuronMotion(motion,width,0.5);motion.frame(450);assertNeuronMotion(motion,width,1);
+  motion.advance();motion.frame(450);assertNeuronMotion(motion,width,1.5);motion.hide();assertNeuronMotion(motion,width,2);motion.show();
+  motion.retreat();motion.frame(450);assertNeuronMotion(motion,width,1.5);motion.goToChapter(11);assert.equal(motion.frames.size,0);assertBendGate(motion,width,1);
+}
+const reducedBend=mount(280,'#act-11',script,'reduce');reducedBend.advance();assertBendGate(reducedBend,280,1);
+reducedBend.advance();assertBendPlot(reducedBend,280,1,1);reducedBend.goToChapter(12);reducedBend.advance();assertNeuronMotion(reducedBend,280,1);
+reducedBend.advance();assertNeuronMotion(reducedBend,280,2);assert.equal(reducedBend.frames.size,0);
+console.log('PASS branch motion: computed curves, number-line transitions, reduced motion, interruption, resize and navigation cancellation');

@@ -67,7 +67,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -77,9 +77,9 @@
     const ink='var(--ma-ink)', muted='var(--ma-muted)', axis='var(--ma-axis)', accent='var(--ma-accent)';
     let geometry=null,drag=null,feedback=null,learning=null,autoTimer=null,autoRunning=false;
     let plotFrame=null,plotMotion=null,lastPlot=null;
-    let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null;
+    let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending'].includes(current());
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending'].includes(current());
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -109,6 +109,7 @@
     }
     function renderCopy() {
       copy.replaceChildren();feedback=null;
+      if(current().startsWith('bend-')) {renderBendCopy();return;}
       if(current().startsWith('wave-')) {renderWaveCopy();return;}
       if(current().startsWith('bias-')) {renderBiasCopy();return;}
       if(current().startsWith('step-')) {renderStepCopy();return;}
@@ -188,6 +189,7 @@
       back.disabled=state.scene===0;
       next.disabled=false;
       back.textContent='← 上一页';automatic.hidden=true;
+      if(current().startsWith('bend-')) {updateBendNav();return;}
       if(current().startsWith('wave-')) {updateWaveNav();return;}
       if(current().startsWith('bias-')) {updateBiasNav();return;}
       if(current().startsWith('step-')) {updateStepNav();return;}
@@ -198,6 +200,7 @@
     }
     function renderStage() {
       if(textOnly()) return;
+      if(current().startsWith('bend-')) {renderBendGraph();return;}
       if(current().startsWith('wave-')) {renderWaveGraph();return;}
       if(current().startsWith('bias-')) {renderBiasGraph();return;}
       if(current().startsWith('step-')) {renderStepGraph();return;}
@@ -1414,7 +1417,7 @@
         case 'wave-intervals':
           if(wave.intervalCancelled)back.textContent='← 放回共有部分';
           next.textContent=wave.intervalCancelled?'需要怎样的新规则？ →':'相减，移去共有部分';break;
-        case 'wave-ending':next.textContent='重新探索这四个单元 ↻';break;
+        case 'wave-ending':next.textContent='让规则在需要的地方拐弯 →';break;
       }
     }
     function waveDrawModel(params,width,data=biasRecords,loss='mse') {
@@ -1617,7 +1620,6 @@
       if(current()==='wave-train'&&waveTrainStatus()==='ready'){waveAdvanceTrain();refreshWave();return;}
       if(current()==='wave-shape'&&!wave.shapeTrained){trainWaveShape();refreshWave();return;}
       if(current()==='wave-intervals'&&!wave.intervalCancelled){wave.intervalCancelled=true;refreshWave();return;}
-      if(current()==='wave-ending'){wave=null;state.scene=scenes.indexOf('wave-multi-purpose');renderScene();return;}
       state.scene++;renderScene();
     }
     function backwardWave() {
@@ -1637,8 +1639,186 @@
       if(current()==='wave-intervals'&&wave.intervalCancelled){wave.intervalCancelled=false;refreshWave();return;}
       state.scene--;renderScene();
     }
+    const bendConfig={base:40,slope:30,weight:1,bias:-2,output:20};
+    function bendCompute(input,amount=1,gate=1,params=bendConfig) {
+      const weighted=input*params.weight,shifted=weighted+params.bias,activated=Math.max(0,shifted);
+      const branch=shifted+(activated-shifted)*gate,extra=params.output*branch*amount,base=params.base+params.slope*input;
+      return {input,weighted,shifted,activated,branch,extra,base,prediction:base+extra};
+    }
+    function ensureBend() {
+      if(!bend)bend={added:false,clipped:false,resultSeen:false,trace:0,input:1};
+    }
+    function bendBaseEquation(extra=false) {
+      const p=paragraph('预测 = 40 + 时间 × 30');p.className='ma-formula';
+      if(extra) {
+        p.appendChild(document.createTextNode(' + '));
+        waveOutput(p,20,'data-ma-bend-output-weight','补充分支的乘数').className='ma-parameter';
+        p.appendChild(document.createTextNode(' ×（时间 − 2）'));
+      }
+    }
+    function renderBendCopy() {
+      switch(current()) {
+        case 'bend-purpose':
+          paragraph('既然一条直线做不到先增加30、再增加50，我们要给规则增加一种能改变形状的计算。目标很具体：保留已经正确的预测，只补上还差的部分。');
+          paragraph('仍用70、100、150这三条记录。明确回到训练前的“40＋时间×30”：前两条已对齐，第三条预测130，还少20。接下来先由我们手动构造这段补充。');
+          break;
+        case 'bend-repair':
+          paragraph(bend.added
+            ? '第三条从130变成150，对齐了；第一条却从70降到50。因为第1秒的“时间−2”是−1，补充项变成−20。第二条补0，保持100。'
+            : '希望第2秒补0，之后每多1秒补20，先试着加入“20×（时间−2）”。留意第三条会不会对齐，以及第一条是否还能保持正确。');
+          bendBaseEquation(bend.added);
+          paragraph(bend.added
+            ? '这次乘加让直线转动了，却把另一端弄坏了。我们真正需要的是：早于第2秒时不扣减，只在超过第2秒之后增加补充。'
+            : '这次是在手动比较规则。黑点是记录，空心点是预测；加入补充后，三个预测会按同一条规则重算。');
+          break;
+        case 'bend-gate':
+          paragraph(bend.clipped
+            ? '第1秒的−1停在0；第2秒仍是0，第3秒仍是1。再乘20，补充量就成为0、0、20，正好保留前两条，只改善第三条。'
+            : '先单独看“时间−2”。三个输入得到−1、0、1。我们只希望超过2的那一部分生效，所以让负数停在0，正数原样保留。');
+          paragraph('下图三行分别对应第1、2、3秒，数轴表示这个中间结果，不是预测位置。');
+          break;
+        case 'bend-result':
+          paragraph('把处理用回预测：第一条回到70，后两条保持100、150。拐点出现在第2秒，此前每秒增加30，此后增加50。');
+          paragraph('“负数取0，正数原样保留”叫ReLU激活函数，拐点来自这一步。接下来拆开分支，认识它怎样组成一个神经元。');
+          break;
+        case 'bend-neuron': {
+          const r=bendCompute(bend.input);
+          if(bend.trace===0) {
+            paragraph('跟着第'+number(r.input)+'秒的输入，追踪补充分支。它会先做乘加，再经过激活，最后把结果作为补充加回预测。');
+            const p=paragraph('输入：'+number(r.input));p.className='ma-formula';
+            paragraph('先看“输入 × 1 − 2”怎样移动这个数。');
+          } else if(bend.trace===1) {
+            paragraph('先乘1，再减2。这个乘数叫权重，加上的−2叫偏置；它们决定送进激活函数之前的数。');
+            const p=paragraph(number(r.input)+' × 1 − 2 = '+number(r.shifted));p.className='ma-formula';
+            paragraph(r.shifted<0?'结果是负数。下一步按刚才的规则，让它停在0。':'结果非负，下一步经过ReLU时会保留原值。');
+          } else if(bend.trace===2) {
+            paragraph((r.shifted<0?'经过ReLU，负数变成0。':'经过ReLU，这个非负数保持原值。')+'输入先乘权重、加偏置，再经过激活，这一小段计算就是一个最简单的神经元。');
+            const p=paragraph('ReLU（'+number(r.shifted)+'）= '+number(r.activated));p.className='ma-formula';
+            paragraph('神经元输出的是这段分支的结果。接下来将它乘20，作为补充加回原来的预测。');
+          } else {
+            paragraph(r.extra===0?'分支输出0，原预测不变。换个输入，看看它何时生效。':'高亮短段是分支的补充量。换输入时，整个计算都会重算。');
+            const p=paragraph(number(r.input)+' × 1 − 2 = '+number(r.shifted)+' → ReLU = '+number(r.activated));p.className='ma-formula';
+            const row=document.createElement('span');row.style.display='block';row.textContent='40 + 30 × '+number(r.input)+' + 20 × '+number(r.activated)+' = '+number(r.prediction);p.appendChild(row);
+            const controls=paragraph('换个输入：');controls.className='ma-controls';
+            for(const input of [1,3,2.5]) {
+              const button=document.createElement('button');button.type='button';button.textContent=input+'秒';
+              button.setAttribute('data-ma-bend-input',String(input));button.setAttribute('aria-pressed',String(bend.input===input));
+              button.addEventListener('click',()=>{stopAutomation();bend.input=input;renderCopy();updateNav();renderStage();Array.from(copy.querySelectorAll('[data-ma-bend-input]')).find(node=>Number(node.getAttribute('data-ma-bend-input'))===input)?.focus?.();});
+              controls.appendChild(button);
+            }
+            const note=document.createElement('span');note.textContent=bend.input===2.5?'第2.5秒没有记录，'+number(r.prediction)+'是尚未核对的预测。':'这个时刻有记录，可以核对当前预测。';controls.appendChild(note);
+          }
+          break;
+        }
+        case 'bend-ending':
+          paragraph('我们从“直线做不到”走到了一段真正改变形状的计算：乘加产生中间值，激活让它在部分范围不生效，再把输出加回预测。它可以计算没有记录的新输入，而不是只修改三个点。');
+          paragraph('这次的权重、偏置和输出乘数由我们手动设置；贴合三条记录，还不代表其他输入也一定预测正确。下一步再研究怎样让机器自己调整这些分支参数。');
+          break;
+      }
+    }
+    function updateBendNav() {
+      switch(current()) {
+        case 'bend-purpose':next.textContent='先尝试一段补充 →';break;
+        case 'bend-repair':
+          if(bend.added)back.textContent='← 撤回补充项';
+          next.textContent=bend.added?'让负的部分停在0 →':'加入这段补充';break;
+        case 'bend-gate':
+          if(bend.clipped)back.textContent='← 恢复负值';
+          next.textContent=bend.clipped?'把处理用回预测 →':'让负数停在0';break;
+        case 'bend-result':next.textContent='跟着一个输入计算 →';break;
+        case 'bend-neuron':
+          if(bend.trace)back.textContent='← 撤回一步计算';
+          next.textContent=['计算输入 × 1 − 2','经过ReLU','把输出加回预测','这一步获得了什么？ →'][bend.trace];break;
+        case 'bend-ending':next.textContent='重新探索这段分支 ↻';break;
+      }
+    }
+    function drawBendPlot(width,amount,gate,selected=null) {
+      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
+      svg.setAttribute('data-ma-chart-kind','bent-prediction');svg.setAttribute('data-ma-bend-amount',String(amount));svg.setAttribute('data-ma-bend-gate',String(gate));
+      const left=54,right=width-22,top=33,bottom=260,X=t=>left+t/3.5*(right-left),Y=p=>bottom-p/200*(bottom-top);
+      const rows=shapeRecords.map(row=>({...row,...bendCompute(row.seconds,amount,gate)}));
+      el('title',{id:'ma-stage-title'}).textContent='横轴时间，纵轴预测位置。黑点是已有记录，空心点是实际规则算出的预测。'+rows.map(row=>row.input+'秒预测'+waveNumber(row.prediction)+'，记录'+row.position).join('；')+'。截断的应用进度'+number(gate)+'，参数不在训练。';
+      line(left,top,left,bottom);line(left,bottom,right,bottom);
+      [0,50,100,150,200].forEach(value=>{line(left-4,Y(value),left,Y(value));text(String(value),left-9,Y(value)+4,{'text-anchor':'end',fill:muted,'font-size':12});});
+      [0,1,2,3].forEach(value=>{line(X(value),bottom,X(value),bottom+5);text(String(value),X(value),bottom+23,{'text-anchor':'middle',fill:muted,'font-size':12});});
+      text('位置（厘米）',left,17,{fill:muted,'font-size':12});text('时间（秒）',right,308,{'text-anchor':'end',fill:muted,'font-size':12});
+      const points=[0,2,3.5].map(t=>({t,value:bendCompute(t,amount,gate).prediction}));
+      el('path',{d:points.map((point,i)=>(i?'L ':'M ')+X(point.t)+' '+Y(point.value)).join(' '),fill:'none',stroke:accent,'stroke-width':2.5,'data-ma-bend-curve':''});
+      rows.forEach(row=>{
+        line(X(row.input),Y(row.position),X(row.input),Y(row.prediction),{stroke:accent,'stroke-width':3.5,'stroke-opacity':0.6,'data-ma-bend-gap':row.input});
+        el('circle',{cx:X(row.input),cy:Y(row.prediction),r:6,fill:'none',stroke:accent,'stroke-width':1.7,'data-ma-bend-prediction':row.input,'data-ma-bend-value':row.prediction});
+        el('circle',{cx:X(row.input),cy:Y(row.position),r:4.5,fill:ink,'data-ma-bend-record':row.input});
+      });
+      if(selected!==null) {
+        const r=bendCompute(selected,amount,gate);
+        line(X(selected),Y(r.base),X(selected),Y(r.prediction),{stroke:accent,'stroke-width':6,'stroke-opacity':0.5,'data-ma-bend-contribution':selected,'data-ma-bend-extra':r.extra});
+        if(Math.abs(r.extra)>1e-9)el('circle',{cx:X(selected),cy:Y(r.base),r:3.5,fill:muted,'data-ma-bend-base':r.base});
+        el('circle',{cx:X(selected),cy:Y(r.prediction),r:9,fill:'none',stroke:accent,'stroke-width':2,'data-ma-bend-selected':selected,'data-ma-bend-selected-value':r.prediction});
+        svg.setAttribute('data-ma-bend-selected-known',String(shapeRecords.some(row=>row.seconds===selected)));
+        svg.children[0].textContent+=' 所选输入'+selected+'，原预测'+r.base+'，补充'+r.extra+'，最终预测'+r.prediction+'。'+(selected===2.5?'这个输入没有已知记录，不能核对。':'可以与已有记录核对。');
+      }
+      copy.querySelectorAll('[data-ma-bend-output-weight]').forEach(node=>{node.textContent=number(20*amount);});
+    }
+    function drawBendGate(width,progress) {
+      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
+      svg.setAttribute('data-ma-chart-kind','positive-part');svg.setAttribute('data-ma-bend-gate',String(progress));
+      const left=58,right=width-24,X=v=>left+(v+1.5)/3*(right-left);
+      el('title',{id:'ma-stage-title'}).textContent='三行先计算时间减2，分别为负1、0、1。负值向0移动，非负值保持不动。这个移动是应用截断的教学过渡，不是训练轮次。';
+      line(X(0),32,X(0),265,{stroke:axis,'stroke-dasharray':'4 5'});
+      for(const [index,input] of [1,2,3].entries()) {
+        const y=64+index*80,r=bendCompute(input,1,progress);
+        line(left,y,right,y,{stroke:axis});text(input+'秒',8,y+5,{fill:muted,'font-size':13});
+        el('circle',{cx:X(r.branch),cy:y,r:7,fill:accent,'data-ma-gated-input':input,'data-ma-gated-raw':r.shifted,'data-ma-gated-value':r.branch});
+        if(progress===0||progress===1)text(number(r.branch),X(r.branch),y-18,{'text-anchor':'middle',fill:accent,'font-size':18});
+      }
+      [-1,0,1].forEach(value=>text(String(value),X(value),292,{'text-anchor':'middle',fill:muted,'font-size':14}));
+    }
+    function drawBendTrace(width,phase) {
+      const r=bendCompute(bend.input);
+      if(bend.trace===3){drawBendPlot(width,1,1,bend.input);svg.setAttribute('data-ma-bend-trace',String(bend.trace));return;}
+      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
+      const left=35,right=width-25,X=v=>left+(v+2)/6*(right-left),y=158;
+      const value=phase<=1?r.input+(r.shifted-r.input)*phase:r.shifted+(r.activated-r.shifted)*(phase-1);
+      svg.setAttribute('data-ma-chart-kind','neuron-number');svg.setAttribute('data-ma-bend-trace',String(bend.trace));
+      svg.setAttribute('data-ma-bend-motion-phase',String(phase));svg.setAttribute('data-ma-bend-token',String(value));
+      el('title',{id:'ma-stage-title'}).textContent='跟踪输入'+r.input+'。乘1减2的结果'+r.shifted+'，经过ReLU得到'+r.activated+'。圆点沿数轴移动以解释运算，移动途中的位置不是一次新的算法输出。';
+      if(bend.trace===2)el('rect',{x:left,y:y-40,width:X(0)-left,height:80,fill:axis,'fill-opacity':0.18});
+      line(left,y,right,y);line(X(0),y-48,X(0),y+48,{stroke:axis,'stroke-dasharray':'4 4'});
+      for(let tick=-2;tick<=4;tick++){line(X(tick),y-5,X(tick),y+5);text(String(tick),X(tick),y+28,{'text-anchor':'middle',fill:muted,'font-size':13});}
+      el('circle',{cx:X(value),cy:y,r:9,fill:accent,'data-ma-neuron-token':''});
+      if(Math.abs(phase-Math.round(phase))<1e-8)text(number(value),X(value),y-25,{'text-anchor':'middle',fill:accent,'font-size':25});
+    }
+    function renderBendGraph() {
+      const width=Math.max(240,figure.getBoundingClientRect().width||736);
+      if(current()==='bend-repair')animatePlot(current(),width,bend.added?1:0,amount=>drawBendPlot(width,amount,0),1000);
+      if(current()==='bend-gate')animatePlot(current(),width,bend.clipped?1:0,progress=>drawBendGate(width,progress),1000);
+      if(current()==='bend-result') {
+        if(!bend.resultSeen){bend.resultSeen=true;lastPlot={scene:current(),width,distance:0};}
+        animatePlot(current(),width,1,progress=>drawBendPlot(width,1,progress),1100);
+      }
+      if(current()==='bend-neuron') {
+        if(bend.trace===3){cancelPlotAnimation();lastPlot=null;drawBendTrace(width,3);}
+        else animatePlot(current(),width,bend.trace,phase=>drawBendTrace(width,phase),900);
+      }
+    }
+    function forwardBend() {
+      stopAutomation();
+      if(current()==='bend-repair'&&!bend.added){bend.added=true;renderCopy();updateNav();renderStage();return;}
+      if(current()==='bend-gate'&&!bend.clipped){bend.clipped=true;renderCopy();updateNav();renderStage();return;}
+      if(current()==='bend-neuron'&&bend.trace<3){bend.trace++;renderCopy();updateNav();renderStage();return;}
+      if(current()==='bend-ending'){bend=null;state.scene=scenes.indexOf('bend-purpose');renderScene();return;}
+      state.scene++;renderScene();
+    }
+    function backwardBend() {
+      stopAutomation();
+      if(current()==='bend-repair'&&bend.added){bend.added=false;renderCopy();updateNav();renderStage();return;}
+      if(current()==='bend-gate'&&bend.clipped){bend.clipped=false;renderCopy();updateNav();renderStage();return;}
+      if(current()==='bend-neuron'&&bend.trace>0){bend.trace--;renderCopy();updateNav();renderStage();return;}
+      state.scene--;renderScene();
+    }
     function renderScene() {
       stopAutomation();lastPlot=null;drag=null;feedback=null;
+      if(current().startsWith('bend-'))ensureBend();
       if(current().startsWith('wave-'))ensureWave();
       if(current().startsWith('bias-'))ensureBiasLesson();
       if(current().startsWith('step-'))ensureStepLesson();
@@ -1682,6 +1862,7 @@
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(current().startsWith('bend-')) {backwardBend();return;}
       if(current().startsWith('wave-')) {backwardWave();return;}
       if(current().startsWith('bias-')) {backwardBias();return;}
       if(current().startsWith('step-')) {backwardStep();return;}
@@ -1690,6 +1871,7 @@
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(current().startsWith('bend-')) {forwardBend();return;}
       if(current().startsWith('wave-')) {forwardWave();return;}
       if(current().startsWith('bias-')) {forwardBias();return;}
       if(current().startsWith('step-')) {forwardStep();return;}
@@ -1723,7 +1905,7 @@
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
-      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape'}[globalThis.location?.hash];
+      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron'}[globalThis.location?.hash];
       if(chapter){state.scene=scenes.indexOf(chapter);renderScene();}
     });
     document.addEventListener('visibilitychange',()=>{
@@ -1733,7 +1915,7 @@
     if(globalThis.location?.hash==='#act-3') state.scene=14;
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
     if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
-    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape'}[globalThis.location?.hash];
+    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron'}[globalThis.location?.hash];
     if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     new ResizeObserver(()=>{
