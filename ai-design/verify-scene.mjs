@@ -674,27 +674,58 @@ function waveModel(app,width,data=waveData,max=200) {
   assert.equal(app.handle.hidden,true);assert.ok(app.copy.children.length<=3);
   return params;
 }
-function assertParameterTrace(app,key) {
-  const traces=app.svg.querySelectorAll('[data-ma-effect-trace]');
-  assert.equal(traces.length,3);
-  const changes=traces.map(trace=>{
-    const t=Number(trace.getAttribute('data-ma-effect-trace')),record=Number(trace.getAttribute('data-ma-trace-record'));
-    const before=Number(trace.getAttribute('data-ma-trace-prediction-before')),after=Number(trace.getAttribute('data-ma-trace-prediction-after'));
-    close(before,20+30*t);close(after,before+(key==='a'?t:1));
-    close(trace.getAttribute('data-ma-trace-gap-before'),Math.abs(before-record));
-    close(trace.getAttribute('data-ma-trace-gap-after'),Math.abs(after-record));
-    return Math.abs(after-record)-Math.abs(before-record);
+function clickWaveNumber(app,key) {
+  const button=app.copy.querySelectorAll('[data-ma-wave-term]').find(node=>node.getAttribute('data-ma-wave-term')===key);
+  assert.ok(button);button.fire('click');
+}
+function assertProbeGeometry(app,expected,loss='mae') {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'parameter-experiment');
+  const params={a:Number(app.svg.getAttribute('data-ma-probe-a')),b:Number(app.svg.getAttribute('data-ma-probe-b'))};
+  if(expected)for(const key of ['a','b'])close(params[key],expected[key]);
+  const evaluation=math.compute(waveData,params,loss),unit=Number(app.svg.getAttribute('data-ma-probe-unit')),origin=Number(app.svg.getAttribute('data-ma-probe-origin'));
+  close(app.svg.getAttribute('data-ma-probe-loss'),evaluation.value);
+  app.copy.querySelectorAll('[data-ma-wave-term]').forEach(button=>close(button.textContent,Number(params[button.getAttribute('data-ma-wave-term')].toFixed(1))));
+  app.svg.querySelectorAll('[data-ma-probe-prediction]').forEach((point,i)=>{
+    close(point.getAttribute('cx'),origin+evaluation.rows[i].residual*unit);
+    close(point.getAttribute('data-ma-probe-value'),evaluation.rows[i].prediction);
   });
-  close(app.svg.getAttribute('data-ma-effect-mean'),changes.reduce((sum,value)=>sum+value,0)/3);
+  app.svg.querySelectorAll('[data-ma-probe-gap]').forEach((gap,i)=>{
+    close(gap.getAttribute('x1'),origin);close(gap.getAttribute('x2'),origin+evaluation.rows[i].residual*unit);
+  });
+  app.svg.querySelectorAll('[data-ma-probe-gap-value]').forEach((label,i)=>close(label.textContent,Number(evaluation.rows[i].gap.toFixed(1))));
+  assert.equal(app.svg.querySelectorAll('[data-ma-effect-trace]').length,0);
+  assert.ok(app.copy.children.length<=3);return evaluation;
+}
+function assertRiskGeometry(app,choice,progress) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'prediction-consequences');
+  assert.equal(app.svg.getAttribute('data-ma-risk-choice'),choice);close(app.svg.getAttribute('data-ma-risk-progress'),progress);
+  close(app.svg.getAttribute('data-ma-risk-loss'),3);
+  const residuals=choice==='A'?[0,-3,-6]:[-3,-3,-3];
+  app.svg.querySelectorAll('[data-ma-risk-ball]').forEach((ball,i)=>{
+    const center=Number(ball.getAttribute('data-ma-risk-center')),unit=Number(ball.getAttribute('data-ma-risk-unit')),hit=Math.abs(residuals[i])<=4;
+    close(ball.getAttribute('cx'),center+residuals[i]*unit);
+    close(ball.getAttribute('cy'),85+((hit?237:282)-85)*progress);
+    assert.equal(ball.getAttribute('data-ma-risk-hit'),String(hit));
+    const cup=app.svg.querySelectorAll('[data-ma-cup]')[i];close(cup.getAttribute('data-ma-cup-half-width'),4*unit);
+    assert.equal(Math.abs(Number(ball.getAttribute('cx'))-center)<=4*unit,hit);
+  });
+  close(app.svg.getAttribute('data-ma-risk-caught'),choice==='A'?2:3);
 }
 for(const width of [736,360,280]) {
   const app=mount(width,'#act-6');assert.equal(app.figure.hidden,true);app.advance();
-  assertParameterTrace(app,'a');
-  close(app.svg.getAttribute('data-ma-effect-mean'),-2);
-  assert.deepEqual(app.svg.querySelectorAll('[data-ma-effect-value]').map(n=>Number(n.getAttribute('data-ma-effect-value'))),[-1,-2,-3]);
-  app.advance();close(app.svg.getAttribute('data-ma-effect-mean'),-1);assertParameterTrace(app,'b');app.advance();
+  assertProbeGeometry(app,{a:30,b:20});assert.equal(app.next.disabled,true);
+  app.advance();assertProbeGeometry(app,{a:30,b:20});
+  clickWaveNumber(app,'a');const slopeProbe=assertProbeGeometry(app,{a:31,b:20});
+  assert.deepEqual(slopeProbe.rows.map(row=>row.prediction),[51,82,113]);close(slopeProbe.value,28);
+  assert.equal(app.next.disabled,true);
+  clickWaveNumber(app,'b');const biasProbe=assertProbeGeometry(app,{a:31,b:21});close(biasProbe.value,27);
+  assert.equal(app.next.disabled,false);
+  clickWaveNumber(app,'a');assertProbeGeometry(app,{a:32,b:21});app.retreat();assertProbeGeometry(app,{a:31,b:21});
+  app.advance();
   waveModel(app,width);app.advance();const joint=waveModel(app,width);close(joint.a,30.5);close(joint.b,20.25);
-  app.retreat();close(waveModel(app,width).a,30);app.advance();app.advance();app.advance();
+  app.retreat();close(waveModel(app,width).a,30);app.advance();app.advance();
+  assertRiskGeometry(app,'A',0);app.advance();assertRiskGeometry(app,'A',1);app.advance();assertRiskGeometry(app,'B',1);
+  app.retreat();assertRiskGeometry(app,'A',1);app.advance();app.advance();
   assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'score-areas');app.advance();
   app.svg.querySelectorAll('[data-ma-score-cell]').forEach(rect=>{
     const side=Number(rect.getAttribute('data-ma-score-side')),unit=Number(rect.getAttribute('data-ma-score-unit'));
@@ -710,7 +741,9 @@ for(const width of [736,360,280]) {
   }
   app.advance();app.advance();close(app.svg.getAttribute('data-ma-normalized-width'),0.1);
   app.svg.querySelectorAll('[data-ma-normalized-result]').forEach(n=>close(n.getAttribute('data-ma-normalized-value'),2*Number(n.getAttribute('data-ma-normalized-result'))-0.1));
-  app.advance();close(app.svg.getAttribute('data-ma-effect-mean'),-120);app.advance();close(app.svg.getAttribute('data-ma-effect-mean'),-60);app.advance();
+  app.advance();assertProbeGeometry(app,{a:30,b:20},'mse');
+  clickWaveNumber(app,'a');assertProbeGeometry(app,{a:31,b:20},'mse');
+  clickWaveNumber(app,'b');assertProbeGeometry(app,{a:31,b:21},'mse');app.advance();
   app.advance();close(waveModel(app,width,waveData,250).a,36);app.advance();const roundTwo=waveModel(app,width,waveData,250);
   app.retreat();close(waveModel(app,width,waveData,250).a,36);app.advance();close(waveModel(app,width,waveData,250).a,roundTwo.a);
   app.automatic.fire('click');app.tick();app.automatic.fire('click');assert.equal(app.timers.size,0);
@@ -725,14 +758,19 @@ for(const width of [736,360,280]) {
   app.advance();assert.deepEqual(app.svg.querySelectorAll('[data-ma-actual-increment]').map(n=>Number(n.getAttribute('data-ma-increment-value'))),[30,50]);
   app.svg.querySelectorAll('[data-ma-model-increment]').forEach(n=>assert.ok(Math.abs(Number(n.getAttribute('data-ma-increment-value'))-40)<1e-5));
   app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.match(app.copy.textContent,/两个数各自该改多少/);
-  console.log('PASS width='+width+': four-unit navigation, simultaneous updates, proportional square areas, nonoverlapping strips, normalized limit, real training/rollback/overshoot, and linear-model limitation');
+  console.log('PASS width='+width+': direct parameter increments, moving predictions/gaps, computed catch consequences, simultaneous updates, square/strip geometry, real training, and linear-model limitation');
 }
 const movingWave=mount(360,'#act-6',script,true);
-movingWave.advance();movingWave.advance();movingWave.advance();movingWave.advance();movingWave.frame(400);
+movingWave.advance();clickWaveNumber(movingWave,'a');movingWave.frame(400);assertProbeGeometry(movingWave,{a:30.5,b:20});
+movingWave.frame(400);clickWaveNumber(movingWave,'b');movingWave.frame(400);assertProbeGeometry(movingWave,{a:31,b:20.5});
+movingWave.frame(400);movingWave.retreat();movingWave.frame(400);assertProbeGeometry(movingWave,{a:31,b:20.5});
+movingWave.hide();assertProbeGeometry(movingWave,{a:31,b:20});movingWave.show();clickWaveNumber(movingWave,'b');movingWave.frame(800);
+movingWave.advance();movingWave.advance();movingWave.frame(400);
 const jointHalf=waveModel(movingWave,360);close(jointHalf.a,30.25);close(jointHalf.b,20.125);
 movingWave.hide();close(waveModel(movingWave,360).a,30.5);assert.equal(movingWave.frames.size,0);movingWave.show();
 const movingTrain=mount(360,'#act-8',script,true);
-for(let i=0;i<6;i++)movingTrain.advance();
+for(let i=0;i<4;i++)movingTrain.advance();
+clickWaveNumber(movingTrain,'a');clickWaveNumber(movingTrain,'b');movingTrain.advance();
 assert.equal(movingTrain.svg.getAttribute('data-ma-chart-kind'),'wave-model');
 movingTrain.advance();movingTrain.frame(400);close(waveModel(movingTrain,360,waveData,250).a,33);
 movingTrain.frame(400);movingTrain.advance();movingTrain.frame(800);
@@ -742,6 +780,15 @@ close(interpolated.a,expected.a);close(interpolated.b,expected.b);
 movingTrain.automatic.fire('click');assert.equal(movingTrain.frames.size,0);assert.equal(movingTrain.timers.size,0);
 movingTrain.automatic.fire('click');movingTrain.goToSecond();assert.equal(movingTrain.timers.size,0);assert.equal(movingTrain.frames.size,0);
 const reducedWave=mount(280,'#act-9',script,'reduce');reducedWave.advance();assert.equal(reducedWave.frames.size,0);
+const movingRisk=mount(360,'#act-7',script,true);
+assertRiskGeometry(movingRisk,'A',0);movingRisk.advance();movingRisk.frame(500);assertRiskGeometry(movingRisk,'A',0.5);
+movingRisk.frame(500);assertRiskGeometry(movingRisk,'A',1);movingRisk.advance();movingRisk.frame(500);assertRiskGeometry(movingRisk,'B',0.5);
+movingRisk.hide();assertRiskGeometry(movingRisk,'B',1);assert.equal(movingRisk.frames.size,0);movingRisk.show();
+movingRisk.retreat();assertRiskGeometry(movingRisk,'A',1);movingRisk.goToSecond();assert.equal(movingRisk.frames.size,0);
+const reducedProbe=mount(280,'#act-6',script,'reduce');reducedProbe.advance();clickWaveNumber(reducedProbe,'a');assertProbeGeometry(reducedProbe,{a:31,b:20});assert.equal(reducedProbe.frames.size,0);
+const crossingProbe=mount(280,'#act-6');crossingProbe.advance();for(let i=0;i<12;i++)clickWaveNumber(crossingProbe,'a');
+assertProbeGeometry(crossingProbe,{a:42,b:20});assert.match(crossingProbe.copy.textContent,/越过记录/);
+crossingProbe.retreat();clickWaveNumber(crossingProbe,'b');assertProbeGeometry(crossingProbe,{a:41,b:21});
 console.log('PASS new motion: computed intermediate model geometry, actual per-round history, pause/navigation cancellation, reduced motion');
 assert.ok(!fragment.includes('完成题数'));
 assert.ok(!fragment.includes('教学样本'));
