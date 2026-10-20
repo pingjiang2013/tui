@@ -1246,49 +1246,53 @@
     function renderWaveCopy() {
       switch(current()) {
         case 'wave-multi-purpose':
-          paragraph('刚才你让两个参数分别改变倾斜程度和整体位置。现在要让电脑自己决定：这两个数各自该改多少。');
-          paragraph('回看起始值20、每秒距离30的规则。三个预测都偏低。我们先分别追踪两个参数对平均差距的影响，再把两项结果用于同一次更新。第五幕里你的调整会保留。');
+          paragraph('现在要让电脑决定：两个数各自该改多少？平均差距只告诉我们预测有多差。要知道该改哪个数、改多少，还要追踪每个参数怎样改变这个评分。');
+          paragraph('回看起始值20、每秒距离30的规则，不覆盖刚才的调整。先保持一个参数不动，只把另一个增加1：算出三条预测怎样变、三条差距怎样变，最后再算平均差距怎样变。');
           break;
         case 'wave-effects':
         case 'wave-gradient': {
           const mse=current()==='wave-gradient',key=mse?wave.gradientSelected:wave.selected;
           const evaluation=waveCompute(biasRecords,waveStart,mse?'mse':'mae');
           paragraph(mse
-            ? '回到同一条未调准的规则，每条预测都低30。按平方评分，预测略增时，每条评分的局部影响为2×（−30）=−60。再乘以该参数在预测里的乘数。'
-            : '点公式里的一个参数，追踪它的影响。当前预测都偏低；每秒距离分别乘1、2、3，起始值在每次预测里只加一次，所以各自的影响不同。');
+            ? '仍然一次只追踪一个参数，另一个保持不动。三个预测都比记录低30；刚才的面积推导说明，预测略增时，平方评分减少的倍率是2×30。用“预测−记录”表示偏差，局部变化率就是2×（−30）=−60。'
+            :key==='a'
+              ? '只把每秒距离从30增到31，起始值仍是20。预测里的“时间×每秒距离”因此分别多出1、2、3。三个预测原本都偏低，所以差距分别缩短1、2、3。下图逐条核对；也可以点公式中的20，换看起始值。'
+              : '只把起始值从20增到21，每秒距离仍是30。起始值在每条预测里都只加一次，所以三个预测各增加1，三条差距也各缩短1。对比刚才：改动同样大小，不同参数却会带来不同的结果。');
           waveTermFormula(mse);
-          paragraph('下面暂时只画局部影响的倍率，不是差距长度：向左表示评分减少。'+(key==='a'?'每秒距离':'起始值')+'的导数是（'+evaluation.rows.map(row=>signed(row[key])).join(' ')+'）÷3 = '+signed(evaluation.gradient[key])+'。'+(mse?'评分变了，导数的尺度也变了；接下来先用较小的学习率0.05，再检查结果。':'再看另一个数，我们需要分别算出这两项。'));
+          paragraph(mse
+            ? '再沿预测公式传回参数：'+(key==='a'?'每秒距离还要乘时间1、2、3':'起始值的乘数都是1')+'，所以得到图中的三个倍率。目标评分是三项的平均，因此导数也取平均：（'+evaluation.rows.map(row=>signed(row[key])).join(' ')+'）÷3 = '+signed(evaluation.gradient[key])+'。箭头表示局部变化的倍率，不是增1后的实际减少量。'
+            : '我们要降低的是平均差距，所以把三条差距的变化相加，再除以3：（'+evaluation.rows.map(row=>signed(row[key])).join(' ')+'）÷3 = '+signed(evaluation.gradient[key])+'。这附近预测仍偏低，缩小改动时变化比例不变；这就是平均差距对'+(key==='a'?'每秒距离':'起始值')+'的导数。');
           break;
         }
         case 'wave-joint':
           paragraph(wave.joint
             ? '两个数已经共同更新：预测的改动是“起始值的改动＋时间×每秒距离的改动”。点、线和差距都按这条新规则重新计算。'
-            : '每秒距离的导数是−2，起始值的导数是−1。把各个参数的导数放在一起，就是梯度。用学习率0.25，分别得到+0.5和+0.25的改动。');
+            : '分别追踪后，我们知道：在当前位置，每秒距离略增时，平均差距按2倍减少；起始值略增时，按1倍减少。把这两个导数−2、−1放在一起，就是梯度。学习率0.25把它们转成实际改动：−0.25×（−2）=+0.5，−0.25×（−1）=+0.25。');
           waveSummary(wave.joint?waveStep(biasRecords,waveStart,0.25,'mae'):waveStart,'mae');
           paragraph(wave.joint
             ? '这一轮两个改动都从更新前的同一条规则算出，没有先改一个数，再用它的新结果计算另一个。我们已经会更新多个参数，接下来看看怎样评价不同分布的偏差。'
             : '接下来同时采用这两个改动。这里仍使用原来的平均差距，先观察一轮真实更新。');
           break;
         case 'wave-score-purpose':
-          paragraph('两个参数可以产生不同的偏差分布。有的规则多数预测接近，却有一条差得较远；有的规则每条都差一点。我们希望电脑怎样评价它们？');
-          paragraph('沿用第五幕的记录，取两条待比较规则。这一次，假设任务更希望避免较大的偏差。先看旧评分怎样评价，再决定是否换一种评分。');
+          paragraph('训练会努力降低我们给它的评分。因此，先要问：什么样的预测，是我们更希望得到的？有时我们愿意让几条预测各差一点，也不希望其中一条偏得很远。');
+          paragraph('原来的平均差距把每1厘米偏差同等累计，不区分偏差集中在哪条记录上。接下来比较两条真实规则：如果旧评分无法表达我们想避免较大偏差的目标，就需要改变评分方式。');
           break;
         case 'wave-score':
           paragraph(wave.squared
-            ? '把每条差距作为边长展开成正方形，面积就是差距乘自身。较大的偏差会产生更大的面积；把三个面积取平均，叫平均平方差。'
-            : 'A是53＋时间×27，三条差距为0、3、6；B是47＋时间×30，三条差距都为3。下图每组三个长度条都来自这些规则的实际预测，平均差距都是3厘米。');
+            ? '平方是一种让较大偏差付出更多代价的简单办法。差距从3变成6，翻了2倍；平方却从9变成36，变成4倍。把差距展开成正方形，就能看见这种放大。三个面积取平均，叫平均平方差。'
+            : '沿用80、110、140这三条记录。A的规则是53＋时间×27，差距为0、3、6；B的规则是47＋时间×30，差距为3、3、3。两者总差距都是9，平均都是3，旧评分认为它们一样好。');
           const ratings=paragraph(wave.squared?'平均平方差：A ':'平均差距：A ');ratings.className='ma-formula';
           waveOutput(ratings,wave.squared?15:3,'data-ma-rating-a','规则A的评分');
           ratings.appendChild(document.createTextNode('，B '));waveOutput(ratings,wave.squared?9:3,'data-ma-rating-b','规则B的评分');
           ratings.appendChild(document.createTextNode(wave.squared?' 平方厘米':' 厘米'));
           paragraph(wave.squared
-            ? 'A的面积合计45，B合计27，各除以3得到15和9。新标准更偏好B；它表达了本任务的取舍，并非所有任务都必须这样评分。单位已改变，不能拿旧评分的3与新评分的9直接比较。'
-            : '旧标准把它们评为一样。为了更重视较大偏差，接下来把每条差距与自己相乘，观察三块面积。');
+            ? 'A的评分是（0＋9＋36）÷3=15，B是（9＋9＋9）÷3=9。现在B更好，符合我们避免一次较大偏差的目标。平方表达的是这种偏好，并非所有任务都更适合它；单位也变成了平方厘米，不能与旧评分的3直接比较。'
+            : '如果我们更不希望出现6厘米的偏差，就会更偏好B；但旧评分不会为此推动训练。我们需要让较大偏差的每1厘米付出更高代价。试着把每条差距与自己相乘，看看评分能否表达这个目标。');
           break;
         case 'wave-strips':
           paragraph(wave.cut
-            ? '两条边都缩短0.5。橙色窄条是减少的面积：右边一条，加上下面一条，拐角只计算一次。大方块减少的面积更多。'
-            : '新的评分会怎样影响调整方向？先看边长3和6的两块评分面积。把它们的边长都缩短同样的0.5，比较面积减少多少。');
+            ? '差距都缩短0.5，大方块却移走了更多面积。这就是新评分表达的取舍：同样一点修正，用在较大的偏差上，评分下降更多。橙色面积由右边和下面两条窄边组成，拐角只计算一次。'
+            : '平方不只改变两条规则的排名，还会改变训练的侧重：同样一点修正，消除较大的偏差会更有价值吗？把边长3和6的两块面积都缩短0.5，直接比较评分减少多少。');
           paragraph(wave.cut?'3² − 2.5² = 2.75；6² − 5.5² = 5.75。':'同样一点预测改善，会从较大的平方评分中移走多少面积？看两块方块的边缘。').className='ma-formula';
           paragraph('这里只观察一条差距的平方，不是在训练模型。接下来把减少的面积除以缩短的宽度，比较每单位变化的影响。');
           break;
@@ -1386,18 +1390,25 @@
     function drawWaveEffects(width,mse) {
       svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
       const key=mse?wave.gradientSelected:wave.selected,evaluation=waveCompute(biasRecords,waveStart,mse?'mse':'mae');
+      const trial=mse?null:waveCompute(biasRecords,{...waveStart,[key]:waveStart[key]+1},'mae');
       svg.setAttribute('data-ma-chart-kind','parameter-influences');svg.setAttribute('data-ma-effect-key',key);
       svg.setAttribute('data-ma-effect-mean',String(evaluation.gradient[key]));svg.setAttribute('data-ma-effect-score',mse?'mse':'mae');
-      el('title',{id:'ma-stage-title'}).textContent='箭头表示所选参数略增时，评分的局部影响倍率，不是预测差距长度。向左表示评分减少。'+evaluation.rows.map(row=>row.seconds+'秒，局部影响'+row[key]).join('；')+'。平均为'+evaluation.gradient[key]+'。';
+      el('title',{id:'ma-stage-title'}).textContent=(mse
+        ? '箭头表示所选参数略增时，平方评分的局部变化倍率。'
+        : '保持另一个参数不动，只将'+(key==='a'?'每秒距离':'起始值')+'增加1。'+evaluation.rows.map((row,index)=>row.seconds+'秒预测'+row.prediction+'变为'+trial.rows[index].prediction+'，记录'+row.position+'，差距'+row.gap+'变为'+trial.rows[index].gap).join('；')+'。')+'向左表示评分减少，三项变化取平均为'+evaluation.gradient[key]+'。';
       const max=Math.max(...evaluation.rows.map(row=>Math.abs(row[key]))),origin=width-28,scale=(width-110)/max;
       evaluation.rows.forEach((row,index)=>{
         const y=65+index*80,value=row[key],end=origin-Math.abs(value)*scale;
-        text(row.seconds+'秒：'+(mse?signed(row.local)+' × '+(key==='a'?row.seconds:1):'预测'+row.prediction+'，记录'+row.position),16,y-23,{fill:muted,'font-size':12});
+        text(row.seconds+'秒：'+(mse?'预测'+row.prediction+'，记录'+row.position:'预测 '+row.prediction+' → '+trial.rows[index].prediction),16,y-23,{fill:muted,'font-size':12});
         line(origin,y,end,y,{stroke:accent,'stroke-width':6,'data-ma-effect-row':row.seconds,'data-ma-effect-value':value});
         el('path',{d:'M '+(end+6)+' '+(y-5)+' L '+end+' '+y+' L '+(end+6)+' '+(y+5),stroke:accent,fill:'none','stroke-width':2});
         text(signed(value),end-8,y+4,{'text-anchor':'end',fill:accent,'font-size':13});
+        if(mse)text(signed(row.local)+' × '+(key==='a'?row.seconds:1)+' = '+signed(value),16,y+24,{fill:muted,'font-size':12});
+        else text('记录'+row.position+'；差距 '+row.gap+' → '+trial.rows[index].gap,16,y+24,{fill:muted,'font-size':12,
+          'data-ma-effect-trace':row.seconds,'data-ma-trace-prediction-before':row.prediction,'data-ma-trace-prediction-after':trial.rows[index].prediction,
+          'data-ma-trace-record':row.position,'data-ma-trace-gap-before':row.gap,'data-ma-trace-gap-after':trial.rows[index].gap});
       });
-      text('平均影响 '+signed(evaluation.gradient[key]),width/2,301,{'text-anchor':'middle','font-size':14});
+      text(mse?'平均局部变化率 '+signed(evaluation.gradient[key]):'平均差距 '+waveNumber(evaluation.value)+' → '+waveNumber(trial.value),width/2,301,{'text-anchor':'middle','font-size':14});
     }
     const scoreCandidates=[{a:27,b:53},{a:30,b:47}];
     function drawWaveScores(width,progress) {

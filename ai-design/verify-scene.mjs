@@ -674,11 +674,25 @@ function waveModel(app,width,data=waveData,max=200) {
   assert.equal(app.handle.hidden,true);assert.ok(app.copy.children.length<=3);
   return params;
 }
+function assertParameterTrace(app,key) {
+  const traces=app.svg.querySelectorAll('[data-ma-effect-trace]');
+  assert.equal(traces.length,3);
+  const changes=traces.map(trace=>{
+    const t=Number(trace.getAttribute('data-ma-effect-trace')),record=Number(trace.getAttribute('data-ma-trace-record'));
+    const before=Number(trace.getAttribute('data-ma-trace-prediction-before')),after=Number(trace.getAttribute('data-ma-trace-prediction-after'));
+    close(before,20+30*t);close(after,before+(key==='a'?t:1));
+    close(trace.getAttribute('data-ma-trace-gap-before'),Math.abs(before-record));
+    close(trace.getAttribute('data-ma-trace-gap-after'),Math.abs(after-record));
+    return Math.abs(after-record)-Math.abs(before-record);
+  });
+  close(app.svg.getAttribute('data-ma-effect-mean'),changes.reduce((sum,value)=>sum+value,0)/3);
+}
 for(const width of [736,360,280]) {
   const app=mount(width,'#act-6');assert.equal(app.figure.hidden,true);app.advance();
+  assertParameterTrace(app,'a');
   close(app.svg.getAttribute('data-ma-effect-mean'),-2);
   assert.deepEqual(app.svg.querySelectorAll('[data-ma-effect-value]').map(n=>Number(n.getAttribute('data-ma-effect-value'))),[-1,-2,-3]);
-  app.advance();close(app.svg.getAttribute('data-ma-effect-mean'),-1);app.advance();
+  app.advance();close(app.svg.getAttribute('data-ma-effect-mean'),-1);assertParameterTrace(app,'b');app.advance();
   waveModel(app,width);app.advance();const joint=waveModel(app,width);close(joint.a,30.5);close(joint.b,20.25);
   app.retreat();close(waveModel(app,width).a,30);app.advance();app.advance();app.advance();
   assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'score-areas');app.advance();
