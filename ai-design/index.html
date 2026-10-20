@@ -64,7 +64,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -74,9 +74,9 @@
     const ink='var(--ma-ink)', muted='var(--ma-muted)', axis='var(--ma-axis)', accent='var(--ma-accent)';
     let geometry=null,drag=null,feedback=null,learning=null,autoTimer=null,autoRunning=false;
     let plotFrame=null,plotMotion=null,lastPlot=null;
-    let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null;
+    let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending'].includes(current());
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-score-purpose','wave-ending'].includes(current());
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -106,6 +106,7 @@
     }
     function renderCopy() {
       copy.replaceChildren();feedback=null;
+      if(current().startsWith('wave-')) {renderWaveCopy();return;}
       if(current().startsWith('bias-')) {renderBiasCopy();return;}
       if(current().startsWith('step-')) {renderStepCopy();return;}
       if(current().startsWith('direction-')) {renderDirectionCopy();return;}
@@ -183,6 +184,7 @@
     function updateNav() {
       back.disabled=state.scene===0;
       back.textContent='← 上一页';automatic.hidden=true;
+      if(current().startsWith('wave-')) {updateWaveNav();return;}
       if(current().startsWith('bias-')) {updateBiasNav();return;}
       if(current().startsWith('step-')) {updateStepNav();return;}
       if(current().startsWith('direction-')) {updateDirectionNav();return;}
@@ -192,6 +194,7 @@
     }
     function renderStage() {
       if(textOnly()) return;
+      if(current().startsWith('wave-')) {renderWaveGraph();return;}
       if(current().startsWith('bias-')) {renderBiasGraph();return;}
       if(current().startsWith('step-')) {renderStepGraph();return;}
       if(current().startsWith('direction-')) {renderDirectionGraph();return;}
@@ -1098,7 +1101,7 @@
         if(biasLesson.trial>0)back.textContent='← 撤回这次调整';
         next.textContent=['让第3条预测对齐','改为让第2条预测对齐','回到原规则，试试整体平移 →'][biasLesson.trial];
       } else if(current()==='bias-shift')next.textContent='两个数各自控制什么？ →';
-      else next.textContent='再试一次整体平移 ↻';
+      else next.textContent='让电脑同时调整两个数 →';
     }
     function syncBiasValues(offset,slope) {
       copy.querySelectorAll('[data-ma-bias-offset]').forEach(node=>{node.textContent=number(offset);});
@@ -1112,15 +1115,15 @@
       },700);
       else {drawBiasGraph(biasLesson.offset,30,width);syncBiasValues(biasLesson.offset,30);}
     }
-    function drawBiasGraph(offset,slope,width) {
+    function drawBiasGraph(offset,slope,width,data=biasRecords,maxPosition=200) {
       svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
       svg.setAttribute('data-ma-chart-kind','time-position-bias');svg.setAttribute('data-ma-bias-offset',String(offset));svg.setAttribute('data-ma-bias-slope',String(slope));
       const left=54,right=width-22,top=33,bottom=260;
-      const X=time=>left+time/4.4*(right-left),Y=position=>bottom-position/200*(bottom-top);
-      biasGeometry={width,scale:(bottom-top)/200,X,Y};
+      const X=time=>left+time/4.4*(right-left),Y=position=>bottom-position/maxPosition*(bottom-top);
+      biasGeometry={width,scale:(bottom-top)/maxPosition,X,Y};
       el('title',{id:'ma-stage-title'}).textContent='新任务：横轴时间，纵轴位置，只有第1、2、3秒的记录，没有起始位置记录。预测规则为'+number(offset)+'加时间乘'+number(slope)+'。'+biasRecords.map(row=>row.seconds+'秒预测'+number(biasPredict(row.seconds,offset,slope))+'，记录'+row.position).join('；')+'。平均差距'+number(biasScore(offset,slope))+'厘米。';
       line(left,top,left,bottom);line(left,bottom,right,bottom);
-      [0,50,100,150,200].forEach(position=>{
+      Array.from({length:maxPosition/50+1},(_,index)=>index*50).forEach(position=>{
         line(left-5,Y(position),left,Y(position));text(String(position),left-10,Y(position)+4,{'text-anchor':'end',fill:muted,'font-size':12});
       });
       [0,1,2,3,4].forEach(time=>{
@@ -1137,7 +1140,7 @@
       }
       const model=el('line',{...attrs,stroke:accent,'stroke-width':2.5,'data-ma-bias-line':''},marks);
       if(current()==='bias-shift'){model.style.touchAction='none';model.style.cursor='ns-resize';model.addEventListener('pointerdown',beginBiasDrag);}
-      biasRecords.forEach(row=>{
+      data.forEach(row=>{
         const value=biasPredict(row.seconds,offset,slope);
         line(X(row.seconds),Y(row.position),X(row.seconds),Y(value),{stroke:accent,'stroke-width':3.5,'stroke-opacity':0.6,'data-ma-bias-gap':row.seconds},marks);
         el('circle',{cx:X(row.seconds),cy:Y(row.position),r:4.5,fill:ink,'data-ma-bias-record':row.seconds},marks);
@@ -1167,7 +1170,6 @@
       stopAutomation();
       if(current()==='bias-observe'&&biasLesson.trial<2){biasLesson.trial++;renderCopy();updateNav();renderStage();return;}
       if(current()==='bias-observe')biasLesson.offset=20;
-      if(current()==='bias-ending'){biasLesson=null;state.scene=scenes.indexOf('bias-observe');renderScene();return;}
       state.scene++;renderScene();
     }
     function backwardBias() {
@@ -1175,8 +1177,361 @@
       if(current()==='bias-observe'&&biasLesson.trial>0){biasLesson.trial--;renderCopy();updateNav();renderStage();return;}
       state.scene--;renderScene();
     }
+    // Chapters 6–9 reuse one numerical model for scoring, tracing and training.
+    const waveNumber=value=>Math.abs(value)<1e-10?'0':Number(value.toFixed(4)).toString();
+    const waveStart={a:30,b:20};
+    const shapeRecords=[70,100,150].map((position,index)=>({seconds:index+1,position}));
+    function waveCompute(data,params,loss='mse') {
+      const rows=data.map(row=>{
+        const prediction=params.b+params.a*row.seconds,residual=prediction-row.position;
+        const local=loss==='mse'?2*residual:residual===0?null:Math.sign(residual);
+        return {...row,prediction,residual,gap:Math.abs(residual),term:loss==='mse'?residual*residual:Math.abs(residual),local,
+          a:local===null?null:local*row.seconds,b:local};
+      });
+      const mean=key=>rows.some(row=>row[key]===null)?null:rows.reduce((sum,row)=>sum+row[key],0)/rows.length;
+      return {params:{...params},rows,value:mean('term'),gradient:{a:mean('a'),b:mean('b')}};
+    }
+    function waveStep(data,params,alpha,loss='mse') {
+      const evaluation=waveCompute(data,params,loss),g=evaluation.gradient;
+      if(g.a===null||g.b===null)throw new Error('绝对差距在当前参数处没有唯一导数');
+      // Both changes use the SAME pre-update parameters and gradient.
+      return {a:params.a-alpha*g.a,b:params.b-alpha*g.b};
+    }
+    function waveBlend(from,to,progress) {return {a:from.a+(to.a-from.a)*progress,b:from.b+(to.b-from.b)*progress};}
+    function ensureWave() {
+      if(!wave)wave={selected:'a',seen:new Set(['a']),joint:false,squared:false,cut:false,narrow:false,
+        gradientSelected:'a',gradientSeen:new Set(['a']),alpha:0.05,history:[{...waveStart}],cursor:0,rateOpen:false,shapeHistory:[{a:30,b:40}],shapeTrained:false};
+    }
+    function waveHistoryParams(history,cursor) {
+      const i=clamp(Math.floor(cursor),0,history.length-1),j=Math.min(i+1,history.length-1);
+      return waveBlend(history[i],history[j],cursor-i);
+    }
+    function waveTrainStatus() {
+      const evaluation=waveCompute(biasRecords,wave.history[wave.cursor]);
+      if(!Number.isFinite(evaluation.value))return 'worse';
+      if(evaluation.value<=0.01)return 'close';
+      if(wave.cursor&&evaluation.value>waveCompute(biasRecords,wave.history[wave.cursor-1]).value+1e-8)return 'worse';
+      return wave.cursor>=2000?'limit':'ready';
+    }
+    function waveOutput(p,value,attr,label) {
+      const node=stepOutput(p,value,attr,label);node.textContent=waveNumber(value);return node;
+    }
+    function waveSummary(params,loss='mse',data=biasRecords) {
+      const p=paragraph('预测 = ');p.className='ma-formula';
+      waveOutput(p,params.b,'data-ma-wave-b','起始值').className='ma-parameter';
+      p.appendChild(document.createTextNode(' + 时间 × '));
+      waveOutput(p,params.a,'data-ma-wave-a','每秒距离').className='ma-parameter';
+      p.appendChild(document.createTextNode(loss==='mse'?'；平均平方差 ':'；平均差距 '));
+      waveOutput(p,waveCompute(data,params,loss).value,'data-ma-wave-loss','当前评分');
+      p.appendChild(document.createTextNode(loss==='mse'?' 平方厘米':' 厘米'));
+    }
+    function syncWaveSummary(params,loss='mse',data=biasRecords) {
+      const values={'data-ma-wave-a':params.a,'data-ma-wave-b':params.b,'data-ma-wave-loss':waveCompute(data,params,loss).value};
+      Object.entries(values).forEach(([key,value])=>copy.querySelectorAll('['+key+']').forEach(node=>{node.textContent=waveNumber(value);}));
+    }
+    function waveTermFormula(isMse) {
+      const selected=isMse?wave.gradientSelected:wave.selected,p=paragraph('预测 = ');p.className='ma-formula';
+      for(const key of ['b','a']) {
+        if(key==='a')p.appendChild(document.createTextNode(' + 时间 × '));
+        const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=String(waveStart[key]);
+        button.setAttribute('data-ma-wave-term',key);button.setAttribute('aria-pressed',String(selected===key));
+        button.setAttribute('aria-label','追踪'+(key==='a'?'每秒距离':'起始值')+'对评分的影响');
+        button.addEventListener('click',()=>{
+          stopAutomation();
+          if(isMse){wave.gradientSelected=key;wave.gradientSeen.add(key);}else{wave.selected=key;wave.seen.add(key);}
+          refreshWave();Array.from(copy.querySelectorAll('[data-ma-wave-term]')).find(node=>node.getAttribute('data-ma-wave-term')===key)?.focus?.();
+        });p.appendChild(button);
+      }
+    }
+    function renderWaveCopy() {
+      switch(current()) {
+        case 'wave-multi-purpose':
+          paragraph('刚才你让两个参数分别改变倾斜程度和整体位置。现在要让电脑自己决定：这两个数各自该改多少。');
+          paragraph('回看起始值20、每秒距离30的规则。三个预测都偏低。我们先分别追踪两个参数对平均差距的影响，再把两项结果用于同一次更新。第五幕里你的调整会保留。');
+          break;
+        case 'wave-effects':
+        case 'wave-gradient': {
+          const mse=current()==='wave-gradient',key=mse?wave.gradientSelected:wave.selected;
+          const evaluation=waveCompute(biasRecords,waveStart,mse?'mse':'mae');
+          paragraph(mse
+            ? '回到同一条未调准的规则，每条预测都低30。按平方评分，预测略增时，每条评分的局部影响为2×（−30）=−60。再乘以该参数在预测里的乘数。'
+            : '点公式里的一个参数，追踪它的影响。当前预测都偏低；每秒距离分别乘1、2、3，起始值在每次预测里只加一次，所以各自的影响不同。');
+          waveTermFormula(mse);
+          paragraph('下面暂时只画局部影响的倍率，不是差距长度：向左表示评分减少。'+(key==='a'?'每秒距离':'起始值')+'的导数是（'+evaluation.rows.map(row=>signed(row[key])).join(' ')+'）÷3 = '+signed(evaluation.gradient[key])+'。'+(mse?'评分变了，导数的尺度也变了；接下来先用较小的学习率0.05，再检查结果。':'再看另一个数，我们需要分别算出这两项。'));
+          break;
+        }
+        case 'wave-joint':
+          paragraph(wave.joint
+            ? '两个数已经共同更新：预测的改动是“起始值的改动＋时间×每秒距离的改动”。点、线和差距都按这条新规则重新计算。'
+            : '每秒距离的导数是−2，起始值的导数是−1。把各个参数的导数放在一起，就是梯度。用学习率0.25，分别得到+0.5和+0.25的改动。');
+          waveSummary(wave.joint?waveStep(biasRecords,waveStart,0.25,'mae'):waveStart,'mae');
+          paragraph(wave.joint
+            ? '这一轮两个改动都从更新前的同一条规则算出，没有先改一个数，再用它的新结果计算另一个。我们已经会更新多个参数，接下来看看怎样评价不同分布的偏差。'
+            : '接下来同时采用这两个改动。这里仍使用原来的平均差距，先观察一轮真实更新。');
+          break;
+        case 'wave-score-purpose':
+          paragraph('两个参数可以产生不同的偏差分布。有的规则多数预测接近，却有一条差得较远；有的规则每条都差一点。我们希望电脑怎样评价它们？');
+          paragraph('沿用第五幕的记录，取两条待比较规则。这一次，假设任务更希望避免较大的偏差。先看旧评分怎样评价，再决定是否换一种评分。');
+          break;
+        case 'wave-score':
+          paragraph(wave.squared
+            ? '把每条差距作为边长展开成正方形，面积就是差距乘自身。较大的偏差会产生更大的面积；把三个面积取平均，叫平均平方差。'
+            : 'A是53＋时间×27，三条差距为0、3、6；B是47＋时间×30，三条差距都为3。下图每组三个长度条都来自这些规则的实际预测，平均差距都是3厘米。');
+          const ratings=paragraph(wave.squared?'平均平方差：A ':'平均差距：A ');ratings.className='ma-formula';
+          waveOutput(ratings,wave.squared?15:3,'data-ma-rating-a','规则A的评分');
+          ratings.appendChild(document.createTextNode('，B '));waveOutput(ratings,wave.squared?9:3,'data-ma-rating-b','规则B的评分');
+          ratings.appendChild(document.createTextNode(wave.squared?' 平方厘米':' 厘米'));
+          paragraph(wave.squared
+            ? 'A的面积合计45，B合计27，各除以3得到15和9。新标准更偏好B；它表达了本任务的取舍，并非所有任务都必须这样评分。单位已改变，不能拿旧评分的3与新评分的9直接比较。'
+            : '旧标准把它们评为一样。为了更重视较大偏差，接下来把每条差距与自己相乘，观察三块面积。');
+          break;
+        case 'wave-strips':
+          paragraph(wave.cut
+            ? '两条边都缩短0.5。橙色窄条是减少的面积：右边一条，加上下面一条，拐角只计算一次。大方块减少的面积更多。'
+            : '新的评分会怎样影响调整方向？先看边长3和6的两块评分面积。把它们的边长都缩短同样的0.5，比较面积减少多少。');
+          paragraph(wave.cut?'3² − 2.5² = 2.75；6² − 5.5² = 5.75。':'同样一点预测改善，会从较大的平方评分中移走多少面积？看两块方块的边缘。').className='ma-formula';
+          paragraph('这里只观察一条差距的平方，不是在训练模型。接下来把减少的面积除以缩短的宽度，比较每单位变化的影响。');
+          break;
+        case 'wave-normalize': {
+          const h=wave.narrow?0.1:0.5;
+          paragraph('减少的面积由两条窄边组成。各自除以共同的宽度，得到两段长度：原边长，以及“原边长减去这点宽度”。下面把它们拼起来，表示每单位缩短带来的面积减少量。');
+          paragraph('缩短'+h+'时：边长3的影响是'+waveNumber(6-h)+'，边长6的影响是'+waveNumber(12-h)+'。').className='ma-formula';
+          paragraph(wave.narrow
+            ? '宽度继续趋近0，两段长度分别趋近3＋3与6＋6。因此，平方评分对差距的局部变化率是边长的2倍。预测偏低时，增大预测会减小评分；偏高时则相反。'
+            : '把这点宽度再缩小，看看结果会接近什么。这里计算的是变化量与改动宽度的比值，缩得越来越小时才得到局部导数。');
+          break;
+        }
+        case 'wave-train': {
+          const status=waveTrainStatus();
+          paragraph(wave.cursor===0
+            ? '现在按新的平方评分，实际训练两个参数。学习率先用0.05：导数比旧评分大了，沿用0.25未必合适。先逐轮看前两次更新，再让电脑自动继续。'
+            :status==='close'
+              ? '已达到本次容许精度：平均平方差不超过0.01平方厘米，停止更新。这是足够接近记录，并不是把参数吸附到答案或宣称误差严格为0。'
+              :status==='worse'
+                ? '这一轮的平均平方差变大，电脑先暂停。学习率会缩放新的导数；可以改用较小幅度，从同一个起点重新比较。'
+                :status==='limit'
+                  ? '本次达到2000轮上限，先停止。当前评分如实保留，可以回退检查，或从同一起点重新比较。'
+                  : '已计算'+wave.cursor+'轮。每一轮的两个导数都来自同一份旧参数，再同时更新。自动继续每次推进20个真实轮次，保留每轮记录，可以逐轮回退。');
+          waveSummary(wave.history[wave.cursor]);
+          if(wave.rateOpen) {
+            const p=paragraph('学习率（切换会从20＋时间×30重新开始）：');p.className='ma-controls';
+            for(const alpha of [0.05,0.25]) {
+              const button=document.createElement('button');button.type='button';button.textContent=String(alpha);
+              button.setAttribute('data-ma-wave-rate',String(alpha));button.setAttribute('aria-pressed',String(wave.alpha===alpha));
+              button.addEventListener('click',()=>{stopAutomation();wave.alpha=alpha;wave.history=[{...waveStart}];wave.cursor=0;refreshWave();});
+              p.appendChild(button);
+            }
+          } else paragraph('这次只改变评分方式，模型与记录都没换。纵轴固定到250厘米，以便比较较大改动；先看一轮是否改善，再继续。');
+          break;
+        }
+        case 'wave-shape':
+          paragraph(wave.shapeTrained
+            ? '电脑实际运行了'+(wave.shapeHistory.length-1)+'轮。参数已稳定，仍有预测对不上。接下来直接检查这些记录要求规则表达什么关系。'
+            : '换一组记录：第1、2、3秒为70、100、150。现在已经会训练两个参数，先让电脑继续调整这条直线，看看能否全部对齐。');
+          waveSummary(wave.shapeTrained?wave.shapeHistory.at(-1):wave.shapeHistory[0],'mse',shapeRecords);
+          paragraph(wave.shapeTrained
+            ? '先不归因于学习率。下一张图只比较相邻输入增加1时，记录和预测各增加多少；这次画的是相邻增量，不是预测与记录的差距。'
+            : '起始规则40＋时间×30对上前两条，第三条仍偏低。下一次操作会执行真实的多轮梯度更新，不播放预设参数。');
+          break;
+        case 'wave-intervals':
+          paragraph('输入同样增加1，记录的输出先增加30，再增加50；直线的预测却两次都增加同一个数。相加的起始值会在相减时抵消。');
+          waveSummary(wave.shapeHistory.at(-1),'mse',shapeRecords);
+          paragraph('因此，无论怎样调整这两个参数，一条直线都无法同时满足“增加30”和“增加50”。这揭示了规则形状的局限，不能靠更多训练解决。');
+          break;
+        case 'wave-ending':
+          paragraph('我们已经会追踪多个参数、选择评分方式，并让电脑根据实际导数反复训练。也看见了训练方法与模型能表达什么，是两个不同的问题。');
+          paragraph('接下来，要给规则增加一种能改变形状的计算：让某一部分只在部分输入范围起作用，再从中理解激活函数与神经元。');
+          break;
+      }
+    }
+    function updateWaveNav() {
+      switch(current()) {
+        case 'wave-multi-purpose':next.textContent='分别追踪这两个数 →';break;
+        case 'wave-effects':next.textContent=wave.seen.size<2?'再看起始值的影响 →':'把两项用于同一轮更新 →';break;
+        case 'wave-joint':
+          if(wave.joint)back.textContent='← 撤回这轮更新';
+          next.textContent=wave.joint?'怎样评价不同的偏差？ →':'按梯度同时更新两个数';break;
+        case 'wave-score-purpose':next.textContent='比较两条实际规则 →';break;
+        case 'wave-score':
+          if(wave.squared)back.textContent='← 回到长度评分';
+          next.textContent=wave.squared?'面积怎样影响调整？ →':'把差距展开成正方形';break;
+        case 'wave-strips':
+          if(wave.cut)back.textContent='← 恢复完整方块';
+          next.textContent=wave.cut?'除以这点改动的宽度 →':'两条边都缩短0.5';break;
+        case 'wave-normalize':
+          if(wave.narrow)back.textContent='← 回到宽度0.5';
+          next.textContent=wave.narrow?'把新影响带回参数计算 →':'把宽度从0.5缩到0.1';break;
+        case 'wave-gradient':next.textContent=wave.gradientSeen.size<2?'再看起始值的导数 →':'按新评分实际训练 →';break;
+        case 'wave-train':
+          if(wave.cursor>0)back.textContent='← 撤回一轮';
+          next.textContent=waveTrainStatus()==='ready'?'更新一轮':'训练之后，直线够用吗？ →';
+          automatic.hidden=wave.cursor<2||waveTrainStatus()!=='ready';automatic.textContent=autoRunning?'暂停':'自动继续（每次20轮）';break;
+        case 'wave-shape':
+          if(wave.shapeTrained)back.textContent='← 回到训练前';
+          next.textContent=wave.shapeTrained?'提取两段相邻增量 →':'实际训练这条直线';break;
+        case 'wave-intervals':next.textContent='需要怎样的新规则？ →';break;
+        case 'wave-ending':next.textContent='重新探索这四个单元 ↻';break;
+      }
+    }
+    function waveDrawModel(params,width,data=biasRecords,loss='mse') {
+      const maxPosition=current()==='wave-train'?250:200;
+      drawBiasGraph(params.b,params.a,width,data,maxPosition);handle.hidden=true;
+      const value=waveCompute(data,params,loss);
+      svg.setAttribute('data-ma-chart-kind','wave-model');svg.setAttribute('data-ma-wave-a',String(params.a));svg.setAttribute('data-ma-wave-b',String(params.b));
+      svg.setAttribute('data-ma-wave-loss',String(value.value));svg.setAttribute('data-ma-wave-score',loss);
+      svg.setAttribute('data-ma-wave-plot-max',String(maxPosition));
+      svg.children[0].textContent='横轴时间，纵轴位置。起始值'+waveNumber(params.b)+'，每秒距离'+waveNumber(params.a)+'。'+(loss==='mse'?'平均平方差':'平均差距')+waveNumber(value.value)+(loss==='mse'?'平方厘米。':'厘米。')+value.rows.map(row=>row.seconds+'秒：预测'+waveNumber(row.prediction)+'，记录'+row.position).join('；');
+      syncWaveSummary(params,loss,data);
+    }
+    function drawWaveEffects(width,mse) {
+      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
+      const key=mse?wave.gradientSelected:wave.selected,evaluation=waveCompute(biasRecords,waveStart,mse?'mse':'mae');
+      svg.setAttribute('data-ma-chart-kind','parameter-influences');svg.setAttribute('data-ma-effect-key',key);
+      svg.setAttribute('data-ma-effect-mean',String(evaluation.gradient[key]));svg.setAttribute('data-ma-effect-score',mse?'mse':'mae');
+      el('title',{id:'ma-stage-title'}).textContent='箭头表示所选参数略增时，评分的局部影响倍率，不是预测差距长度。向左表示评分减少。'+evaluation.rows.map(row=>row.seconds+'秒，局部影响'+row[key]).join('；')+'。平均为'+evaluation.gradient[key]+'。';
+      const max=Math.max(...evaluation.rows.map(row=>Math.abs(row[key]))),origin=width-28,scale=(width-110)/max;
+      evaluation.rows.forEach((row,index)=>{
+        const y=65+index*80,value=row[key],end=origin-Math.abs(value)*scale;
+        text(row.seconds+'秒：'+(mse?signed(row.local)+' × '+(key==='a'?row.seconds:1):'预测'+row.prediction+'，记录'+row.position),16,y-23,{fill:muted,'font-size':12});
+        line(origin,y,end,y,{stroke:accent,'stroke-width':6,'data-ma-effect-row':row.seconds,'data-ma-effect-value':value});
+        el('path',{d:'M '+(end+6)+' '+(y-5)+' L '+end+' '+y+' L '+(end+6)+' '+(y+5),stroke:accent,fill:'none','stroke-width':2});
+        text(signed(value),end-8,y+4,{'text-anchor':'end',fill:accent,'font-size':13});
+      });
+      text('平均影响 '+signed(evaluation.gradient[key]),width/2,301,{'text-anchor':'middle','font-size':14});
+    }
+    const scoreCandidates=[{a:27,b:53},{a:30,b:47}];
+    function drawWaveScores(width,progress) {
+      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
+      svg.setAttribute('data-ma-chart-kind','score-areas');svg.setAttribute('data-ma-square-progress',String(progress));
+      el('title',{id:'ma-stage-title'}).textContent='两条实际规则的差距：A为0、3、6；B为3、3、3。长度评分均为3厘米。正方形展开完成后，平均平方差分别为15和9平方厘米。展开仅改变表现方式，不更新模型。';
+      const cell=(width-64)/3,unit=Math.min(16,cell/7);
+      ['A','B'].forEach((label,rowIndex)=>{
+        const evaluation=waveCompute(biasRecords,scoreCandidates[rowIndex]),bottom=135+135*rowIndex;
+        text(label,10,bottom-24,{fill:muted});
+        evaluation.rows.forEach((row,index)=>{
+          const side=row.gap*unit,x=40+(index+0.5)*cell-side/2,height=progress===0?3:side*progress;
+          if(side)el('rect',{x,y:bottom-height,width:side,height,fill:accent,'fill-opacity':0.35,
+            'data-ma-score-cell':label+index,'data-ma-score-side':row.gap,'data-ma-score-term':row.term,'data-ma-score-unit':unit});
+          else el('circle',{cx:x,cy:bottom,r:2,fill:muted,'data-ma-zero-score':label+index});
+          text(progress===1?row.gap+'²='+row.term:String(row.gap),40+(index+0.5)*cell,bottom+19,{'text-anchor':'middle','font-size':11,fill:muted});
+          if(rowIndex===0)text((index+1)+'秒',40+(index+0.5)*cell,18,{'text-anchor':'middle','font-size':12,fill:muted});
+        });
+      });
+      if(wave.squared) {
+        copy.querySelectorAll('[data-ma-rating-a]').forEach(node=>{node.textContent=progress===1?'15':'展开中';});
+        copy.querySelectorAll('[data-ma-rating-b]').forEach(node=>{node.textContent=progress===1?'9':'展开中';});
+      }
+    }
+    function drawWaveStrips(width,h) {
+      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
+      svg.setAttribute('data-ma-chart-kind','square-strips');svg.setAttribute('data-ma-strip-width',String(h));
+      el('title',{id:'ma-stage-title'}).textContent='两个正方形边长分别3和6，同时缩短'+waveNumber(h)+'。减少面积由右侧与下侧两条窄边组成，角只计算一次。';
+      const unit=Math.min(22,(width-48)/14),centers=[width*0.27,width*0.73],bottom=220;
+      [3,6].forEach((d,index)=>{
+        const side=d*unit,x=centers[index]-side/2,y=bottom-side,newSide=(d-h)*unit,removed=d*d-(d-h)*(d-h);
+        el('rect',{x,y,width:side,height:side,fill:'none',stroke:axis});
+        el('rect',{x,y,width:newSide,height:newSide,fill:accent,'fill-opacity':0.12,'data-ma-inner-side':d,'data-ma-inner-value':d-h});
+        el('rect',{x:x+newSide,y,width:h*unit,height:side,fill:accent,'fill-opacity':0.65,'data-ma-strip-part':d+'-right','data-ma-strip-area':d*h});
+        el('rect',{x,y:y+newSide,width:newSide,height:h*unit,fill:accent,'fill-opacity':0.45,'data-ma-strip-part':d+'-bottom','data-ma-strip-area':(d-h)*h});
+        text('边长 '+d,centers[index],y-20,{'text-anchor':'middle',fill:muted,'font-size':12});
+        text(h?'减少 '+waveNumber(removed):'面积 '+d*d,centers[index],bottom+35,{'text-anchor':'middle','font-size':13,'data-ma-removed-area':d,'data-ma-removed-value':removed});
+      });
+    }
+    function drawWaveNormalized(width,h) {
+      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
+      svg.setAttribute('data-ma-chart-kind','normalized-strips');svg.setAttribute('data-ma-normalized-width',String(h));
+      el('title',{id:'ma-stage-title'}).textContent='把两条窄边的面积分别除以共同宽度'+waveNumber(h)+'，得到长度d和d减宽度，再相加。两组的单位变化影响分别为'+waveNumber(6-h)+'、'+waveNumber(12-h)+'。';
+      const unit=(width-104)/12,left=62;
+      [3,6].forEach((d,index)=>{
+        const y=90+130*index;
+        text('边长'+d,12,y-25,{fill:muted,'font-size':12});
+        line(left,y,left+d*unit,y,{stroke:accent,'stroke-width':12,'stroke-opacity':0.7,'data-ma-normalized-part':d+'-first','data-ma-normalized-length':d});
+        line(left+d*unit,y,left+(2*d-h)*unit,y,{stroke:accent,'stroke-width':12,'stroke-opacity':0.4,'data-ma-normalized-part':d+'-second','data-ma-normalized-length':d-h});
+        line(left+d*unit,y-10,left+d*unit,y+10,{stroke:ink});
+        text(d+' + '+waveNumber(d-h)+' = '+waveNumber(2*d-h),left,y+35,{'font-size':14,'data-ma-normalized-result':d,'data-ma-normalized-value':2*d-h});
+      });
+    }
+    function drawWaveIntervals(width) {
+      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
+      svg.setAttribute('data-ma-chart-kind','adjacent-increments');
+      const params=wave.shapeHistory.at(-1),evaluation=waveCompute(shapeRecords,params),scale=(width-115)/55,left=70;
+      el('title',{id:'ma-stage-title'}).textContent='现在比较相邻位置增加量，不是预测误差。输入每次增加1，记录先增加30再增加50；直线预测两次都增加'+waveNumber(params.a)+'。';
+      for(let i=0;i<2;i++) {
+        const y=65+i*140,actual=shapeRecords[i+1].position-shapeRecords[i].position,predicted=evaluation.rows[i+1].prediction-evaluation.rows[i].prediction;
+        text((i+1)+'→'+(i+2)+'秒',12,y-22,{fill:muted,'font-size':12});
+        line(left,y,left+actual*scale,y,{stroke:ink,'stroke-width':7,'data-ma-actual-increment':i,'data-ma-increment-value':actual});
+        text(String(actual),left+actual*scale+8,y+4,{'font-size':12});
+        line(left,y+34,left+predicted*scale,y+34,{stroke:accent,'stroke-width':7,'data-ma-model-increment':i,'data-ma-increment-value':predicted});
+        text(waveNumber(predicted),left+predicted*scale+8,y+38,{'font-size':12,fill:accent});
+      }
+      text('深色是记录，橙色是同一条直线的预测',width/2,302,{'text-anchor':'middle',fill:muted,'font-size':11});
+    }
+    function renderWaveGraph() {
+      const width=Math.max(240,figure.getBoundingClientRect().width||736);
+      switch(current()) {
+        case 'wave-effects':drawWaveEffects(width,false);break;
+        case 'wave-gradient':drawWaveEffects(width,true);break;
+        case 'wave-joint':animatePlot(current(),width,wave.joint?1:0,progress=>waveDrawModel(waveBlend(waveStart,waveStep(biasRecords,waveStart,0.25,'mae'),progress),width,biasRecords,'mae'),800);break;
+        case 'wave-score':animatePlot(current(),width,wave.squared?1:0,progress=>drawWaveScores(width,progress),850);break;
+        case 'wave-strips':animatePlot(current(),width,wave.cut?0.5:0,h=>drawWaveStrips(width,h),800);break;
+        case 'wave-normalize':animatePlot(current(),width,wave.narrow?0.1:0.5,h=>drawWaveNormalized(width,h),800);break;
+        case 'wave-train':animatePlot(current(),width,wave.cursor,index=>{waveDrawModel(waveHistoryParams(wave.history,index),width);svg.setAttribute('data-ma-wave-frame-round',String(index));},800);break;
+        case 'wave-shape':animatePlot(current(),width,wave.shapeTrained?wave.shapeHistory.length-1:0,index=>waveDrawModel(waveHistoryParams(wave.shapeHistory,index),width,shapeRecords),1000);break;
+        case 'wave-intervals':drawWaveIntervals(width);break;
+      }
+    }
+    function waveAdvanceTrain(count=1) {
+      for(let i=0;i<count&&waveTrainStatus()==='ready';i++) {
+        if(wave.cursor===wave.history.length-1)wave.history.push(waveStep(biasRecords,wave.history[wave.cursor],wave.alpha));
+        wave.cursor++;
+      }
+      if(wave.cursor>=2)wave.rateOpen=true;
+      if(waveTrainStatus()!=='ready')stopAutomation();
+    }
+    function scheduleWaveTraining() {
+      autoTimer=setTimeout(()=>{
+        autoTimer=null;if(!autoRunning||current()!=='wave-train')return;
+        cancelPlotAnimation(true);waveAdvanceTrain(20);refreshWave();
+        if(autoRunning&&waveTrainStatus()==='ready')scheduleWaveTraining();
+      },950);
+    }
+    function trainWaveShape() {
+      if(wave.shapeHistory.length===1) {
+        for(let i=0;i<3000;i++) {
+          const previous=wave.shapeHistory.at(-1),g=waveCompute(shapeRecords,previous).gradient;
+          if(Math.hypot(g.a,g.b)<1e-7)break;
+          wave.shapeHistory.push(waveStep(shapeRecords,previous,0.05));
+        }
+      }
+      wave.shapeTrained=true;
+    }
+    function refreshWave() {renderCopy();updateNav();renderStage();}
+    function forwardWave() {
+      stopAutomation();ensureWave();
+      if(current()==='wave-effects'&&wave.seen.size<2){wave.selected='b';wave.seen.add('b');refreshWave();return;}
+      if(current()==='wave-joint'&&!wave.joint){wave.joint=true;refreshWave();return;}
+      if(current()==='wave-score'&&!wave.squared){wave.squared=true;refreshWave();return;}
+      if(current()==='wave-strips'&&!wave.cut){wave.cut=true;refreshWave();return;}
+      if(current()==='wave-normalize'&&!wave.narrow){wave.narrow=true;refreshWave();return;}
+      if(current()==='wave-gradient'&&wave.gradientSeen.size<2){wave.gradientSelected='b';wave.gradientSeen.add('b');refreshWave();return;}
+      if(current()==='wave-train'&&waveTrainStatus()==='ready'){waveAdvanceTrain();refreshWave();return;}
+      if(current()==='wave-shape'&&!wave.shapeTrained){trainWaveShape();refreshWave();return;}
+      if(current()==='wave-ending'){wave=null;state.scene=scenes.indexOf('wave-multi-purpose');renderScene();return;}
+      state.scene++;renderScene();
+    }
+    function backwardWave() {
+      stopAutomation();
+      if(current()==='wave-joint'&&wave.joint){wave.joint=false;refreshWave();return;}
+      if(current()==='wave-score'&&wave.squared){wave.squared=false;refreshWave();return;}
+      if(current()==='wave-strips'&&wave.cut){wave.cut=false;refreshWave();return;}
+      if(current()==='wave-normalize'&&wave.narrow){wave.narrow=false;refreshWave();return;}
+      if(current()==='wave-train'&&wave.cursor>0){wave.cursor--;refreshWave();return;}
+      if(current()==='wave-shape'&&wave.shapeTrained){wave.shapeTrained=false;refreshWave();return;}
+      state.scene--;renderScene();
+    }
     function renderScene() {
       stopAutomation();lastPlot=null;drag=null;feedback=null;
+      if(current().startsWith('wave-'))ensureWave();
       if(current().startsWith('bias-'))ensureBiasLesson();
       if(current().startsWith('step-'))ensureStepLesson();
       if(current().startsWith('learn-')) ensureLearning();
@@ -1219,6 +1574,7 @@
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(current().startsWith('wave-')) {backwardWave();return;}
       if(current().startsWith('bias-')) {backwardBias();return;}
       if(current().startsWith('step-')) {backwardStep();return;}
       if(current().startsWith('direction-')) {backwardDirection();return;}
@@ -1226,6 +1582,7 @@
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(current().startsWith('wave-')) {forwardWave();return;}
       if(current().startsWith('bias-')) {forwardBias();return;}
       if(current().startsWith('step-')) {forwardStep();return;}
       if(current().startsWith('direction-')) {forwardDirection();return;}
@@ -1236,6 +1593,11 @@
       state.scene++;state.highlight=null;renderScene();
     });
     automatic.addEventListener('click',()=>{
+      if(current()==='wave-train') {
+        if(waveTrainStatus()!=='ready'||wave.cursor<2)return;
+        if(autoRunning)stopAutomation();else{autoRunning=true;scheduleWaveTraining();}
+        updateNav();return;
+      }
       if(current()==='step-practice') {
         if(stepStatus()!=='ready'||stepLesson.inputError)return;
         if(autoRunning)stopAutomation();else {autoRunning=true;scheduleStepPractice();}
@@ -1253,6 +1615,8 @@
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
+      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape'}[globalThis.location?.hash];
+      if(chapter){state.scene=scenes.indexOf(chapter);renderScene();}
     });
     document.addEventListener('visibilitychange',()=>{
       if(document.hidden) {stopAutomation();updateNav();}
@@ -1261,6 +1625,8 @@
     if(globalThis.location?.hash==='#act-3') state.scene=14;
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
     if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
+    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape'}[globalThis.location?.hash];
+    if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     new ResizeObserver(()=>{
       cancelPlotAnimation(true);lastPlot=null;

@@ -35,8 +35,9 @@ function mount(width,hash='',program=script,motion=false) {
   const timers=new Map(),frames=new Map(),documentEvents={},pageEvents={},location={hash},evaluations=[],derivativeInputs=[];let timerId=0,frameId=0,frameTime=0,resizeCallback;
   const document={hidden:false,getElementById:id=>id==='minimal-ai-scene'?root:null,createElement:tag=>new Element(tag),createElementNS:(_,tag)=>new Element(tag),createTextNode:value=>Object.assign(new Element('#text'),{textContent:value}),addEventListener:(name,callback)=>{documentEvents[name]=callback;}};
   const motionPlatform=motion?{performance:{now:()=>frameTime},requestAnimationFrame:callback=>{frames.set(++frameId,callback);return frameId;},cancelAnimationFrame:id=>frames.delete(id),matchMedia:()=>({matches:motion==='reduce'})}:{};
-  vm.runInNewContext(program,{document,ResizeObserver:class{constructor(callback){resizeCallback=callback;}observe(){}},Math,Number,String,location,__recordParameter:value=>evaluations.push(value),__recordDerivative:value=>derivativeInputs.push(value),setTimeout:callback=>{timers.set(++timerId,callback);return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,callback)=>{pageEvents[name]=callback;},...motionPlatform});
-  return {root,copy,figure,svg,handle,back,next,automatic,timers,frames,evaluations,derivativeInputs,
+  let waveMath;
+  vm.runInNewContext(program,{document,ResizeObserver:class{constructor(callback){resizeCallback=callback;}observe(){}},Math,Number,String,location,__captureWaveMath:value=>{waveMath=value;},__recordParameter:value=>evaluations.push(value),__recordDerivative:value=>derivativeInputs.push(value),setTimeout:callback=>{timers.set(++timerId,callback);return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,callback)=>{pageEvents[name]=callback;},...motionPlatform});
+  return {root,copy,figure,svg,handle,back,next,automatic,timers,frames,evaluations,derivativeInputs,waveMath,
     advance(){next.fire('click');},retreat(){back.fire('click');},key(key){handle.fire('keydown',{key});},
     tick(){const [id,callback]=timers.entries().next().value;timers.delete(id);callback();},
     frame(milliseconds=210){frameTime+=milliseconds;const callbacks=[...frames.values()];frames.clear();callbacks.forEach(callback=>callback(frameTime));},
@@ -619,7 +620,8 @@ for(const width of [736,360,280]) {
   app.handle.fire('pointercancel',{pointerId:6});assertBiasGeometry(app,width,50);
   app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/两个可调整的数/);
   app.retreat();assertBiasGeometry(app,width,50);
-  app.advance();app.advance();assertBiasGeometry(app,width);
+  app.advance();app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/两个数各自该改多少/);
+  app.retreat();app.retreat();assertBiasGeometry(app,width,50);
   const short=mount(width,'#act-5');for(let i=0;i<4;i++)short.advance();
   assert.equal(short.figure.hidden,true,'four advances reach the short ending without extra text-only steps');
   console.log('PASS width='+width+': short fifth act, real alignment attempts, parallel shift, line/point dragging, keyboard, boundaries, revisit and replay');
@@ -641,6 +643,92 @@ assert.equal(biasMotion.handle.getAttribute('aria-orientation'),'horizontal');as
 const biasReduced=mount(360,'#act-5',script,'reduce');biasReduced.advance();assertBiasGeometry(biasReduced,360,20,40);
 assert.equal(biasReduced.frames.size,0);
 console.log('PASS fifth act: actual animated trial values, hidden-page settling, cancelled drag/navigation, reduced motion');
+const capturedWave=script.replace('    const waveChapter=', '    globalThis.__captureWaveMath({compute:waveCompute,step:waveStep,history:waveHistoryParams});\n    const waveChapter=');
+assert.notEqual(capturedWave,script);
+const math=mount(360,'#act-6',capturedWave).waveMath;
+const waveData=[1,2,3].map(seconds=>({seconds,position:50+30*seconds}));
+for(const loss of ['mae','mse']) {
+  const params={a:29,b:21},actual=math.compute(waveData,params,loss);
+  for(const key of ['a','b']) {
+    const h=1e-4,plus={...params,[key]:params[key]+h},minus={...params,[key]:params[key]-h};
+    const numeric=(math.compute(waveData,plus,loss).value-math.compute(waveData,minus,loss).value)/(2*h);
+    assert.ok(Math.abs(numeric-actual.gradient[key])<1e-6);
+  }
+}
+close(math.compute(waveData,{a:30,b:50}).gradient.a,0);
+assert.equal(math.compute(waveData,{a:30,b:50},'mae').gradient.a,null);
+assert.throws(()=>math.step(waveData,{a:30,b:50},0.25,'mae'));
+const simultaneous=math.step(waveData,{a:30,b:20},0.05);
+close(simultaneous.a,36);close(simultaneous.b,23);close(math.compute(waveData,simultaneous).value,249);
+console.log('PASS new math: analytic gradients match independent finite differences; both updates use the same old parameters; absolute-value corners remain undefined');
+function waveModel(app,width,data=waveData,max=200) {
+  const params={a:Number(app.svg.getAttribute('data-ma-wave-a')),b:Number(app.svg.getAttribute('data-ma-wave-b'))};
+  const loss=app.svg.getAttribute('data-ma-wave-score'),score=math.compute(data,params,loss).value,Y=p=>260-p/max*227;
+  close(app.svg.getAttribute('data-ma-wave-loss'),score);
+  for(const key of ['a','b'])close(app.copy.querySelectorAll('[data-ma-wave-'+key+']')[0].textContent,Number(params[key].toFixed(4)));
+  close(app.copy.querySelectorAll('[data-ma-wave-loss]')[0].textContent,Number(score.toFixed(4)));
+  app.svg.querySelectorAll('[data-ma-bias-prediction]').forEach((point,i)=>{
+    close(point.getAttribute('cy'),Y(params.b+params.a*data[i].seconds));
+    close(point.getAttribute('cx'),54+data[i].seconds/4.4*(width-76));
+  });
+  assert.equal(app.handle.hidden,true);assert.ok(app.copy.children.length<=3);
+  return params;
+}
+for(const width of [736,360,280]) {
+  const app=mount(width,'#act-6');assert.equal(app.figure.hidden,true);app.advance();
+  close(app.svg.getAttribute('data-ma-effect-mean'),-2);
+  assert.deepEqual(app.svg.querySelectorAll('[data-ma-effect-value]').map(n=>Number(n.getAttribute('data-ma-effect-value'))),[-1,-2,-3]);
+  app.advance();close(app.svg.getAttribute('data-ma-effect-mean'),-1);app.advance();
+  waveModel(app,width);app.advance();const joint=waveModel(app,width);close(joint.a,30.5);close(joint.b,20.25);
+  app.retreat();close(waveModel(app,width).a,30);app.advance();app.advance();app.advance();
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'score-areas');app.advance();
+  app.svg.querySelectorAll('[data-ma-score-cell]').forEach(rect=>{
+    const side=Number(rect.getAttribute('data-ma-score-side')),unit=Number(rect.getAttribute('data-ma-score-unit'));
+    close(rect.getAttribute('width'),side*unit);close(rect.getAttribute('height'),side*unit);
+    close(Number(rect.getAttribute('width'))*Number(rect.getAttribute('height'))/unit**2,rect.getAttribute('data-ma-score-term'));
+  });
+  assert.equal(app.copy.querySelectorAll('[data-ma-rating-a]')[0].textContent,'15');
+  app.advance();app.advance();
+  const strips=app.svg.querySelectorAll('[data-ma-strip-part]');
+  for(const d of [3,6]) {
+    const areas=strips.filter(n=>n.getAttribute('data-ma-strip-part').startsWith(d+'-')).map(n=>Number(n.getAttribute('data-ma-strip-area')));
+    close(areas[0]+areas[1],d*d-(d-0.5)**2);
+  }
+  app.advance();app.advance();close(app.svg.getAttribute('data-ma-normalized-width'),0.1);
+  app.svg.querySelectorAll('[data-ma-normalized-result]').forEach(n=>close(n.getAttribute('data-ma-normalized-value'),2*Number(n.getAttribute('data-ma-normalized-result'))-0.1));
+  app.advance();close(app.svg.getAttribute('data-ma-effect-mean'),-120);app.advance();close(app.svg.getAttribute('data-ma-effect-mean'),-60);app.advance();
+  app.advance();close(waveModel(app,width,waveData,250).a,36);app.advance();const roundTwo=waveModel(app,width,waveData,250);
+  app.retreat();close(waveModel(app,width,waveData,250).a,36);app.advance();close(waveModel(app,width,waveData,250).a,roundTwo.a);
+  app.automatic.fire('click');app.tick();app.automatic.fire('click');assert.equal(app.timers.size,0);
+  app.automatic.fire('click');let ticks=0;while(app.timers.size&&ticks++<100)app.tick();assert.ok(ticks<100);
+  assert.ok(Number(app.svg.getAttribute('data-ma-wave-loss'))<=0.01);assert.equal(app.automatic.hidden,true);
+  const rates=app.copy.querySelectorAll('[data-ma-wave-rate]');rates.find(n=>n.getAttribute('data-ma-wave-rate')==='0.25').fire('click');
+  app.advance();const overshoot=waveModel(app,width,waveData,250);close(overshoot.a,60);close(overshoot.b,35);close(app.svg.getAttribute('data-ma-wave-loss'),2625);
+  assert.match(app.copy.textContent,/先暂停/);assert.equal(app.automatic.hidden,true);
+  app.advance();app.advance();const shapeData=[70,100,150].map((position,index)=>({seconds:index+1,position}));
+  const fitted=waveModel(app,width,shapeData);assert.ok(Math.abs(fitted.a-40)<1e-5);assert.ok(Math.abs(fitted.b-80/3)<1e-5);
+  assert.ok(Math.abs(Number(app.svg.getAttribute('data-ma-wave-loss'))-200/9)<1e-8);
+  app.advance();assert.deepEqual(app.svg.querySelectorAll('[data-ma-actual-increment]').map(n=>Number(n.getAttribute('data-ma-increment-value'))),[30,50]);
+  app.svg.querySelectorAll('[data-ma-model-increment]').forEach(n=>assert.ok(Math.abs(Number(n.getAttribute('data-ma-increment-value'))-40)<1e-5));
+  app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.match(app.copy.textContent,/两个数各自该改多少/);
+  console.log('PASS width='+width+': four-unit navigation, simultaneous updates, proportional square areas, nonoverlapping strips, normalized limit, real training/rollback/overshoot, and linear-model limitation');
+}
+const movingWave=mount(360,'#act-6',script,true);
+movingWave.advance();movingWave.advance();movingWave.advance();movingWave.advance();movingWave.frame(400);
+const jointHalf=waveModel(movingWave,360);close(jointHalf.a,30.25);close(jointHalf.b,20.125);
+movingWave.hide();close(waveModel(movingWave,360).a,30.5);assert.equal(movingWave.frames.size,0);movingWave.show();
+const movingTrain=mount(360,'#act-8',script,true);
+for(let i=0;i<6;i++)movingTrain.advance();
+assert.equal(movingTrain.svg.getAttribute('data-ma-chart-kind'),'wave-model');
+movingTrain.advance();movingTrain.frame(400);close(waveModel(movingTrain,360,waveData,250).a,33);
+movingTrain.frame(400);movingTrain.advance();movingTrain.frame(800);
+movingTrain.automatic.fire('click');movingTrain.tick();movingTrain.frame(400);
+const interpolated=waveModel(movingTrain,360,waveData,250);let expected={a:30,b:20};for(let i=0;i<12;i++)expected=math.step(waveData,expected,0.05);
+close(interpolated.a,expected.a);close(interpolated.b,expected.b);
+movingTrain.automatic.fire('click');assert.equal(movingTrain.frames.size,0);assert.equal(movingTrain.timers.size,0);
+movingTrain.automatic.fire('click');movingTrain.goToSecond();assert.equal(movingTrain.timers.size,0);assert.equal(movingTrain.frames.size,0);
+const reducedWave=mount(280,'#act-9',script,'reduce');reducedWave.advance();assert.equal(reducedWave.frames.size,0);
+console.log('PASS new motion: computed intermediate model geometry, actual per-round history, pause/navigation cancellation, reduced motion');
 assert.ok(!fragment.includes('完成题数'));
 assert.ok(!fragment.includes('教学样本'));
 assert.ok(!fragment.includes('<pre'));
