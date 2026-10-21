@@ -14,6 +14,9 @@
     #minimal-ai-scene .ma-handle[aria-orientation="vertical"] { cursor:ns-resize; }
     #minimal-ai-scene button:focus-visible { outline:2px solid var(--ma-ink); outline-offset:5px; }
     #minimal-ai-scene .ma-formula { font-variant-numeric:tabular-nums; }
+    #minimal-ai-scene .ma-fraction { display:inline-grid; text-align:center; vertical-align:middle; font-size:0.9em; line-height:1.6; margin:0 3px; }
+    #minimal-ai-scene .ma-fraction > :first-child { border-bottom:1px solid var(--ma-axis); }
+    #minimal-ai-scene .ma-shared { color:var(--ma-accent); }
     #minimal-ai-scene .ma-parameter { color:var(--ma-accent); font-weight:500; padding:0 3px; font-variant-numeric:tabular-nums; }
     #minimal-ai-scene .ma-term { font:inherit; font-size:1.15em; color:var(--ma-ink); background:transparent; padding:2px 3px; border:0; border-bottom:1px solid var(--ma-axis); cursor:pointer; }
     #minimal-ai-scene .ma-term[aria-pressed="true"] { border-color:var(--ma-accent); color:var(--ma-accent); }
@@ -1991,95 +1994,135 @@
       if(current()==='output-train'&&outputLesson.cursor>0){outputLesson.cursor--;refreshOutput();return;}
       state.scene--;renderScene();
     }
-    function chainTrace(delta=0.01) {
+    function chainTrace(delta=0.05) {
       const bias=-2.4,before=relayEvaluate(bias),after=relayEvaluate(bias+delta),r=before.rows[2],q=after.rows[2];
-      const original=[bias,r.activated,r.prediction,before.loss],trial=[bias+delta,q.activated,q.prediction,after.loss];
-      const changes=trial.map((value,i)=>value-original[i]);
-      return {original,trial,changes,before,after,factors:[r.activationSlope,bendConfig.output,2*r.error],count:before.rows.length,
-        gradient:before.gradient,estimate:before.gradient*delta,scoreFactor:2*r.error/before.rows.length};
+      const original=[bias,r.activated,r.prediction,before.loss],trial=[bias+delta,q.activated,q.prediction,after.loss],changes=trial.map((value,i)=>value-original[i]);
+      const positionSlope=r.effect,scoreSlope=2*r.error/before.rows.length,local=Math.abs(delta)<1e-10;
+      return {original,trial,changes,before,after,count:before.rows.length,gradient:before.gradient,positionSlope,scoreSlope,
+        rates:local?[positionSlope,scoreSlope,before.gradient]:[changes[2]/changes[0],changes[3]/changes[2],changes[3]/changes[0]]};
     }
-    function chainDirectionControls(p) {
+    function chainValue(kind,input) {
+      if(kind==='prediction')return relayEvaluate(input).rows[2].prediction;
+      const snapshot=relayEvaluate(-2.4);
+      return snapshot.rows.reduce((sum,row,i)=>sum+(i===2?(input-row.actual)**2:row.error**2),0)/snapshot.rows.length;
+    }
+    function chainLayout(width) {
+      const wide=width>=600,side=wide?Math.min(210,(width-150)/2):Math.min(150,width-96);
+      return {side,height:wide?side+90:2*side+166,first:{left:wide?58:(width-side)/2,top:40},second:{left:wide?width-36-side:(width-side)/2,top:wide?40:40+side+76}};
+    }
+    function chainCompareControl(p) {
       const c=relayLesson.chain,row=document.createElement('span');row.className='ma-controls';row.style.marginTop='8px';
-      for(const delta of [0.01,-0.01]) {
-        const button=document.createElement('button');button.type='button';button.textContent=delta>0?'试算偏置 +0.01':'试算偏置 −0.01';
-        button.setAttribute('data-ma-chain-direction',delta);button.setAttribute('aria-pressed',String(c.delta===delta));
-        button.addEventListener('click',()=>{stopAutomation();c.delta=delta;refreshRelay();copy.querySelectorAll('[data-ma-chain-direction]').find(node=>Number(node.getAttribute('data-ma-chain-direction'))===delta)?.focus?.();});row.appendChild(button);
-      }p.appendChild(row);
+      const button=document.createElement('button');button.type='button';button.textContent=c.delta>0?'反向试算：偏置减小0.05':'反向试算：偏置增加0.05';button.setAttribute('data-ma-chain-reverse','');
+      button.addEventListener('click',()=>{stopAutomation();c.delta=-c.delta;refreshRelay();copy.querySelectorAll('[data-ma-chain-reverse]')[0]?.focus?.();});row.appendChild(button);p.appendChild(row);
+    }
+    function chainFraction(parent,top,bottom,sharedTop=false,sharedBottom=false,keys=[]) {
+      const fraction=document.createElement('span');fraction.className='ma-fraction';
+      for(const [index,[value,shared]] of [[top,sharedTop],[bottom,sharedBottom]].entries()) {
+        const node=document.createElement(shared?'button':'span');node.textContent=value;
+        if(keys[index])node.setAttribute('data-ma-chain-fraction-value',keys[index]);
+        if(shared){node.type='button';node.className='ma-term ma-shared';node.setAttribute('data-ma-chain-shared','');node.setAttribute('aria-pressed',String(relayLesson.chain.focus===2));node.setAttribute('aria-label','突出两幅图中同一段预测位置变化');node.addEventListener('click',()=>{stopAutomation();relayLesson.chain.focus=relayLesson.chain.focus===2?null:2;refreshRelay();});}
+        fraction.appendChild(node);
+      }parent.appendChild(fraction);
     }
     function renderChainCopy() {
-      const c=relayLesson.chain,v=chainTrace(c.delta);
+      const c=relayLesson.chain,v=chainTrace(c.step===5?0:c.delta);
       if(c.step===0) {
-        paragraph('我们要决定偏置往哪边改，平均平方误差才会下降。先追踪一次很小的试算：固定第3秒的输入，把偏置从−2.4'+(c.delta>0?'增加':'减小')+'0.01，看变化怎样到达评分。');
-        paragraph('灰色是原计算，橙色始终代表这同一次试算。接下来每一步都接收上一步已经产生的变化；这里只试算，不更新保存的模型。');return;
+        paragraph('我们要计算平均平方误差对偏置的局部影响，用它决定偏置往哪边改。先把连续计算拆成两步：偏置怎样影响第3秒的预测位置，预测位置又怎样影响平均平方误差。');
+        paragraph('第一幅包含刚才的ReLU和输出放大，两图各有自己的坐标和单位。当前偏置−2.4；在这个小范围内，前两秒的预测保持正确，所以只需追踪第3秒的变化。');return;
       }
       if(c.step===1) {
-        paragraph('偏置的变化先到达ReLU。第3秒的激活前数值为正，微小变化没有跨过拐点，因此被原样保留。橙色区域连接的是同一次变化的输入与输出。');
-        const p=paragraph('激活输出变化 = 1 × 偏置变化 ');p.className='ma-formula';waveOutput(p,v.changes[0],'data-ma-chain-input','偏置变化');p.appendChild(document.createTextNode(' = '));waveOutput(p,v.changes[1],'data-ma-chain-activation','激活输出变化');
-        paragraph('所以这里的局部影响是1。未激活的范围会挡住变化；不能把这个1用于ReLU的所有位置。');return;
+        paragraph('先只看第一幅图。偏置'+(c.delta>0?'增加':'减小')+'0.05时，沿函数找到新的预测位置。这个试算幅度是为了看清刻度，不是训练步幅。');
+        const p=paragraph('偏置变化 ');p.className='ma-formula';waveOutput(p,v.changes[0],'data-ma-chain-input','偏置变化');p.appendChild(document.createTextNode('，带来位置变化 '));waveOutput(p,v.changes[2],'data-ma-chain-prediction','预测位置变化');p.appendChild(document.createTextNode(' 厘米'));
+        paragraph('第一幅图纵轴上标出的这段位置变化，接下来会成为第二幅图的输入。保存的模型没有更新。');return;
       }
       if(c.step===2) {
-        paragraph('输出乘法收到的是刚才已经产生的激活输出变化。它把这份变化放大20倍，成为预测变化；图中橙色区域从原来的边界继续展开。');
-        const p=paragraph('预测变化 = 20 × 传来的 ');p.className='ma-formula';waveOutput(p,v.changes[1],'data-ma-chain-activation','传来的激活变化');p.appendChild(document.createTextNode(' = '));waveOutput(p,v.changes[2],'data-ma-chain-prediction','预测变化');
-        paragraph('把上一步代入：预测变化 = 20 ×（1 × 偏置变化）。后一步作用在前一步的结果上，所以影响相乘。灰色原函数保持不变。');return;
+        paragraph('取出第一幅图纵轴上这段位置刻度，旋转后放到第二幅图的横轴上。移动的始终是同一段位置变化，长度、两端数值和厘米单位都保持一致。');
+        const p=paragraph('同一段预测位置：'+waveNumber(v.original[2])+' → '+waveNumber(v.trial[2])+' 厘米');p.className='ma-formula';
+        paragraph('偏置留在第一幅图的横轴，平方误差留在第二幅图的纵轴。只连接两幅图真正共享的中间量。');return;
       }
       if(c.step===3) {
-        paragraph('仍是同一次试算。前两秒的预测不变，第3秒的预测误差改变，三秒的平均平方误差随之改变。橙色区域现在从预测延伸到评分，评分使用平方厘米。');
-        const p=paragraph('平均平方误差：');p.className='ma-formula';waveOutput(p,v.original[3],'data-ma-chain-score-before','原平均平方误差');p.appendChild(document.createTextNode(' → '));waveOutput(p,v.trial[3],'data-ma-chain-score-after','试算平均平方误差');
-        const row=document.createElement('span');row.style.display='block';row.appendChild(document.createTextNode('实际变化 '));waveOutput(row,v.changes[3],'data-ma-chain-score-change','评分实际变化');row.appendChild(document.createTextNode('；局部估计 '));waveOutput(row,v.estimate,'data-ma-chain-estimate','评分局部估计');p.appendChild(row);
-        const note=paragraph('当前第3秒的预测误差为−8，平方评分的局部影响是2 ×（−8）= −16；对三秒取平均，还要除以3。它乘上传来的预测变化，只是当前位置的估计，不是有限试算的精确结果。');chainDirectionControls(note);return;
+        paragraph('现在沿第二幅函数图，查看这同一段位置变化带来了多少评分变化。前两秒的预测不变，评分仍然是三秒的平均平方误差。');
+        const p=paragraph('平均平方误差：'+waveNumber(v.original[3])+' → '+waveNumber(v.trial[3])+' 平方厘米');p.className='ma-formula';
+        const note=paragraph('位置变化'+waveNumber(v.changes[2])+'厘米，评分实际变化'+waveNumber(v.changes[3])+'平方厘米。两个函数图描述的是实际计算，不把不同单位的图形长度直接比较。');chainCompareControl(note);return;
       }
-      paragraph('电脑不必每次试改参数。把沿途的局部影响接起来，就能直接计算偏置对平均平方误差的局部影响，决定调整方向。这就是链式法则的用途。');
-      const p=paragraph('偏置对平均平方误差的局部影响 = ');p.className='ma-formula';
-      v.factors.forEach((value,index)=>{
-        if(index)p.appendChild(document.createTextNode(' × '));const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=value<0?'('+waveNumber(value)+')':waveNumber(value);
-        button.setAttribute('data-ma-chain-factor',index);button.setAttribute('aria-pressed',String(c.focus===index));button.setAttribute('aria-label',['突出偏置到激活输出的同一次变化','突出激活输出到预测的同一次变化','突出预测到平均平方误差的同一次变化'][index]);
-        button.addEventListener('click',()=>{stopAutomation();c.focus=c.focus===index?null:index;refreshRelay();copy.querySelectorAll('[data-ma-chain-factor]').find(node=>Number(node.getAttribute('data-ma-chain-factor'))===index)?.focus?.();});p.appendChild(button);
-      });p.appendChild(document.createTextNode(' ÷ '+v.count+' = '));waveOutput(p,v.gradient,'data-ma-chain-gradient','平均平方误差对偏置的导数');
-      const explanations=['这里突出ReLU接收偏置变化并原样传出的部分，其余轨迹仍保留。不是一次独立的试算。','这里突出20乘上传来的激活变化，成为预测变化。中间变化来自前一步，因此影响必须接着相乘。','这里突出同一个预测变化到达评分。−16来自当前第3秒的预测误差；除以3来自三秒的平均评分。'];
-      const note=paragraph(c.focus===null?'负号告诉电脑：偏置稍微增大，平均平方误差会先减小。学习率再控制改多少。点公式里的数，只突出同一轨迹中的相应转换。':explanations[c.focus]);chainDirectionControls(note);
+      if(c.step===4) {
+        paragraph('第一步产生的位置变化，正是第二步接收到的位置变化。把这两个变化比相乘，共同的中间量接起来，就得到评分变化与偏置变化的比例。');
+        const p=paragraph('平均平方误差变化 ÷ 偏置变化 = ');p.className='ma-formula';p.setAttribute('data-ma-chain-finite-formula','');
+        chainFraction(p,waveNumber(v.changes[3])+' 平方厘米',waveNumber(v.changes[2])+' 厘米',false,true,['score','position']);p.appendChild(document.createTextNode(' × '));chainFraction(p,waveNumber(v.changes[2])+' 厘米',waveNumber(v.changes[0])+' 偏置',true,false,['position','bias']);p.appendChild(document.createTextNode(' = '));waveOutput(p,v.rates[2],'data-ma-chain-finite-total','本次有限试算的总变化比');
+        const note=paragraph('两个橙色的位置变化对应同一段刻度。这里计算的是这次有限试算的精确变化比，还没有把它称为当前位置的导数。点击橙色数字可同时突出两处共享刻度。');chainCompareControl(note);return;
+      }
+      paragraph('让两点靠近，观察变化比接近当前位置的局部斜率。沿用已经学过的导数，把两幅图的局部斜率相乘，就是平均平方误差对偏置的导数。');
+      const p=paragraph('');p.className='ma-formula';const label=document.createElement('span');label.setAttribute('data-ma-chain-rate-label','');label.textContent='平均平方误差对偏置的导数 = ';p.appendChild(label);
+      for(const [index,value] of v.rates.slice(0,2).entries()) {
+        if(index)p.appendChild(document.createTextNode(' × '));const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=waveNumber(value);button.setAttribute('data-ma-chain-factor',index);button.setAttribute('aria-pressed',String(c.focus===index));button.setAttribute('aria-label',index?'突出预测位置到平均平方误差的函数斜率':'突出偏置到预测位置的函数斜率');
+        button.addEventListener('click',()=>{stopAutomation();c.focus=c.focus===index?null:index;refreshRelay();});p.appendChild(button);
+      }p.appendChild(document.createTextNode(' = '));waveOutput(p,v.gradient,'data-ma-chain-gradient','平均平方误差对偏置的导数');
+      const row=document.createElement('span');row.style.display='block';const kind=document.createElement('span');kind.setAttribute('data-ma-chain-rate-kind','');kind.textContent='（当前位置导数）';row.appendChild(kind);p.appendChild(row);
+      paragraph('负号告诉电脑：偏置稍微增大，平均平方误差会先减小。链式法则用于计算这个调整方向，学习率再控制改多少。两图中的斜率单位不同，共享的位置单位在乘积里衔接。');
     }
     function updateChainNav() {
-      const c=relayLesson.chain;if(c.step>0)back.textContent='← 回退一步传递';
-      next.textContent=[c.delta>0?'试算偏置增加0.01':'试算偏置减小0.01','把这份变化送到预测 →','让同一个预测变化影响评分 →','从这次传递整理更新方向 →','用这个方向调整偏置 →'][c.step];
+      const c=relayLesson.chain;if(c.step>0)back.textContent='← 回退一步';
+      next.textContent=[c.delta>0?'试算偏置增加0.05':'试算偏置减小0.05','把同一段位置刻度移过去 →','沿第二幅函数查看评分 →','为什么两段影响相乘？ →','看当前位置附近的影响 →','用这个方向调整偏置 →'][c.step];
     }
-    function drawChainTrace(width,progress) {
-      svg.replaceChildren();handle.hidden=true;svg.style.height='330px';svg.setAttribute('viewBox','0 0 '+width+' 330');
-      const c=relayLesson.chain,v=chainTrace(c.delta*clamp(progress,0,1)),stage=Math.min(progress,3),active=c.focus===null?Math.max(1,Math.ceil(stage)):c.focus+1;
-      const center=width/2,scales=[1,1,1,0].map((_,i)=>(width-100)/(2*(i===3?1.5:0.22))),ys=[48,128,208,288];
-      const xs=v.changes.map((value,i)=>center+value*scales[i]);
-      svg.setAttribute('data-ma-chart-kind','chain-trace');svg.setAttribute('data-ma-chain-progress',progress);svg.setAttribute('data-ma-chain-focus',c.focus===null?'all':c.focus);svg.setAttribute('data-ma-chain-input-delta',v.changes[0]);
-      el('title',{id:'ma-stage-title'}).textContent='同一次偏置微小试算的连续轨迹。灰色为原计算，橙色为试算计算。前面三个量使用相同数值比例，评分单独使用平方厘米刻度。逐段展开是计算追踪，不新增训练；移动的前沿不是新的模型数值。';
-      const labels=['偏置','第3秒的激活输出','第3秒预测（厘米）','平均平方误差（平方厘米）'];
-      for(let i=1;i<=3;i++) {
-        const reveal=clamp(stage-(i-1),0,1);if(!reveal)continue;
-        const frontY=ys[i-1]+(ys[i]-ys[i-1])*reveal,frontX=xs[i-1]+(xs[i]-xs[i-1])*reveal;
-        const highlighted=c.focus===null||active===i;
-        el('path',{d:'M '+center+' '+ys[i-1]+' L '+xs[i-1]+' '+ys[i-1]+' L '+frontX+' '+frontY+' L '+center+' '+frontY+' Z',fill:accent,'fill-opacity':highlighted?0.22:0.07,stroke:'none','data-ma-chain-link':i,'data-ma-chain-arriving':v.changes[i-1],'data-ma-chain-leaving':v.changes[i],'data-ma-chain-link-reveal':reveal});
-        line(center,ys[i-1],center,frontY,{stroke:muted,'stroke-width':1.5,'stroke-opacity':0.5});
-        line(xs[i-1],ys[i-1],frontX,frontY,{stroke:accent,'stroke-width':highlighted?3:1.5,'stroke-opacity':highlighted?1:0.3,'data-ma-chain-trajectory':i});
-        if(reveal<1)el('circle',{cx:frontX,cy:frontY,r:4,fill:accent,'data-ma-chain-front':''});
-      }
-      const visible=Math.max(1,Math.ceil(stage));
-      for(let i=0;i<=visible;i++) {
-        const reveal=i===0?1:clamp(stage-(i-1),0,1),selected=i===active||i===active-1;
-        text(labels[i],24,ys[i]-24,{fill:selected?ink:muted,'font-size':12,opacity:i<2?1:reveal});
-        line(28,ys[i],width-28,ys[i],{stroke:axis,'stroke-opacity':0.45,opacity:i<2?1:reveal});
-        el('circle',{cx:center,cy:ys[i],r:3.5,fill:muted,opacity:i<2?1:reveal,'data-ma-chain-original':i,'data-ma-chain-original-value':v.original[i]});
-        el('circle',{cx:xs[i],cy:ys[i],r:4,fill:accent,opacity:reveal,'data-ma-chain-trial':i,'data-ma-chain-trial-value':v.trial[i],'data-ma-chain-change':v.changes[i],'data-ma-chain-scale':scales[i]});
-        if(selected) {
-          text(waveNumber(v.original[i]),center,ys[i]+19,{'text-anchor':'middle',fill:muted,'font-size':12,opacity:i<2?1:reveal});
-          text(waveNumber(v.trial[i]),xs[i],ys[i]-7,{'text-anchor':'middle',fill:accent,'font-size':13,opacity:reveal});
+    function drawChainPlot(width,layout,kind,focus) {
+      const box=kind==='prediction'?layout.first:layout.second,S=layout.side,left=box.left,top=box.top,bottom=top+S;
+      const domain=kind==='prediction'?[-2.5,-2.2]:[140,146],range=kind==='prediction'?[140,146]:[0,36],X=x=>left+(x-domain[0])/(domain[1]-domain[0])*S,Y=y=>bottom-(y-range[0])/(range[1]-range[0])*S;
+      const group=el('g',{'data-ma-chain-plot':kind,'data-ma-chain-x-unit':kind==='prediction'?'bias':'cm','data-ma-chain-y-unit':kind==='prediction'?'cm':'cm2'});
+      line(left,top,left,bottom,{},group);line(left,bottom,left+S,bottom,{},group);
+      const xticks=kind==='prediction'?[-2.5,-2.4,-2.3,-2.2]:[140,142,144,146],yticks=kind==='prediction'?[140,142,144,146]:[0,12,24,36];
+      xticks.forEach(x=>{line(X(x),bottom,X(x),bottom+4,{},group);text(number(x),X(x),bottom+18,{'text-anchor':'middle',fill:muted,'font-size':10},group);});
+      yticks.forEach(y=>{line(left-4,Y(y),left,Y(y),{},group);text(number(y),left-8,Y(y)+3,{'text-anchor':'end',fill:muted,'font-size':10},group);});
+      text(kind==='prediction'?'第3秒预测位置 / 厘米':'平均平方误差 / 平方厘米',left-18,top-17,{fill:ink,'font-size':11},group);
+      text(kind==='prediction'?'偏置':'预测位置 / 厘米',left+S,bottom+37,{'text-anchor':'end',fill:muted,'font-size':11},group);
+      const defs=el('defs',{},group),clip=el('clipPath',{id:'ma-chain-'+kind+'-clip'},defs);el('rect',{x:left,y:top,width:S,height:S},clip);
+      const plot=el('g',{'clip-path':'url(#ma-chain-'+kind+'-clip)'},group);
+      const points=Array.from({length:41},(_,i)=>{const x=domain[0]+(domain[1]-domain[0])*i/40;return [X(x),Y(chainValue(kind,x))];});
+      el('path',{d:points.map(([x,y],i)=>(i?'L ':'M ')+x+' '+y).join(' '),fill:'none',stroke:ink,'stroke-width':1.8,'stroke-opacity':focus===null||focus===(kind==='prediction'?0:1)?0.85:0.4,'data-ma-chain-curve':kind},plot);
+      return {left,top,bottom,S,domain,range,X,Y,plot};
+    }
+    function drawChainRuler(x1,y1,x2,y2,attrs={},opacity=1) {
+      const length=Math.hypot(x2-x1,y2-y1);if(length<1e-8)return;
+      line(x1,y1,x2,y2,{stroke:accent,'stroke-width':5,opacity,...attrs});const nx=-(y2-y1)/length*4,ny=(x2-x1)/length*4;
+      for(const [x,y] of [[x1,y1],[x2,y2]])line(x-nx,y-ny,x+nx,y+ny,{stroke:accent,'stroke-width':2,opacity});
+    }
+    function drawChainFunctions(width,progress) {
+      svg.replaceChildren();handle.hidden=true;const c=relayLesson.chain,layout=chainLayout(width),seed=clamp(progress,0,1),local=clamp(progress-4,0,1),v=chainTrace(c.delta*seed*(1-local));
+      svg.style.height=layout.height+'px';svg.setAttribute('viewBox','0 0 '+width+' '+layout.height);svg.setAttribute('data-ma-chart-kind','chain-functions');svg.setAttribute('data-ma-chain-progress',progress);svg.setAttribute('data-ma-chain-delta',v.changes[0]);svg.setAttribute('data-ma-chain-focus',c.focus===null?'all':c.focus);
+      el('title',{id:'ma-stage-title'}).textContent='第一幅函数图：横轴偏置，纵轴第3秒预测位置，单位厘米。第二幅函数图：横轴预测位置，单位厘米，纵轴三秒的平均平方误差，单位平方厘米。两图共享同一位置刻度，不混用其他量纲。移动刻度与靠近两点都不执行训练。';
+      const a=drawChainPlot(width,layout,'prediction',c.focus),b=drawChainPlot(width,layout,'score',c.focus),source={x:a.left,y:a.Y(v.original[2])},target={x:b.X(v.original[2]),y:b.bottom};
+      const reveal=clamp(progress-2,0,1),marks=[{name:'prediction',p:a,x0:v.original[0],x1:v.trial[0],y0:v.original[2],y1:v.trial[2],opacity:1,slope:v.rates[0]},{name:'score',p:b,x0:v.original[2],x1:v.trial[2],y0:v.original[3],y1:v.trial[3],opacity:reveal,slope:v.rates[1]}];
+      for(const m of marks) {
+        const {p}=m,A=[p.X(m.x0),p.Y(m.y0)],B=[p.X(m.x1),p.Y(m.y1)];
+        el('path',{d:'M '+A.join(' ')+' L '+p.X(m.x1)+' '+A[1]+' L '+B.join(' ')+' Z',fill:accent,'fill-opacity':0.12*m.opacity,stroke:accent,'stroke-width':1.3,'stroke-dasharray':'3 3',opacity:m.opacity,'data-ma-chain-triangle':m.name},p.plot);
+        el('circle',{cx:A[0],cy:A[1],r:3.5,fill:ink,'data-ma-chain-original':m.name,'data-ma-chain-input':m.x0,'data-ma-chain-output':m.y0},p.plot);
+        el('circle',{cx:B[0],cy:B[1],r:5,fill:'none',stroke:accent,'stroke-width':2,opacity:(m.name==='prediction'?seed:reveal),'data-ma-chain-trial':m.name,'data-ma-chain-input':m.x1,'data-ma-chain-output':m.y1},p.plot);
+        if(progress>=4) {
+          const lo=Math.min(m.x0,m.x1),hi=Math.max(m.x0,m.x1),start=lo+(p.domain[0]-lo)*local,end=hi+(p.domain[1]-hi)*local;
+          el('path',{d:'M '+p.X(start)+' '+p.Y(m.y0+m.slope*(start-m.x0))+' L '+p.X(end)+' '+p.Y(m.y0+m.slope*(end-m.x0)),fill:'none',stroke:accent,'stroke-width':2.1,'stroke-opacity':c.focus===null||c.focus===(m.name==='prediction'?0:1)?1:0.3,'data-ma-chain-slope':m.name,'data-ma-chain-slope-value':m.slope,'data-ma-chain-slope-kind':Math.abs(v.changes[0])<1e-10?'tangent':'secant'},p.plot);
         }
       }
-      const values={'data-ma-chain-input':v.changes[0],'data-ma-chain-activation':v.changes[1],'data-ma-chain-prediction':v.changes[2],'data-ma-chain-score-before':v.original[3],'data-ma-chain-score-after':v.trial[3],'data-ma-chain-score-change':v.changes[3],'data-ma-chain-estimate':v.estimate,'data-ma-chain-gradient':v.gradient};
+      if(seed>0) {
+        for(const position of [v.original[2],v.trial[2]])line(a.left,a.Y(position),a.X(position===v.original[2]?v.original[0]:v.trial[0]),a.Y(position),{stroke:accent,'stroke-dasharray':'3 3','stroke-opacity':0.4},a.plot);
+        if(reveal>0)for(const [position,score] of [[v.original[2],v.original[3]],[v.trial[2],v.trial[3]]])line(b.X(position),b.bottom,b.X(position),b.Y(score),{stroke:accent,'stroke-dasharray':'3 3',opacity:reveal*0.5},b.plot);
+      }
+      const turn=clamp(progress-1,0,1),length=v.changes[2]*layout.side/6,angle=-Math.PI/2+Math.PI/2*turn,x=source.x+(target.x-source.x)*turn,y=source.y+(target.y-source.y)*turn;
+      drawChainRuler(source.x,source.y,source.x,source.y-length,{'data-ma-chain-ruler':'source','data-ma-chain-ruler-unit':'cm'},c.focus===2?0.85:0.25);
+      if(turn>0)drawChainRuler(target.x,target.y,target.x+length,target.y,{'data-ma-chain-ruler':'target','data-ma-chain-ruler-unit':'cm'},c.focus===2?0.85:0.2*turn);
+      drawChainRuler(x,y,x+length*Math.cos(angle),y+length*Math.sin(angle),{'data-ma-chain-ruler':'moving','data-ma-chain-ruler-unit':'cm','data-ma-chain-ruler-turn':turn,'data-ma-chain-position-from':v.original[2],'data-ma-chain-position-to':v.trial[2]});
+      const values={'data-ma-chain-input':v.changes[0],'data-ma-chain-prediction':v.changes[2],'data-ma-chain-gradient':v.rates[2],'data-ma-chain-finite-total':v.rates[2]};
       Object.entries(values).forEach(([key,value])=>copy.querySelectorAll('['+key+']').forEach(node=>{node.textContent=waveNumber(value);}));
+      if(c.step===5)copy.querySelectorAll('[data-ma-chain-factor]').forEach((node,i)=>{node.textContent=waveNumber(v.rates[i]);});
+      copy.querySelectorAll('[data-ma-chain-rate-kind]').forEach(node=>{node.textContent=Math.abs(v.changes[0])<1e-10?'（当前位置导数）':'（当前区间变化比，正在靠近）';});
+      copy.querySelectorAll('[data-ma-chain-rate-label]').forEach(node=>{node.textContent=Math.abs(v.changes[0])<1e-10?'平均平方误差对偏置的导数 = ':'平均平方误差变化 ÷ 偏置变化 = ';});
+      const fractionValues={score:waveNumber(v.changes[3])+' 平方厘米',position:waveNumber(v.changes[2])+' 厘米',bias:waveNumber(v.changes[0])+' 偏置'};
+      copy.querySelectorAll('[data-ma-chain-fraction-value]').forEach(node=>{node.textContent=fractionValues[node.getAttribute('data-ma-chain-fraction-value')];});
+      copy.querySelectorAll('[data-ma-chain-finite-formula]').forEach(node=>{node.style.visibility=Math.abs(v.changes[0])<1e-10?'hidden':'visible';});
     }
     function renderChainGraph() {
-      const width=Math.max(240,figure.getBoundingClientRect().width||736);
-      animatePlot(current(),width,relayLesson.chain.step,p=>drawChainTrace(width,p),1000);
+      const width=Math.max(240,figure.getBoundingClientRect().width||736);animatePlot(current(),width,relayLesson.chain.step,p=>drawChainFunctions(width,p),1200);
     }
     function forwardChain() {
-      const c=relayLesson.chain;c.focus=null;if(c.step<4){c.step++;refreshRelay();return;}state.scene++;renderScene();
+      const c=relayLesson.chain;c.focus=null;if(c.step<5){c.step++;refreshRelay();return;}state.scene++;renderScene();
     }
     function backwardChain() {
       const c=relayLesson.chain;c.focus=null;if(c.step>0){c.step--;refreshRelay();return;}state.scene--;renderScene();
@@ -2100,7 +2143,7 @@
       return result.gradient===null?null:bias-rate*result.gradient;
     }
     function ensureRelayLesson() {
-      if(!relayLesson)relayLesson={changed:false,gateSeen:false,resultSeen:false,history:[-2.4],cursor:0,chain:{step:0,delta:0.01,focus:null}};
+      if(!relayLesson)relayLesson={changed:false,gateSeen:false,resultSeen:false,history:[-2.4],cursor:0,chain:{step:0,delta:0.05,focus:null}};
       if(current().startsWith('relay-chain-'))relayLesson.changed=true;
     }
     function relayBias() {return current()==='relay-train'?relayLesson.history[relayLesson.cursor]:relayLesson.changed?-2.4:-2.5;}
