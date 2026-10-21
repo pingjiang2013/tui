@@ -59,7 +59,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -71,7 +71,7 @@
     let plotFrame=null,plotMotion=null,lastPlot=null;
     let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null,outputLesson=null,relayLesson=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending'].includes(current());
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending'].includes(current());
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -101,6 +101,7 @@
     }
     function renderCopy() {
       copy.replaceChildren();feedback=null;
+      if(current().startsWith('joint-')) {renderJointCopy();return;}
       if(current().startsWith('relay-')) {renderRelayCopy();return;}
       if(current().startsWith('output-')) {renderOutputCopy();return;}
       if(current().startsWith('bend-')) {renderBendCopy();return;}
@@ -183,6 +184,7 @@
       back.disabled=state.scene===0;
       next.disabled=false;
       back.textContent='← 上一页';automatic.hidden=true;
+      if(current().startsWith('joint-')) {updateJointNav();return;}
       if(current().startsWith('relay-')) {updateRelayNav();return;}
       if(current().startsWith('output-')) {updateOutputNav();return;}
       if(current().startsWith('bend-')) {updateBendNav();return;}
@@ -196,6 +198,7 @@
     }
     function renderStage() {
       if(textOnly()) return;
+      if(current().startsWith('joint-')) {renderJointGraph();return;}
       if(current().startsWith('relay-')) {renderRelayGraph();return;}
       if(current().startsWith('output-')) {renderOutputGraph();return;}
       if(current().startsWith('bend-')) {renderBendGraph();return;}
@@ -2187,7 +2190,7 @@
       }
       if(current()==='relay-ending') {
         paragraph('我们把几段局部影响接起来：偏置影响激活输出，激活输出影响预测，预测再影响评分。沿途的影响相乘，就是链式法则在这里的作用。');
-        paragraph('电脑现在可以学习分支的启动位置。刚才只训练一个偏置，内部权重仍固定；以后再把同样的追踪方式扩展到更多参数和多层计算。');return;
+        paragraph('电脑现在可以学习分支的启动位置。接下来，把同样的方法用到另外两个参数，让它们一起改善预测。');return;
       }
       const result=relayEvaluate(relayBias()),status=relayStatus(),row=result.rows[2];
       paragraph(status==='done'?'平均平方误差已小于0.001，停止调整。偏置接近−2，启动位置接近第2秒，但没有被强行设成答案。':status==='corner'?'有输入恰好落在ReLU拐点，这里的局部斜率不唯一。本演示暂停，不把它冒充为0或1。':status==='flat'?'当前输入的激活都没有传递调整方向，导数为0，但误差仍在。局部梯度无法继续改善，因此暂停。':status==='limit'?'已达到100次调整上限。保留实际参数与评分，可以逐次回退。':relayLesson.cursor===0?'沿用−2.4。第3秒的局部影响20要再乘平方评分的影响，并对三条取平均。因影响被放大，学习率改用较小的0.00125。':'偏置变化先经过激活，再被20倍放大。这次用较小的学习率0.00125控制步幅，每次根据当前预测重算导数。');
@@ -2208,7 +2211,7 @@
       }
       if(current()==='relay-gate'){next.textContent='把留下的变化带回预测 →';return;}
       if(current()==='relay-result'){next.textContent='偏置怎样影响评分？ →';return;}
-      if(current()==='relay-ending'){next.textContent='重新探索偏置训练 ↻';return;}
+      if(current()==='relay-ending'){next.textContent='训练整个神经元 →';return;}
       const status=relayStatus();if(relayLesson.cursor>0)back.textContent='← 回退一次调整';
       next.textContent=status==='ready'?'按当前影响调整一次':'这些影响怎样接起来？ →';
       automatic.hidden=status!=='ready'||relayLesson.cursor<1;automatic.textContent=autoRunning?'暂停':'继续调整';
@@ -2264,7 +2267,7 @@
       if(current().startsWith('relay-chain-')){forwardChain();return;}
       if(current()==='relay-shift'&&!relayLesson.changed)return;
       if(current()==='relay-train'&&relayStatus()==='ready'){advanceRelayTraining();refreshRelay();return;}
-      if(current()==='relay-ending'){relayLesson=null;state.scene=scenes.indexOf('relay-purpose');renderScene();return;}
+      if(current()==='relay-ending'){state.scene++;renderScene();return;}
       state.scene++;renderScene();
     }
     function backwardRelay() {
@@ -2274,8 +2277,193 @@
       if(current()==='relay-train'&&relayLesson.cursor>0){relayLesson.cursor--;refreshRelay();return;}
       state.scene--;renderScene();
     }
+    // A shared, real forward/backward computation for the whole neuron.
+    const jointInitial={...bendConfig,weight:1,bias:-1.8,output:12};
+    const jointKeys=['weight','bias','output'],jointRate=0.001;
+    const jointNames={weight:'内部权重',bias:'偏置',output:'输出权重'};
+    let jointLesson=null;
+    function jointEvaluate(params,data=shapeRecords) {
+      const rows=data.map(record=>{
+        const value=bendCompute(record.seconds,1,1,params),error=value.prediction-record.position;
+        const gate=value.shifted>0?1:value.shifted<0?0:null;
+        const effects={weight:gate===null?null:params.output*gate*record.seconds,bias:gate===null?null:params.output*gate,output:value.activated};
+        return {...value,actual:record.position,error,gate,effects};
+      });
+      const gradient=Object.fromEntries(jointKeys.map(key=>[key,rows.some(row=>row.effects[key]===null)?null:rows.reduce((sum,row)=>sum+2*row.error*row.effects[key],0)/rows.length]));
+      return {rows,gradient,loss:rows.reduce((sum,row)=>sum+row.error*row.error,0)/rows.length};
+    }
+    function jointStep(params) {
+      const result=jointEvaluate(params);
+      if(jointKeys.some(key=>result.gradient[key]===null))return null;
+      // All gradients use the same parameter snapshot, before any parameter is updated.
+      return {...params,...Object.fromEntries(jointKeys.map(key=>[key,params[key]-jointRate*result.gradient[key]]))};
+    }
+    function ensureJointLesson() {
+      if(!jointLesson)jointLesson={key:'weight',probed:false,phase:0,focus:null,history:[{...jointInitial}],cursor:0};
+    }
+    function jointParamsAt(position) {
+      const lower=Math.floor(position),upper=Math.min(Math.ceil(position),jointLesson.history.length-1),a=jointLesson.history[lower],b=jointLesson.history[upper],fraction=position-lower;
+      return {...a,...Object.fromEntries(jointKeys.map(key=>[key,a[key]+(b[key]-a[key])*fraction]))};
+    }
+    function jointStatus() {
+      const result=jointEvaluate(jointLesson.history[jointLesson.cursor]);
+      if(!Number.isFinite(result.loss))return 'invalid';
+      if(result.loss<=0.001)return 'done';
+      if(jointKeys.some(key=>result.gradient[key]===null))return 'corner';
+      if(jointKeys.every(key=>result.gradient[key]===0))return 'flat';
+      return jointLesson.cursor>=3000?'limit':'ready';
+    }
+    function jointTrial(amount=jointLesson.probed?1:0) {
+      const key=jointLesson.key,delta=key==='output'?1:0.1;
+      return {...jointInitial,[key]:jointInitial[key]+delta*amount};
+    }
+    function refreshJoint() {renderCopy();updateNav();renderStage();}
+    function jointEquation(params,probe=false) {
+      const p=paragraph('预测 = 40 + 30 × 时间 + ');p.className='ma-formula';
+      function parameter(key) {
+        const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=waveNumber(params[key]);
+        button.setAttribute('data-ma-joint-param',key);button.setAttribute('aria-pressed',String(probe?jointLesson.probed&&jointLesson.key===key:jointLesson.focus===key));
+        button.setAttribute('aria-label',probe?jointNames[key]+'，点击查看从起始值增加'+(key==='output'?'1':'0.1')+'的影响':'查看平均平方误差对'+jointNames[key]+'的影响');
+        button.addEventListener('click',()=>{
+          stopAutomation();
+          if(probe){const same=jointLesson.key===key;jointLesson.key=key;jointLesson.probed=true;if(!same){jointLesson.phase=key==='output'?2:0;lastPlot=null;}}
+          else jointLesson.focus=jointLesson.focus===key?null:key;
+          refreshJoint();
+        });p.appendChild(button);
+      }
+      parameter('output');p.appendChild(document.createTextNode(' × ReLU('));parameter('weight');p.appendChild(document.createTextNode(' × 时间 + ('));parameter('bias');p.appendChild(document.createTextNode('))'));
+    }
+    function renderJointCopy() {
+      if(current()==='joint-purpose') {
+        paragraph('刚才，我们固定其他数字，只让电脑调整偏置。但这个神经元里，还有两个可以调整的数字。能不能一起调整它们，让预测更准确？');
+        paragraph('继续使用原来的三次观测。这次换一组起始值：内部权重1、偏置−1.8、输出权重12。先看尚未展开的一段影响，再让电脑训练整个神经元。');return;
+      }
+      if(current()==='joint-path') {
+        const key=jointLesson.key,phase=jointLesson.phase;
+        paragraph(!jointLesson.probed?'偏置直接加进结果；内部权重先乘以输入。点公式中的1，让内部权重增加0.1，观察同一条直线怎样变化。':phase===0?(key==='weight'?'内部权重从1变成1.1。截距不变，整条直线转动；输入越大，增加得越多。深色区域是这一次改动带来的变化。':'偏置从−1.8变成−1.7。整条直线统一上移0.1；它与内部权重转动直线的作用不同。'):phase===1?'让同一次变化经过ReLU。小于0的部分都变成0，那里原本的变化被截去；高于0的部分保留下来，再交给输出权重。':key==='output'?'输出权重从12变成13，放大激活后的补充量。整条预测曲线重新计算；没有激活的位置不受影响。':'把保留下来的变化乘以12，再加回原函数。同一个参数的改动，已经传到了完整预测；它可能改善一处，同时让另一处偏得更远。');
+        jointEquation(jointTrial(),true);
+        paragraph(phase===2?'空心点是预测，实心点是观测。可点其他参数比较；每次只改一个数字，其他数字回到起始值。这些试算不进入训练。':'横轴仍是时间，纵轴是'+(phase===0?'激活前':'激活后')+'的函数值。也可以点另外两个数字，比较它们的作用；这是试算，还没有训练。');return;
+      }
+      if(current()==='joint-ending') {
+        paragraph('现在，我们能训练整个神经元了。每次先用同一组参数算出全部预测，合并所有观测的影响，再一起调整三个数字。');
+        paragraph('得到的参数不必与之前完全相同：不同参数也可能给出相近的预测。不过，这个分支仍只能给曲线增加一个转折。遇到需要更多转折的数据，还够用吗？');return;
+      }
+      const params=jointLesson.history[jointLesson.cursor],result=jointEvaluate(params),status=jointStatus();
+      paragraph(status==='done'?'平均平方误差已小于0.001，停止调整。参数没有被设成预先写好的答案；它们共同找到了更贴合观测的预测。':status==='corner'?'有观测恰好落在ReLU拐点，局部斜率不唯一。本次实验暂停，不编造调整方向。':status==='flat'?'三个局部影响都为0，但预测仍有误差。这次局部调整无法继续改善。':status==='limit'||status==='invalid'?'已停止这次训练。保留实际计算结果，可以回退查看。':jointLesson.cursor===0?'撤回刚才的试算，从1、−1.8、12开始训练。电脑合并所有观测的影响，再一起调整三个参数，不能只照顾某一个时刻。':'三个参数改变的是同一条预测曲线。某个时刻的差距可能暂时增大；我们要改善的是全部观测的平均平方误差。');
+      jointEquation(params);
+      const p=paragraph('平均平方误差 ');waveOutput(p,result.loss,'data-ma-joint-loss','平均平方误差');p.appendChild(document.createTextNode('；已调整 '));const rounds=document.createElement('span');rounds.setAttribute('data-ma-joint-round','');rounds.textContent=String(jointLesson.cursor);p.appendChild(rounds);p.appendChild(document.createTextNode(' 次。'));
+      if(jointLesson.focus!==null)renderJointDetail(params);
+      else paragraph('下方三个方块的面积分别是三次预测的差距平方，比例始终相同。点公式中的数字可查看它的调整依据；学习率为0.001。');
+    }
+    function jointExpression(params,row,key) {
+      if(key==='output')return waveNumber(row.activated);
+      return (key==='weight'?waveNumber(row.input)+' × ':'')+(row.gate===null?'未定义':row.gate)+' × '+waveNumber(params.output);
+    }
+    function renderJointDetail(params) {
+      const key=jointLesson.focus,result=jointEvaluate(params),p=paragraph('');p.setAttribute('data-ma-joint-detail','');p.className='ma-formula';
+      p.textContent=jointNames[key]+'的影响：先算它对每个预测的影响，再乘该预测误差的2倍，最后取平均。';
+      const details=document.createElement('span');details.style.display='block';details.setAttribute('data-ma-joint-detail-values','');p.appendChild(details);syncJointDetail(params);
+    }
+    function syncJointDetail(params) {
+      if(jointLesson.focus===null)return;
+      const key=jointLesson.focus,result=jointEvaluate(params);
+      copy.querySelectorAll('[data-ma-joint-detail-values]').forEach(node=>{node.textContent='平均平方误差对'+jointNames[key]+'的局部影响 ≈ ['+result.rows.map(row=>'2 × ('+waveNumber(row.error)+') × ('+jointExpression(params,row,key)+')').join(' + ')+'] ÷ 3 = '+(result.gradient[key]===null?'未定义':waveNumber(result.gradient[key]))+'。下一次：当前值 − 0.001 × 这个影响。';});
+    }
+    function updateJointNav() {
+      if(current()==='joint-purpose'){next.textContent='接上内部权重的影响 →';return;}
+      if(current()==='joint-path') {
+        next.disabled=!jointLesson.probed;
+        next.textContent=!jointLesson.probed?'先点公式里的1':jointLesson.phase===0?'让这次变化经过ReLU →':jointLesson.phase===1?'带回完整预测 →':'撤回试算，开始一起训练 →';
+        if(jointLesson.phase>0&&jointLesson.key!=='output')back.textContent='← 看上一步';else if(jointLesson.probed)back.textContent='← 撤回试算';return;
+      }
+      if(current()==='joint-ending'){next.textContent='重新探索整个神经元 ↻';return;}
+      const status=jointStatus();next.textContent=status==='ready'?'调整一次':'这次学会了什么？ →';
+      if(jointLesson.cursor>0)back.textContent='← 回退一次调整';
+      automatic.hidden=status!=='ready'||jointLesson.cursor<1;automatic.textContent=autoRunning?'暂停':'连续调整（每次10轮）';
+    }
+    function jointBand(width,params,phase) {
+      const X=t=>54+t/3.5*(width-76),Y=phase===2?v=>260-v/260*227:v=>260-(v+2)/4.2*227;
+      const inputs=[...new Set([...bendVertices(jointInitial),...bendVertices(params)])].sort((a,b)=>a-b);
+      const value=(p,t)=>{const v=bendCompute(t,1,1,p);return phase===0?v.shifted:phase===1?v.activated:v.prediction;};
+      const before=inputs.map(t=>[X(t),Y(value(jointInitial,t))]),after=inputs.map(t=>[X(t),Y(value(params,t))]);
+      el('path',{d:[...before,...after.slice().reverse()].map(([x,y],i)=>(i?'L ':'M ')+x+' '+y).join(' ')+' Z',fill:accent,'fill-opacity':0.42,'data-ma-joint-change-band':''});
+      [1,2,3].forEach(t=>{const a=value(jointInitial,t),b=value(params,t);line(X(t),Y(a),X(t),Y(b),{stroke:accent,'stroke-width':5,'data-ma-joint-change-input':t,'data-ma-joint-change':b-a});});
+    }
+    function drawJointTrial(width,amount) {
+      const params=jointTrial(amount),phase=jointLesson.phase;
+      if(phase<2)drawBendFunction(width,params.weight,params.bias,1,phase===1,{min:-2,max:2.2,ticks:[-2,-1,0,1,2]});
+      else drawBendComposition(width,1,params);
+      jointBand(width,params,phase);
+      svg.setAttribute('data-ma-chart-kind','joint-trial');svg.setAttribute('data-ma-joint-phase',String(phase));
+      const key=jointLesson.key;
+      copy.querySelectorAll('[data-ma-joint-param]').forEach(node=>{node.textContent=waveNumber(params[node.getAttribute('data-ma-joint-param')]);});
+      const before=jointEvaluate(jointInitial),after=jointEvaluate(params);
+      if(phase===2){text('第3秒：'+waveNumber(before.rows[2].prediction)+' → '+waveNumber(after.rows[2].prediction),54,340,{fill:accent,'font-size':14});svg.style.height='360px';svg.setAttribute('viewBox','0 0 '+width+' 360');}
+      svg.setAttribute('data-ma-joint-trial-key',key);svg.setAttribute('data-ma-joint-trial-amount',String(amount));
+    }
+    function drawJointTraining(width,position) {
+      const params=jointParamsAt(position),result=jointEvaluate(params);
+      svg.replaceChildren();handle.hidden=true;svg.style.height='410px';svg.setAttribute('viewBox','0 0 '+width+' 410');svg.setAttribute('data-ma-chart-kind','joint-training');
+      const left=54,right=width-22,top=33,bottom=260,X=t=>left+t/3.5*(right-left),Y=v=>bottom-v/260*227;
+      const title=el('title',{id:'ma-stage-title'});title.textContent='实时计算的完整预测。横轴时间秒，纵轴位置厘米；橙色空心点是预测，黑色实心点是观测。下方方块面积按同一固定比例表示各次差距的平方。图像平滑过渡不增加训练轮次。';
+      line(left,top,left,bottom);line(left,bottom,right,bottom);
+      [0,50,100,150,200,250].forEach(v=>text(String(v),left-8,Y(v)+4,{'text-anchor':'end',fill:muted,'font-size':12}));
+      [0,1,2,3].forEach(t=>text(String(t),X(t),bottom+22,{'text-anchor':'middle',fill:muted,'font-size':12}));
+      text('位置（厘米）',left,17,{fill:muted,'font-size':12});text('时间（秒）',right,306,{'text-anchor':'end',fill:muted,'font-size':12});
+      const vertices=bendVertices(params).map(t=>bendCompute(t,1,1,params));
+      el('path',{d:vertices.map((r,i)=>(i?'L ':'M ')+X(r.input)+' '+Y(r.prediction)).join(' '),fill:'none',stroke:accent,'stroke-width':3,'data-ma-joint-function':''});
+      result.rows.forEach((row,i)=>{
+        line(X(row.input),Y(row.actual),X(row.input),Y(row.prediction),{stroke:accent,'stroke-width':4,'data-ma-joint-gap':row.input,'data-ma-joint-error':row.error});
+        el('circle',{cx:X(row.input),cy:Y(row.prediction),r:6,fill:'var(--ma-paper)',stroke:accent,'stroke-width':2,'data-ma-joint-prediction':row.prediction,'data-ma-joint-input':row.input});
+        el('circle',{cx:X(row.input),cy:Y(row.actual),r:4,fill:ink});
+        const center=left+(i+0.5)*(right-left)/3,size=Math.abs(row.error)*8;
+        el('rect',{x:center-size/2,y:382-size,width:size,height:size,fill:accent,'fill-opacity':0.3,stroke:accent,'stroke-width':size>0?1:0,'data-ma-joint-square':row.input,'data-ma-joint-square-value':row.error*row.error});
+        line(center-3,382,center+3,382,{stroke:axis});text(row.input+'秒',center,402,{'text-anchor':'middle',fill:muted,'font-size':12});
+      });
+      copy.querySelectorAll('[data-ma-joint-param]').forEach(node=>{node.textContent=waveNumber(params[node.getAttribute('data-ma-joint-param')]);});
+      copy.querySelectorAll('[data-ma-joint-loss]').forEach(node=>{node.textContent=waveNumber(result.loss);});
+      copy.querySelectorAll('[data-ma-joint-round]').forEach(node=>{node.textContent=Number.isInteger(position)?String(position):Math.floor(position)+' → '+Math.ceil(position)+'（过渡）';});
+      syncJointDetail(params);
+      svg.setAttribute('data-ma-joint-position',String(position));svg.setAttribute('data-ma-joint-loss',String(result.loss));
+      jointKeys.forEach(key=>svg.setAttribute('data-ma-joint-'+key,String(params[key])));
+    }
+    function renderJointGraph() {
+      const width=Math.max(240,figure.getBoundingClientRect().width||736);
+      if(current()==='joint-path')animatePlot(current()+jointLesson.key+jointLesson.phase,width,jointLesson.probed?1:0,amount=>drawJointTrial(width,amount),1000);
+      if(current()==='joint-train')animatePlot(current(),width,jointLesson.cursor,position=>drawJointTraining(width,position),800);
+    }
+    function advanceJointTraining() {
+      if(jointStatus()!=='ready')return;
+      const params=jointStep(jointLesson.history[jointLesson.cursor]);if(!params)return;
+      jointLesson.history=jointLesson.history.slice(0,jointLesson.cursor+1);jointLesson.history.push(params);jointLesson.cursor++;
+    }
+    function scheduleJointTraining() {
+      autoTimer=setTimeout(()=>{
+        autoTimer=null;if(!autoRunning||current()!=='joint-train')return;
+        cancelPlotAnimation(true);for(let i=0;i<10&&jointStatus()==='ready';i++)advanceJointTraining();
+        if(jointStatus()!=='ready')autoRunning=false;
+        refreshJoint();if(autoRunning)scheduleJointTraining();
+      },950);
+    }
+    function forwardJoint() {
+      stopAutomation();
+      if(current()==='joint-path') {if(!jointLesson.probed)return;if(jointLesson.phase<2){jointLesson.phase++;lastPlot=null;refreshJoint();return;}}
+      if(current()==='joint-train'&&jointStatus()==='ready'){advanceJointTraining();refreshJoint();return;}
+      if(current()==='joint-ending'){jointLesson=null;state.scene=scenes.indexOf('joint-purpose');renderScene();return;}
+      state.scene++;renderScene();
+    }
+    function backwardJoint() {
+      stopAutomation();
+      if(current()==='joint-path') {
+        if(jointLesson.phase>0&&jointLesson.key!=='output'){jointLesson.phase--;lastPlot=null;refreshJoint();return;}
+        if(jointLesson.probed){jointLesson.probed=false;jointLesson.phase=0;refreshJoint();return;}
+      }
+      if(current()==='joint-train'&&jointLesson.cursor>0){jointLesson.cursor--;refreshJoint();return;}
+      state.scene--;renderScene();
+    }
     function renderScene() {
       stopAutomation();lastPlot=null;drag=null;feedback=null;
+      if(current().startsWith('joint-'))ensureJointLesson();
       if(current().startsWith('relay-'))ensureRelayLesson();
       if(current().startsWith('output-'))ensureOutputLesson();
       if(current().startsWith('bend-'))ensureBend();
@@ -2322,6 +2510,7 @@
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(current().startsWith('joint-')) {backwardJoint();return;}
       if(current().startsWith('relay-')) {backwardRelay();return;}
       if(current().startsWith('output-')) {backwardOutput();return;}
       if(current().startsWith('bend-')) {backwardBend();return;}
@@ -2333,6 +2522,7 @@
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(current().startsWith('joint-')) {forwardJoint();return;}
       if(current().startsWith('relay-')) {forwardRelay();return;}
       if(current().startsWith('output-')) {forwardOutput();return;}
       if(current().startsWith('bend-')) {forwardBend();return;}
@@ -2347,6 +2537,11 @@
       state.scene++;state.highlight=null;renderScene();
     });
     automatic.addEventListener('click',()=>{
+      if(current()==='joint-train') {
+        if(jointStatus()!=='ready'||jointLesson.cursor<1)return;
+        if(autoRunning)stopAutomation();else{cancelPlotAnimation(true);autoRunning=true;scheduleJointTraining();}
+        updateNav();return;
+      }
       if(current()==='relay-train') {
         if(relayStatus()!=='ready'||relayLesson.cursor<1)return;
         if(autoRunning)stopAutomation();else{cancelPlotAnimation(true);autoRunning=true;scheduleRelayTraining();}
@@ -2379,7 +2574,7 @@
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
-      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace'}[globalThis.location?.hash];
+      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train'}[globalThis.location?.hash];
       if(chapter){state.scene=scenes.indexOf(chapter);renderScene();}
     });
     document.addEventListener('visibilitychange',()=>{
@@ -2389,7 +2584,7 @@
     if(globalThis.location?.hash==='#act-3') state.scene=14;
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
     if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
-    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace'}[globalThis.location?.hash];
+    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train'}[globalThis.location?.hash];
     if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     new ResizeObserver(()=>{

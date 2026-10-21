@@ -35,9 +35,9 @@ function mount(width,hash='',program=script,motion=false) {
   const timers=new Map(),frames=new Map(),documentEvents={},pageEvents={},location={hash},evaluations=[],derivativeInputs=[];let timerId=0,frameId=0,frameTime=0,resizeCallback;
   const document={hidden:false,getElementById:id=>id==='minimal-ai-scene'?root:null,createElement:tag=>new Element(tag),createElementNS:(_,tag)=>new Element(tag),createTextNode:value=>Object.assign(new Element('#text'),{textContent:value}),addEventListener:(name,callback)=>{documentEvents[name]=callback;}};
   const motionPlatform=motion?{performance:{now:()=>frameTime},requestAnimationFrame:callback=>{frames.set(++frameId,callback);return frameId;},cancelAnimationFrame:id=>frames.delete(id),matchMedia:()=>({matches:motion==='reduce'})}:{};
-  let waveMath,bendMath,outputMath,relayMath;
-  vm.runInNewContext(program,{document,ResizeObserver:class{constructor(callback){resizeCallback=callback;}observe(){}},Math,Number,String,location,__captureWaveMath:value=>{waveMath=value;},__captureBendMath:value=>{bendMath=value;},__captureOutputMath:value=>{outputMath=value;},__captureRelayMath:value=>{relayMath=value;},__recordParameter:value=>evaluations.push(value),__recordDerivative:value=>derivativeInputs.push(value),setTimeout:callback=>{timers.set(++timerId,callback);return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,callback)=>{pageEvents[name]=callback;},...motionPlatform});
-  return {root,copy,figure,svg,handle,back,next,automatic,timers,frames,evaluations,derivativeInputs,waveMath,bendMath,outputMath,relayMath,
+  let waveMath,bendMath,outputMath,relayMath,jointMath;
+  vm.runInNewContext(program,{document,ResizeObserver:class{constructor(callback){resizeCallback=callback;}observe(){}},Math,Number,String,location,__captureWaveMath:value=>{waveMath=value;},__captureBendMath:value=>{bendMath=value;},__captureOutputMath:value=>{outputMath=value;},__captureRelayMath:value=>{relayMath=value;},__captureJointMath:value=>{jointMath=value;},__recordParameter:value=>evaluations.push(value),__recordDerivative:value=>derivativeInputs.push(value),setTimeout:callback=>{timers.set(++timerId,callback);return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,callback)=>{pageEvents[name]=callback;},...motionPlatform});
+  return {root,copy,figure,svg,handle,back,next,automatic,timers,frames,evaluations,derivativeInputs,waveMath,bendMath,outputMath,relayMath,jointMath,
     advance(){next.fire('click');},retreat(){back.fire('click');},key(key){handle.fire('keydown',{key});},
     goToChapter(number){location.hash='#act-'+number;pageEvents.hashchange();},
     tick(){const [id,callback]=timers.entries().next().value;timers.delete(id);callback();},
@@ -1088,8 +1088,8 @@ for(const width of [736,360,280]) {
   app.automatic.fire('click');let rounds=0;while(app.timers.size&&rounds++<100)app.tick();assert.ok(rounds<100);
   const final=Number(app.svg.getAttribute('data-ma-relay-current'));assert.ok(final<-2&&final>-2.01);assert.ok(relayMath.evaluate(final).loss>0&&relayMath.evaluate(final).loss<=0.001);assertRelayPrediction(app,width,final,false,true);assert.equal(app.automatic.hidden,true);
   app.retreat();assert.ok(relayMath.evaluate(Number(app.svg.getAttribute('data-ma-relay-current'))).loss>0.001);app.advance();assertRelayPrediction(app,width,final,false,true);
-  app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/链式法则/);app.advance();assert.equal(app.figure.hidden,true);app.advance();assertRelayFunction(app,width,-2.5);
-  app.goToChapter(13);assert.equal(app.figure.hidden,true);app.advance();assertOutputGraph(app,width,10);app.goToChapter(14);app.advance();assertRelayFunction(app,width,-2.5);
+  app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/链式法则/);app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/一起调整/);app.advance();assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'joint-trial');
+  app.goToChapter(13);assert.equal(app.figure.hidden,true);app.advance();assertOutputGraph(app,width,10);app.goToChapter(14);app.advance();assertRelayFunction(app,width,-2.4);
   console.log('PASS relay width='+width+': explicit experiment, +0.1, blocked/preserved function differences, 20-fold contribution, true bias training, rollback, tolerance and isolated replay');
 }
 for(const width of [736,360,280]) {
@@ -1158,3 +1158,75 @@ for(const width of [736,360,280]) {
 }
 const reducedFunctionsChain=mount(280,'#act-14-chain',relayProgram,'reduce');finishChain(reducedFunctionsChain);assertRelayPrediction(reducedFunctionsChain,280,-2.4,false,true);assert.equal(reducedFunctionsChain.frames.size,0);assert.equal(reducedFunctionsChain.relayMath.cursor(),0);
 console.log('PASS shared ruler motion: invariant cm length during rotation/translation, live secant-to-tangent math, zero extra training, reduced motion and interrupted navigation');
+// Whole-neuron learning: numerical derivatives, simultaneous updates, and shared visuals.
+const jointClose=(actual,expected,tolerance=1e-8)=>assert.ok(Math.abs(Number(actual)-expected)<tolerance,actual+' != '+expected);
+const jointProgram=script.replace('    const waveChapter=', '    globalThis.__captureJointMath({evaluate:jointEvaluate,step:jointStep,initial:jointInitial,history:()=>jointLesson.history.map(p=>({...p})),cursor:()=>jointLesson.cursor});\n    const waveChapter=');
+const jointMath=mount(736,'#act-15',jointProgram).jointMath;
+const initialJoint={...jointMath.initial};
+for(const params of [initialJoint,{...initialJoint,weight:0.8,bias:-1.5,output:15},{...initialJoint,weight:1.2,bias:-2.1,output:8}]) {
+  const result=jointMath.evaluate(params),epsilon=1e-6;
+  for(const key of ['weight','bias','output']) {
+    const plus={...params,[key]:params[key]+epsilon},minus={...params,[key]:params[key]-epsilon};
+    jointClose(result.gradient[key],(jointMath.evaluate(plus).loss-jointMath.evaluate(minus).loss)/(2*epsilon),1e-5);
+    jointClose(jointMath.step(params)[key],params[key]-0.001*result.gradient[key]);
+  }
+}
+jointClose(jointMath.evaluate(initialJoint).loss,12.373333333333333);
+const jointFirst=jointMath.step(initialJoint);
+jointClose(jointFirst.weight,1.096);jointClose(jointFirst.bias,-1.7744);jointClose(jointFirst.output,12.00416);
+assert.ok(jointMath.evaluate(jointFirst).loss<jointMath.evaluate(initialJoint).loss);
+assert.ok(jointMath.evaluate(jointFirst).rows[1].error>jointMath.evaluate(initialJoint).rows[1].error);
+assert.equal(jointMath.evaluate({...initialJoint,bias:-2}).gradient.weight,null);
+assert.equal(jointMath.step({...initialJoint,bias:-2}),null);
+const alternativeJointData=[{seconds:1,position:72},{seconds:2,position:104},{seconds:3,position:155}];
+for(const key of ['weight','bias','output']) {
+  const plus={...initialJoint,[key]:initialJoint[key]+1e-6},minus={...initialJoint,[key]:initialJoint[key]-1e-6};
+  jointClose(jointMath.evaluate(initialJoint,alternativeJointData).gradient[key],(jointMath.evaluate(plus,alternativeJointData).loss-jointMath.evaluate(minus,alternativeJointData).loss)/2e-6,1e-5);
+}
+function jointButton(app,key){return app.copy.querySelectorAll('[data-ma-joint-param]').find(n=>n.getAttribute('data-ma-joint-param')===key);}
+function assertJointTraining(app,width,params) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'joint-training');
+  const result=jointMath.evaluate(params),X=t=>54+t/3.5*(width-76),Y=v=>260-v/260*227;
+  for(const key of ['weight','bias','output']) {jointClose(app.svg.getAttribute('data-ma-joint-'+key),params[key]);jointClose(Number(jointButton(app,key).textContent),params[key],0.000051);}
+  jointClose(app.svg.getAttribute('data-ma-joint-loss'),result.loss);jointClose(Number(app.copy.querySelectorAll('[data-ma-joint-loss]')[0].textContent),result.loss,0.000051);
+  app.svg.querySelectorAll('[data-ma-joint-prediction]').forEach((node,i)=>{jointClose(node.getAttribute('data-ma-joint-prediction'),result.rows[i].prediction);jointClose(node.getAttribute('cx'),X(result.rows[i].input));jointClose(node.getAttribute('cy'),Y(result.rows[i].prediction));});
+  app.svg.querySelectorAll('[data-ma-joint-square]').forEach((node,i)=>{jointClose(Number(node.getAttribute('width'))**2,64*result.rows[i].error**2);jointClose(node.getAttribute('data-ma-joint-square-value'),result.rows[i].error**2);assert.ok(Number(node.getAttribute('y'))>=310);assert.ok(Number(node.getAttribute('x'))>=54);assert.ok(Number(node.getAttribute('x'))+Number(node.getAttribute('width'))<=width-22);});
+  const path=points(app.svg.querySelectorAll('[data-ma-joint-function]')[0]);assert.equal(path.length,3);
+  const knot=-params.bias/params.weight;jointClose(path[1][0],X(knot));jointClose(path[1][1],Y(40+30*knot));
+  assert.ok(app.copy.children.length<=4);
+}
+for(const width of [736,360,280]) {
+  const app=mount(width,'#act-15',jointProgram);
+  assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/换一组起始值/);app.advance();assert.equal(app.figure.hidden,false);assert.equal(app.next.disabled,true);
+  app.advance();assert.equal(app.svg.getAttribute('data-ma-joint-phase'),'0');
+  jointButton(app,'weight').fire('click');jointClose(Number(jointButton(app,'weight').textContent),1.1);assert.equal(app.jointMath.cursor(),0);
+  app.svg.querySelectorAll('[data-ma-joint-change-input]').forEach((node,i)=>jointClose(node.getAttribute('data-ma-joint-change'),0.1*(i+1)));
+  app.advance();assert.equal(app.svg.getAttribute('data-ma-joint-phase'),'1');
+  app.svg.querySelectorAll('[data-ma-joint-change-input]').forEach((node,i)=>jointClose(node.getAttribute('data-ma-joint-change'),[0,0.2,0.3][i]));
+  app.advance();assert.equal(app.svg.getAttribute('data-ma-joint-phase'),'2');
+  app.svg.querySelectorAll('[data-ma-joint-change-input]').forEach((node,i)=>jointClose(node.getAttribute('data-ma-joint-change'),[0,2.4,3.6][i]));
+  jointButton(app,'bias').fire('click');assert.equal(app.svg.getAttribute('data-ma-joint-phase'),'0');jointClose(Number(jointButton(app,'weight').textContent),1);jointClose(Number(jointButton(app,'bias').textContent),-1.7);
+  jointButton(app,'output').fire('click');assert.equal(app.svg.getAttribute('data-ma-joint-phase'),'2');jointClose(Number(jointButton(app,'output').textContent),13);jointClose(Number(jointButton(app,'bias').textContent),-1.8);
+  assert.equal(app.jointMath.history().length,1);app.advance();assertJointTraining(app,width,initialJoint);assert.match(app.copy.textContent,/撤回刚才的试算/);assert.equal(app.automatic.hidden,true);
+  for(const key of ['weight','bias','output']){jointButton(app,key).fire('click');assert.match(app.copy.textContent,/局部影响/);assert.equal(app.jointMath.cursor(),0);}
+  app.advance();assertJointTraining(app,width,jointFirst);assert.equal(app.jointMath.cursor(),1);assert.equal(app.automatic.hidden,false);
+  app.retreat();assertJointTraining(app,width,initialJoint);app.advance();assertJointTraining(app,width,jointFirst);assert.equal(app.jointMath.history().length,2);
+  app.automatic.fire('click');app.tick();assert.equal(app.jointMath.cursor(),11);assert.equal(app.jointMath.history().length,12);app.automatic.fire('click');assert.equal(app.timers.size,0);
+  app.retreat();assert.equal(app.jointMath.cursor(),10);assertJointTraining(app,width,app.jointMath.history()[10]);app.advance();assert.equal(app.jointMath.cursor(),11);
+  app.automatic.fire('click');let ticks=0;while(app.timers.size&&ticks++<100)app.tick();assert.ok(ticks<100);assert.equal(app.jointMath.cursor(),630);const history=app.jointMath.history(),end=history.at(-1);
+  for(let i=1;i<history.length;i++){for(const key of ['weight','bias','output'])jointClose(history[i][key],jointMath.step(history[i-1])[key]);assert.ok(jointMath.evaluate(history[i]).loss<=jointMath.evaluate(history[i-1]).loss);}
+  assert.ok(jointMath.evaluate(end).loss>0&&jointMath.evaluate(end).loss<=0.001);assert.notEqual(end.weight,1);assert.notEqual(end.bias,-2);assert.notEqual(end.output,20);assertJointTraining(app,width,end);assert.equal(app.automatic.hidden,true);
+  app.retreat();assert.ok(jointMath.evaluate(app.jointMath.history()[app.jointMath.cursor()]).loss>0.001);app.advance();app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/一个转折/);
+  app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.equal(app.next.disabled,true);assert.equal(app.jointMath.cursor(),0);
+  app.goToChapter('15-train');assertJointTraining(app,width,initialJoint);app.advance();app.automatic.fire('click');app.hide();assert.equal(app.timers.size,0);app.show();app.automatic.fire('click');app.goToChapter(14);assert.equal(app.timers.size,0);app.goToChapter('15-train');assertJointTraining(app,width,jointFirst);
+  console.log('PASS joint width='+width+': explicit reset, real parameter probes, activation gate, simultaneous three-parameter updates, all-data gradients, fixed-area squares, per-round history, convergence, rollback and replay');
+}
+for(const width of [736,360,280]) {
+  const app=mount(width,'#act-15',jointProgram,true);app.advance();jointButton(app,'weight').fire('click');app.frame(500);jointClose(Number(jointButton(app,'weight').textContent),1.05);assert.equal(app.jointMath.cursor(),0);app.resize();jointClose(Number(jointButton(app,'weight').textContent),1.1);
+  app.advance();app.advance();app.advance();app.advance();app.frame(400);
+  const middle={...initialJoint,...Object.fromEntries(['weight','bias','output'].map(key=>[key,(initialJoint[key]+jointFirst[key])/2]))};assertJointTraining(app,width,middle);assert.equal(app.jointMath.history().length,2);
+  app.hide();assertJointTraining(app,width,jointFirst);assert.equal(app.frames.size,0);app.show();jointButton(app,'weight').fire('click');app.advance();app.frame(400);assert.ok(app.frames.size);app.leave();assert.equal(app.frames.size,0);app.resume();
+  app.automatic.fire('click');app.tick();app.frame(400);app.resize();assertJointTraining(app,width,app.jointMath.history()[12]);assert.equal(app.jointMath.cursor(),12);app.goToChapter(13);assert.equal(app.frames.size,0);assert.equal(app.timers.size,0);
+}
+const reducedJoint=mount(280,'#act-15-train',jointProgram,'reduce');reducedJoint.advance();assertJointTraining(reducedJoint,280,jointFirst);assert.equal(reducedJoint.frames.size,0);
+console.log('PASS joint motion: synchronized intermediate parameters, curves, loss and squares; immutable training snapshots, interruption, narrow layouts and reduced motion');
