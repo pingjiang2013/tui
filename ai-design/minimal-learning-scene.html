@@ -56,7 +56,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-train','relay-ending'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-scale','relay-chain-path','relay-chain-square','relay-chain-summary','relay-train','relay-ending'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -1991,6 +1991,126 @@
       if(current()==='output-train'&&outputLesson.cursor>0){outputLesson.cursor--;refreshOutput();return;}
       state.scene--;renderScene();
     }
+    function chainValues() {
+      const evaluation=relayEvaluate(-2.4),row=evaluation.rows[2];
+      const factors=[row.activationSlope,bendConfig.output,2*row.error];
+      return {row,factors,product:factors.reduce((a,b)=>a*b,1),gradient:evaluation.gradient,count:evaluation.rows.length};
+    }
+    function chainSquare(delta) {
+      const {row}=chainValues(),gap=Math.abs(row.error),remaining=gap-delta;
+      return {gap,delta,remaining,removed:gap*gap-remaining*remaining,estimate:2*gap*delta,overlap:delta*delta,slope:2*row.error};
+    }
+    function chainScale(phase) {
+      return phase<0.8?1+phase/0.8:phase<=1.2?2:2+4*(phase-1.2)/0.8;
+    }
+    function renderChainCopy() {
+      const c=relayLesson.chain,v=chainValues();
+      if(current()==='relay-chain-scale') {
+        paragraph('偏置没有直接出现在评分里，电脑怎样知道该改它？先看一次变化经过连续计算时，影响怎样组合。');
+        paragraph('这里仅演示倍数关系：每份先变成2份，再把得到的每一份变成3份。两种颜色帮助你追踪原来的两份，没有运行训练。');
+        if(c.scaled)paragraph('每份最终对应6份。后一步作用在前一步的结果上，所以总影响是2 × 3，而不是2 + 3。');return;
+      }
+      if(current()==='relay-chain-path') {
+        paragraph(c.path===0?'回看偏置−2.4、第3秒的计算。在ReLU的正斜线段里，偏置稍微增加多少，激活输出就增加多少。这一段的局部影响为1。':'再把同一份变化带回预测。激活输出的变化经过输出权重20放大，再加到原函数上；前面的影响还要乘上这一步的20。');
+        const p=paragraph(c.path===0?'偏置 → 激活输出：局部影响 1':'偏置 → 预测：局部影响 1 × 20 = 20');p.className='ma-formula';
+        paragraph(c.path===0?'深色带回看刚才0.1的变化怎样被保留。这里解释的是没有跨过拐点的局部范围，不是说ReLU在所有位置都原样保留。':'深色带回看0.1怎样成为预测增加的2。偏置仍是−2.4，没有再次增加，也没有执行训练。');return;
+      }
+      if(current()==='relay-chain-square') {
+        paragraph(c.square===0?'预测142，记录150，差距是8。先只看第三条的平方差：把差距画成边长8的正方形。预测稍微靠近记录，面积会怎样变化？':c.square===1?'试算预测增加1，差距8变成7。两条边附近的面积都减少，但角落只能算一次；实际少了15，而两条完整窄条合计16。':'重新试算更小的增加0.1。实际减少1.59，两条窄条估计1.6，差别只剩角落的0.01；变化越小，角落相对越不重要。');
+        const p=paragraph(c.square===2?'当前位置的局部影响 = −2 × 8 = −16':c.square===1?'平方差：64 → 49；实际减少15':'第三条平方差 = 8 × 8 = 64');p.className='ma-formula';
+        paragraph(c.square===2?'负号表示预测略增时平方差减小。−16描述当前位置的局部影响，不是说预测增加1总能让第三条平方差减少16。':'这是平方评分的局部试算，不更新已保存的偏置，也不增加训练轮数。接下来缩小试算幅度，看两条窄条为什么能描述局部影响。');return;
+      }
+      paragraph(c.averaged?'第三条的局部影响为−320。前两条没有把偏置变化传过ReLU，各自贡献0；三条合计后还要除以3，才是平均评分的影响。':'偏置的变化先被保留，再被20倍放大，预测的变化又影响平方差。后一步作用在前一步的结果上，把沿途局部影响相乘，就是链式法则。');
+      const p=paragraph('第三条：');p.className='ma-formula';
+      v.factors.forEach((value,index)=>{
+        if(index)p.appendChild(document.createTextNode(' × '));
+        const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=value<0?'('+waveNumber(value)+')':waveNumber(value);
+        button.setAttribute('data-ma-chain-factor',String(index));button.setAttribute('aria-label',['回看激活的局部影响1','回看输出权重20','回看平方差的局部影响负16'][index]);button.setAttribute('aria-pressed',String(c.review===index));
+        button.addEventListener('click',()=>{stopAutomation();c.review=c.review===index?null:index;refreshRelay();copy.querySelectorAll('[data-ma-chain-factor]').find(node=>Number(node.getAttribute('data-ma-chain-factor'))===index)?.focus?.();});p.appendChild(button);
+      });p.appendChild(document.createTextNode(' = '+waveNumber(v.product)));
+      if(c.averaged){const row=document.createElement('span');row.style.display='block';row.textContent='平均影响 = (0 + 0 '+waveNumber(v.product)+') ÷ '+v.count+' = '+waveNumber(v.gradient);p.appendChild(row);}
+      paragraph(c.review===0?'1来自ReLU当前的正斜线段：偏置的微小变化被原样保留。图中回看同一份变化，模型没有重新调整。':c.review===1?'20是激活输出到预测之间的权重。图中回看贡献相加；当前偏置仍为−2.4。':c.review===2?'−16来自当前差距8的平方评分：预测略微增加，两条边附近的面积共同减少。图中回看小幅试算，不执行训练。':c.averaged?'沿一条计算路径的影响相乘，不同记录的贡献相加并取平均。现在更新式里的每个数都有了出处。':'点击公式里的任一数字，可回到它对应的图像；接下来再算三条记录的平均影响。');
+    }
+    function updateChainNav() {
+      const c=relayLesson.chain;
+      if(current()==='relay-chain-scale'){if(c.scaled)back.textContent='← 撤回两次放大';next.textContent=c.scaled?'回到我们的预测 →':'经过两次放大';return;}
+      if(current()==='relay-chain-path'){if(c.path)back.textContent='← 再看激活';next.textContent=c.path?'预测怎样影响评分？ →':'再经过输出权重20 →';return;}
+      if(current()==='relay-chain-square'){if(c.square)back.textContent='← 回看上一次试算';next.textContent=['让预测靠近记录1','再试更小的0.1','把三段影响接起来 →'][c.square];return;}
+      if(c.review!==null){back.textContent='← 接回计算';next.textContent='接回计算 →';return;}
+      if(c.averaged)back.textContent='← 回到第三条的影响';next.textContent=c.averaged?'用这个影响调整偏置 →':'求三条记录的平均影响';
+    }
+    function drawChainScale(width,phase) {
+      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
+      const factor=chainScale(phase),unit=(width-80)/12,left=40;
+      svg.setAttribute('data-ma-chart-kind','chain-scale');svg.setAttribute('data-ma-chain-phase',phase);svg.setAttribute('data-ma-chain-scale',factor);
+      el('title',{id:'ma-stage-title'}).textContent='两份有颜色标记的原始单位，先各自放大2倍，再将每一份放大3倍。当前相对原单位的倍数'+waveNumber(factor)+'。这只是倍数关系演示，不运行模型训练。';
+      for(let source=0;source<2;source++) {
+        const x=left+source*unit*factor;
+        el('rect',{x,y:128,width:unit*factor,height:46,fill:source?muted:accent,'fill-opacity':source?0.65:0.9,stroke:'var(--ma-paper)','stroke-width':1,'data-ma-chain-source':source,'data-ma-chain-source-units':factor});
+        if(phase>=0.8)line(x+unit*factor/2,128,x+unit*factor/2,174,{stroke:'var(--ma-paper)','stroke-width':2});
+        if(phase>1.2)for(const fraction of [1/6,2/6,4/6,5/6])line(x+unit*factor*fraction,128,x+unit*factor*fraction,174,{stroke:'var(--ma-paper)','stroke-width':1,opacity:(phase-1.2)/0.8});
+      }
+      text(phase<0.8?'每一份先放大2倍':phase<=1.2?'得到的每份，再放大3倍':'后一步作用在前一步的结果上',width/2,76,{'text-anchor':'middle',fill:muted,'font-size':14});
+      text('相当于原来的 '+waveNumber(factor)+' 倍',width/2,226,{'text-anchor':'middle','font-size':18});
+    }
+    function drawChainSquare(width,delta) {
+      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
+      const s=chainSquare(delta),side=Math.min(190,width-90),unit=side/s.gap,x=(width-side)/2,y=48,d=delta*unit;
+      svg.setAttribute('data-ma-chart-kind','chain-square');svg.setAttribute('data-ma-chain-delta',delta);svg.setAttribute('data-ma-chain-removed',s.removed);svg.setAttribute('data-ma-chain-estimate',s.estimate);
+      el('title',{id:'ma-stage-title'}).textContent='第三条原差距'+s.gap+'，平方差'+s.gap*s.gap+'。试算预测增加'+waveNumber(delta)+'，面积实际减少'+waveNumber(s.removed)+'，两条窄条合计'+waveNumber(s.estimate)+'，差别为角落面积'+waveNumber(s.overlap)+'。不更新模型参数。';
+      el('rect',{x,y,width:side,height:side,fill:accent,'fill-opacity':0.09,stroke:axis,'data-ma-chain-square-base':''});
+      el('rect',{x:x+side-d,y,width:d,height:side-d,fill:accent,'fill-opacity':0.5,'data-ma-chain-square-right':''});
+      el('rect',{x,y:y+side-d,width:side,height:d,fill:accent,'fill-opacity':0.5,'data-ma-chain-square-bottom':''});
+      el('rect',{x:x+side-d,y:y+side-d,width:d,height:d,fill:accent,'fill-opacity':0.75,stroke:ink,'stroke-width':delta?1:0,'data-ma-chain-square-overlap':''});
+      text('8',width/2,y-13,{'text-anchor':'middle',fill:muted,'font-size':14});text('8',x-14,y+side/2,{'text-anchor':'end',fill:muted,'font-size':14});
+      text(delta?'实际减少 '+waveNumber(s.removed)+'；窄条估计 '+waveNumber(s.estimate):'平方差 64',width/2,276,{'text-anchor':'middle','font-size':15});
+    }
+    function drawChainAverage(width,progress,divide) {
+      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');
+      const v=chainValues(),left=40,right=width-40,length=right-left;
+      svg.setAttribute('data-ma-chart-kind','chain-influence');svg.setAttribute('data-ma-chain-average-progress',progress);svg.setAttribute('data-ma-chain-product',v.product);svg.setAttribute('data-ma-chain-gradient',v.gradient);
+      el('title',{id:'ma-stage-title'}).textContent='第三条平方差对偏置的局部影响'+v.product+'，前两条各为0。负值画在0的左侧。'+(divide?'把合计影响均分三份，得到平均评分的导数。':'这条带表示局部影响，不是一次有限调整减少的误差。');
+      text(divide?'三条记录的合计影响，再均分':'第三条平方差对偏置的局部影响',width/2,62,{'text-anchor':'middle',fill:muted,'font-size':13});
+      el('rect',{x:left,y:130,width:length,height:36,fill:accent,'fill-opacity':0.65,'data-ma-chain-total':''});
+      line(right,120,right,176,{stroke:ink});text('0',right,198,{'text-anchor':'middle',fill:muted});text(waveNumber(v.product),left,198,{'text-anchor':'middle',fill:accent});
+      if(divide)for(let i=1;i<v.count;i++)line(right-length*i/v.count*progress,130,right-length*i/v.count*progress,166,{stroke:'var(--ma-paper)','stroke-width':3,'data-ma-chain-divider':i});
+      text(divide?'三等份，每份 '+waveNumber(v.gradient):'负号：偏置略增，平方差局部减小',width/2,244,{'text-anchor':'middle','font-size':14});
+    }
+    function renderChainGraph() {
+      const width=Math.max(240,figure.getBoundingClientRect().width||736),c=relayLesson.chain;
+      if(current()==='relay-chain-scale'){animatePlot(current(),width,c.scaled?2:0,phase=>drawChainScale(width,phase),2400);return;}
+      if(current()==='relay-chain-path') {
+        if(c.path===0)drawRelayFunction(width,-2.4,1,true);else drawRelayPrediction(width,-2.4,true);return;
+      }
+      if(current()==='relay-chain-square'){animatePlot(current(),width,c.square===0?0:c.square===1?1:0.1,delta=>drawChainSquare(width,delta),900);return;}
+      if(c.review!==null) {
+        cancelPlotAnimation();lastPlot=null;
+        if(c.review===0)drawRelayFunction(width,-2.4,1,true);else if(c.review===1)drawRelayPrediction(width,-2.4,true);else drawChainSquare(width,0.1);return;
+      }
+      animatePlot(current(),width,c.averaged?1:0,p=>drawChainAverage(width,p,c.averaged),1000);
+    }
+    function forwardChain() {
+      const c=relayLesson.chain;
+      if(current()==='relay-chain-scale'&&!c.scaled){c.scaled=true;refreshRelay();return;}
+      if(current()==='relay-chain-path'&&c.path===0){c.path=1;refreshRelay();return;}
+      if(current()==='relay-chain-square'&&c.square<2){c.square++;refreshRelay();return;}
+      if(current()==='relay-chain-summary') {
+        if(c.review!==null){c.review=null;refreshRelay();return;}
+        if(!c.averaged){c.averaged=true;refreshRelay();return;}
+      }
+      state.scene++;renderScene();
+    }
+    function backwardChain() {
+      const c=relayLesson.chain;
+      if(current()==='relay-chain-summary') {
+        if(c.review!==null){c.review=null;refreshRelay();return;}
+        if(c.averaged){c.averaged=false;refreshRelay();return;}
+      }
+      if(current()==='relay-chain-square'&&c.square>0){c.square--;refreshRelay();return;}
+      if(current()==='relay-chain-path'&&c.path>0){c.path=0;refreshRelay();return;}
+      if(current()==='relay-chain-scale'&&c.scaled){c.scaled=false;refreshRelay();return;}
+      state.scene--;renderScene();
+    }
     const relayLearningRate=0.00125;
     function relayEvaluate(bias,data=shapeRecords,params=bendConfig) {
       const rows=data.map(row=>{
@@ -2007,7 +2127,8 @@
       return result.gradient===null?null:bias-rate*result.gradient;
     }
     function ensureRelayLesson() {
-      if(!relayLesson)relayLesson={changed:false,gateSeen:false,resultSeen:false,history:[-2.4],cursor:0};
+      if(!relayLesson)relayLesson={changed:false,gateSeen:false,resultSeen:false,history:[-2.4],cursor:0,chain:{scaled:false,path:0,square:0,averaged:false,review:null}};
+      if(current().startsWith('relay-chain-'))relayLesson.changed=true;
     }
     function relayBias() {return current()==='relay-train'?relayLesson.history[relayLesson.cursor]:relayLesson.changed?-2.4:-2.5;}
     function relayStatus() {
@@ -2031,6 +2152,7 @@
       p.appendChild(node);return p;
     }
     function renderRelayCopy() {
+      if(current().startsWith('relay-chain-')){renderChainCopy();return;}
       if(current()==='relay-purpose') {
         paragraph('刚才，电脑学会了调整分支的放大程度。现在让它学习分支从哪里开始生效：只调整ReLU前面的偏置。');
         paragraph('另开一次实验：输出权重固定为20，内部权重仍是1，偏置设为−2.5。预测为70、100、140，第三条还差10。上一轮的训练结果保留。');return;
@@ -2062,13 +2184,14 @@
       calculation.appendChild(document.createTextNode(status==='ready'?'下一次：当前偏置 − 0.00125 × 平均影响':'已停止；可以回退查看真实调整。'));
     }
     function updateRelayNav() {
+      if(current().startsWith('relay-chain-')){updateChainNav();return;}
       if(current()==='relay-purpose'){next.textContent='先看变化怎样经过激活 →';return;}
       if(current()==='relay-shift') {
         next.disabled=!relayLesson.changed;next.textContent=relayLesson.changed?'让这次变化经过ReLU →':'先点公式里的−2.5';
         if(relayLesson.changed)back.textContent='← 撤回这次增加';return;
       }
       if(current()==='relay-gate'){next.textContent='把留下的变化带回预测 →';return;}
-      if(current()==='relay-result'){next.textContent='让电脑接着调整偏置 →';return;}
+      if(current()==='relay-result'){next.textContent='偏置怎样影响评分？ →';return;}
       if(current()==='relay-ending'){next.textContent='重新探索偏置训练 ↻';return;}
       const status=relayStatus();if(relayLesson.cursor>0)back.textContent='← 回退一次调整';
       next.textContent=status==='ready'?'按当前影响调整一次':'这些影响怎样接起来？ →';
@@ -2096,6 +2219,7 @@
       drawTrainingGap(width,relayEvaluate(bias).rows[2],'relay');syncRelayValues(bias);
     }
     function renderRelayGraph() {
+      if(current().startsWith('relay-chain-')){renderChainGraph();return;}
       const width=Math.max(240,figure.getBoundingClientRect().width||736);
       if(current()==='relay-shift')animatePlot(current(),width,relayBias(),bias=>drawRelayFunction(width,bias,0,false),1000);
       if(current()==='relay-gate') {
@@ -2121,6 +2245,7 @@
     }
     function forwardRelay() {
       stopAutomation();
+      if(current().startsWith('relay-chain-')){forwardChain();return;}
       if(current()==='relay-shift'&&!relayLesson.changed)return;
       if(current()==='relay-train'&&relayStatus()==='ready'){advanceRelayTraining();refreshRelay();return;}
       if(current()==='relay-ending'){relayLesson=null;state.scene=scenes.indexOf('relay-purpose');renderScene();return;}
@@ -2128,6 +2253,7 @@
     }
     function backwardRelay() {
       stopAutomation();
+      if(current().startsWith('relay-chain-')){backwardChain();return;}
       if(current()==='relay-shift'&&relayLesson.changed){relayLesson.changed=false;relayLesson.gateSeen=false;relayLesson.resultSeen=false;refreshRelay();return;}
       if(current()==='relay-train'&&relayLesson.cursor>0){relayLesson.cursor--;refreshRelay();return;}
       state.scene--;renderScene();
@@ -2237,7 +2363,7 @@
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
-      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose'}[globalThis.location?.hash];
+      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-scale'}[globalThis.location?.hash];
       if(chapter){state.scene=scenes.indexOf(chapter);renderScene();}
     });
     document.addEventListener('visibilitychange',()=>{
@@ -2247,7 +2373,7 @@
     if(globalThis.location?.hash==='#act-3') state.scene=14;
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
     if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
-    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose'}[globalThis.location?.hash];
+    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-scale'}[globalThis.location?.hash];
     if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     new ResizeObserver(()=>{

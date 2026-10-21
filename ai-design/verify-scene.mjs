@@ -1030,7 +1030,7 @@ for(const width of [736,360,280]) {
 const reducedOutput=mount(280,'#act-13',script,'reduce');enterOutputTrain(reducedOutput,280);reducedOutput.advance();assertOutputGraph(reducedOutput,280,14,true);assert.equal(reducedOutput.frames.size,0);
 console.log('PASS output motion: one parameter drives all curves, residual and live numbers; interruption, resize, visibility, navigation and reduced motion');
 
-const relayProgram=script.replace('    const waveChapter=','    globalThis.__captureRelayMath({evaluate:relayEvaluate,step:relayStep});\n    const waveChapter=');
+const relayProgram=script.replace('    const waveChapter=','    globalThis.__captureRelayMath({evaluate:relayEvaluate,step:relayStep,chainValues,chainSquare,chainScale,history:()=>relayLesson.history.slice(),cursor:()=>relayLesson.cursor});\n    const waveChapter=');
 const relayMath=mount(360,'#act-14',relayProgram).relayMath;
 for(const bias of [-3.4,-2.8,-2.4,-2.1,-1.8,-0.4,0.2]) {
   const result=relayMath.evaluate(bias),h=1e-5;
@@ -1061,7 +1061,7 @@ function assertRelayFunction(app,width,bias,gate=0,activation=false) {
   const vertices=[0,-bias,3.5],X=t=>54+t/3.5*(width-76),Y=v=>260-(v+2.6)/3.8*227;
   const curve=points(app.svg.querySelectorAll('[data-ma-active-function]')[0]);curve.forEach(([x,y],i)=>{const t=vertices[i],raw=t+bias;close(x,X(t));close(y,Y(raw+(Math.max(0,raw)-raw)*gate));});
   const root=app.svg.querySelectorAll('[data-ma-function-zero]')[0];close(root.getAttribute('cx'),X(-bias));close(root.getAttribute('cy'),Y(0));
-  assertRelayBand(app,width,bias,gate);assert.ok(Math.abs(Number(app.copy.querySelectorAll('[data-ma-relay-bias]')[0].textContent)-bias)<0.000051);
+  assertRelayBand(app,width,bias,gate);const biasNode=app.copy.querySelectorAll('[data-ma-relay-bias]')[0];if(biasNode)assert.ok(Math.abs(Number(biasNode.textContent)-bias)<0.000051);else assert.match(app.copy.textContent,/局部影响/);
   assert.ok(app.copy.children.length<=3);assert.equal(app.handle.hidden,true);
 }
 function assertRelayPrediction(app,width,bias,compare=false,training=false) {
@@ -1071,18 +1071,19 @@ function assertRelayPrediction(app,width,bias,compare=false,training=false) {
   app.svg.querySelectorAll('[data-ma-composition-input]').forEach((node,i)=>{close(node.getAttribute('data-ma-composition-prediction'),result.rows[i].prediction);close(node.getAttribute('cy'),Y(result.rows[i].prediction));});
   const gap=app.svg.querySelectorAll('[data-ma-relay-gap]')[0];close(gap.getAttribute('x1'),width-22+result.rows[2].error*(width-76)/10);close(gap.getAttribute('data-ma-relay-gap-value'),Math.abs(result.rows[2].error));
   assert.equal(app.svg.querySelectorAll('[data-ma-relay-change-band]').length,compare?1:0);if(compare)assertRelayBand(app,width,bias,1,true);
-  assert.ok(Math.abs(Number(app.copy.querySelectorAll('[data-ma-relay-bias]')[0].textContent)-bias)<0.000051);
+  const biasNode=app.copy.querySelectorAll('[data-ma-relay-bias]')[0];if(biasNode)assert.ok(Math.abs(Number(biasNode.textContent)-bias)<0.000051);else assert.match(app.copy.textContent,/局部影响/);
   if(training)for(const [attr,expected] of [['data-ma-relay-loss',result.loss],['data-ma-relay-error',result.rows[2].error],['data-ma-relay-gradient',result.gradient]])assert.ok(Math.abs(Number(app.copy.querySelectorAll('['+attr+']')[0].textContent)-expected)<0.000051);
   assert.ok(app.copy.children.length<=3);
 }
+function finishChain(app) {let n=0;while(!app.copy.querySelectorAll('[data-ma-relay-gradient]').length){assert.ok(n++<20);app.advance();}}
 function relayProbe(app) {const button=app.copy.querySelectorAll('[data-ma-relay-bias]')[0];assert.equal(button.disabled,false);button.fire('click');}
 for(const width of [736,360,280]) {
   const app=mount(width,'#act-14');assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/另开一次实验/);app.advance();assertRelayFunction(app,width,-2.5);
   assert.equal(app.next.disabled,true);app.advance();assertRelayFunction(app,width,-2.5);relayProbe(app);assertRelayFunction(app,width,-2.4);
   app.retreat();assertRelayFunction(app,width,-2.5);relayProbe(app);app.advance();assertRelayFunction(app,width,-2.4,1,true);app.advance();assertRelayPrediction(app,width,-2.4,true);
-  app.retreat();assertRelayFunction(app,width,-2.4,1,true);app.advance();app.advance();assertRelayPrediction(app,width,-2.4,false,true);assert.match(app.copy.textContent,/0.00125/);assert.equal(app.automatic.hidden,true);
+  app.retreat();assertRelayFunction(app,width,-2.4,1,true);app.advance();app.advance();finishChain(app);assertRelayPrediction(app,width,-2.4,false,true);assert.match(app.copy.textContent,/0.00125/);assert.equal(app.automatic.hidden,true);
   const first=relayMath.step(-2.4);app.advance();assertRelayPrediction(app,width,first,false,true);assert.equal(app.automatic.hidden,false);app.retreat();assertRelayPrediction(app,width,-2.4,false,true);
-  app.retreat();assertRelayPrediction(app,width,-2.4,true);app.advance();app.advance();app.automatic.fire('click');app.tick();const second=relayMath.step(first);assertRelayPrediction(app,width,second,false,true);
+  app.retreat();assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'chain-influence');app.advance();app.advance();app.automatic.fire('click');app.tick();const second=relayMath.step(first);assertRelayPrediction(app,width,second,false,true);
   app.automatic.fire('click');assert.equal(app.timers.size,0);app.retreat();assertRelayPrediction(app,width,first,false,true);app.advance();assertRelayPrediction(app,width,second,false,true);
   app.automatic.fire('click');let rounds=0;while(app.timers.size&&rounds++<100)app.tick();assert.ok(rounds<100);
   const final=Number(app.svg.getAttribute('data-ma-relay-current'));assert.ok(final<-2&&final>-2.01);assert.ok(relayMath.evaluate(final).loss>0&&relayMath.evaluate(final).loss<=0.001);assertRelayPrediction(app,width,final,false,true);assert.equal(app.automatic.hidden,true);
@@ -1094,11 +1095,64 @@ for(const width of [736,360,280]) {
 for(const width of [736,360,280]) {
   const app=mount(width,'#act-14',script,true);app.advance();relayProbe(app);app.frame(500);assertRelayFunction(app,width,-2.45);app.resize();assertRelayFunction(app,width,-2.4);
   app.advance();app.frame(550);assertRelayFunction(app,width,-2.4,0.5,true);app.hide();assertRelayFunction(app,width,-2.4,1,true);app.show();
-  app.advance();assertRelayPrediction(app,width,-2.5,true);app.frame(550);assertRelayPrediction(app,width,-2.45,true);app.advance();assertRelayPrediction(app,width,-2.4,false,true);assert.equal(app.frames.size,0);
+  app.advance();assertRelayPrediction(app,width,-2.5,true);app.frame(550);assertRelayPrediction(app,width,-2.45,true);app.advance();finishChain(app);assertRelayPrediction(app,width,-2.4,false,true);assert.equal(app.frames.size,0);
   const first=relayMath.step(-2.4);app.advance();app.frame(400);assertRelayPrediction(app,width,(-2.4+first)/2,false,true);app.automatic.fire('click');assertRelayPrediction(app,width,first,false,true);
   app.tick();app.frame(400);assertRelayPrediction(app,width,(first+relayMath.step(first))/2,false,true);app.goToChapter(13);assert.equal(app.frames.size,0);assert.equal(app.timers.size,0);
-  app.goToChapter(14);app.advance();assertRelayFunction(app,width,-2.4);app.advance();assertRelayFunction(app,width,-2.4,1,true);app.advance();assertRelayPrediction(app,width,-2.4,true);app.advance();assertRelayPrediction(app,width,relayMath.step(first),false,true);
+  app.goToChapter(14);app.advance();assertRelayFunction(app,width,-2.4);app.advance();assertRelayFunction(app,width,-2.4,1,true);app.advance();assertRelayPrediction(app,width,-2.4,true);app.advance();finishChain(app);assertRelayPrediction(app,width,relayMath.step(first),false,true);
   app.automatic.fire('click');app.leave();assert.equal(app.timers.size,0);app.resume();assert.equal(app.timers.size,0);
 }
-const reducedRelay=mount(280,'#act-14',script,'reduce');reducedRelay.advance();relayProbe(reducedRelay);reducedRelay.advance();assertRelayFunction(reducedRelay,280,-2.4,1,true);reducedRelay.advance();assertRelayPrediction(reducedRelay,280,-2.4,true);reducedRelay.advance();reducedRelay.advance();assertRelayPrediction(reducedRelay,280,relayMath.step(-2.4),false,true);assert.equal(reducedRelay.frames.size,0);
+const reducedRelay=mount(280,'#act-14',script,'reduce');reducedRelay.advance();relayProbe(reducedRelay);reducedRelay.advance();assertRelayFunction(reducedRelay,280,-2.4,1,true);reducedRelay.advance();assertRelayPrediction(reducedRelay,280,-2.4,true);reducedRelay.advance();finishChain(reducedRelay);reducedRelay.advance();assertRelayPrediction(reducedRelay,280,relayMath.step(-2.4),false,true);assert.equal(reducedRelay.frames.size,0);
 console.log('PASS relay motion: computed difference polygons and local gates, fixed magnification, live gradient, interruption, navigation and reduced motion');
+
+const chainMath=relayMath.chainValues();assert.equal(chainMath.factors.join(','),'1,20,-16');close(chainMath.product,-320);close(chainMath.gradient,-320/3);close(chainMath.row.prediction,142);
+for(const delta of [0,1,0.5,0.1,0.01]) {
+  const s=relayMath.chainSquare(delta);close(s.removed,64-(8-delta)**2);close(s.estimate,16*delta);close(s.estimate-s.removed,s.overlap);close(s.overlap,delta*delta);close(s.slope,-16);
+}
+close(relayMath.chainScale(0),1);close(relayMath.chainScale(0.8),2);close(relayMath.chainScale(1.2),2);close(relayMath.chainScale(2),6);
+function assertChainScale(app,width,phase) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'chain-scale');close(app.svg.getAttribute('data-ma-chain-phase'),phase);
+  const factor=relayMath.chainScale(phase);close(app.svg.getAttribute('data-ma-chain-scale'),factor);
+  const sources=app.svg.querySelectorAll('[data-ma-chain-source]');assert.equal(sources.length,2);
+  sources.forEach((node,i)=>{close(node.getAttribute('x'),40+i*(width-80)/12*factor);close(node.getAttribute('width'),(width-80)/12*factor);close(node.getAttribute('data-ma-chain-source-units'),factor);});
+  assert.notEqual(sources[0].getAttribute('fill'),sources[1].getAttribute('fill'));
+}
+function assertChainSquare(app,width,delta) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'chain-square');close(app.svg.getAttribute('data-ma-chain-delta'),delta);
+  const side=Math.min(190,width-90),unit=side/8,right=app.svg.querySelectorAll('[data-ma-chain-square-right]')[0],bottom=app.svg.querySelectorAll('[data-ma-chain-square-bottom]')[0],overlap=app.svg.querySelectorAll('[data-ma-chain-square-overlap]')[0];
+  close(right.getAttribute('width'),delta*unit);close(right.getAttribute('height'),side-delta*unit);close(bottom.getAttribute('width'),side);close(bottom.getAttribute('height'),delta*unit);
+  const area=Number(right.getAttribute('width'))*Number(right.getAttribute('height'))+Number(bottom.getAttribute('width'))*Number(bottom.getAttribute('height'));
+  close(area/unit**2,64-(8-delta)**2);close(Number(overlap.getAttribute('width'))*Number(overlap.getAttribute('height'))/unit**2,delta**2);
+  close(app.svg.getAttribute('data-ma-chain-removed'),64-(8-delta)**2);close(app.svg.getAttribute('data-ma-chain-estimate'),16*delta);
+}
+function assertChainAverage(app,width,progress,divided=false) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'chain-influence');close(app.svg.getAttribute('data-ma-chain-product'),-320);close(app.svg.getAttribute('data-ma-chain-gradient'),-320/3);close(app.svg.getAttribute('data-ma-chain-average-progress'),progress);
+  const dividers=app.svg.querySelectorAll('[data-ma-chain-divider]');assert.equal(dividers.length,divided?2:0);
+  dividers.forEach((node,i)=>close(node.getAttribute('x1'),width-40-(width-80)*(i+1)/3*progress));
+  const band=app.svg.querySelectorAll('[data-ma-chain-total]')[0];close(band.getAttribute('width'),width-80);
+}
+function chainFactor(app,index) {const button=app.copy.querySelectorAll('[data-ma-chain-factor]').find(node=>Number(node.getAttribute('data-ma-chain-factor'))===index);assert.ok(button);button.fire('click');}
+function assertChainUntouched(app) {assert.equal(app.relayMath.history().join(','),'-2.4');assert.equal(app.relayMath.cursor(),0);assert.equal(app.timers.size,0);assert.equal(app.automatic.hidden,true);assert.ok(app.copy.children.length<=3);}
+for(const width of [736,360,280]) {
+  const app=mount(width,'#act-14-chain',relayProgram);assertChainScale(app,width,0);assertChainUntouched(app);
+  app.advance();assertChainScale(app,width,2);app.retreat();assertChainScale(app,width,0);app.advance();app.advance();assertRelayFunction(app,width,-2.4,1,true);
+  app.advance();assertRelayPrediction(app,width,-2.4,true);app.retreat();assertRelayFunction(app,width,-2.4,1,true);app.advance();app.advance();assertChainSquare(app,width,0);
+  app.advance();assertChainSquare(app,width,1);app.advance();assertChainSquare(app,width,0.1);assert.match(app.copy.textContent,/不是说预测增加1/);app.advance();assertChainAverage(app,width,0);
+  assert.equal(app.copy.querySelectorAll('[data-ma-chain-factor]').map(node=>Number(node.textContent.replace(/[()]/g,''))).join(','),'1,20,-16');
+  for(const index of [0,1,2]) {
+    chainFactor(app,index);assert.equal(app.copy.querySelectorAll('[data-ma-chain-factor]')[index].getAttribute('aria-pressed'),'true');
+    if(index===0)assertRelayFunction(app,width,-2.4,1,true);else if(index===1)assertRelayPrediction(app,width,-2.4,true);else assertChainSquare(app,width,0.1);
+    assertChainUntouched(app);app.advance();assertChainAverage(app,width,0);
+  }
+  app.advance();assertChainAverage(app,width,1,true);assertChainUntouched(app);app.retreat();assertChainAverage(app,width,0);app.retreat();assertChainSquare(app,width,0.1);app.retreat();assertChainSquare(app,width,1);app.advance();app.advance();app.advance();assertChainAverage(app,width,1,true);
+  app.advance();assertRelayPrediction(app,width,-2.4,false,true);assert.equal(app.relayMath.cursor(),0);app.advance();assertRelayPrediction(app,width,relayMath.step(-2.4),false,true);assert.equal(app.relayMath.cursor(),1);
+  app.goToChapter('14-chain');assertChainScale(app,width,2);assert.equal(app.relayMath.cursor(),1);
+  console.log('PASS chain width='+width+': source-preserving multiplication, actual area vs local derivative, clickable provenance, average, reversible stages and unchanged training history');
+}
+for(const width of [736,360,280]) {
+  const app=mount(width,'#act-14-chain',relayProgram,true);app.advance();app.frame(1200);assertChainScale(app,width,1);app.frame(1200);assertChainScale(app,width,2);app.advance();app.advance();app.advance();
+  app.advance();app.frame(450);assertChainSquare(app,width,0.5);app.hide();assertChainSquare(app,width,1);app.show();app.advance();app.frame(450);assertChainSquare(app,width,0.55);app.resize();assertChainSquare(app,width,0.1);
+  app.advance();app.advance();app.frame(500);assertChainAverage(app,width,0.5,true);chainFactor(app,2);assertChainSquare(app,width,0.1);assert.equal(app.frames.size,0);app.advance();assertChainAverage(app,width,1,true);assertChainUntouched(app);
+  app.goToChapter(13);assert.equal(app.frames.size,0);assert.equal(app.timers.size,0);app.goToChapter('14-chain');assertChainScale(app,width,2);assertChainUntouched(app);
+}
+const reducedChain=mount(280,'#act-14-chain',relayProgram,'reduce');reducedChain.advance();assertChainScale(reducedChain,280,2);finishChain(reducedChain);assertRelayPrediction(reducedChain,280,-2.4,false,true);assert.equal(reducedChain.frames.size,0);assert.equal(reducedChain.relayMath.cursor(),0);
+console.log('PASS chain motion: real intermediate lengths/areas/divisions, no hidden updates, reduced motion, interruption, resize and navigation cancellation');
