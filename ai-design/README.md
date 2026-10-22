@@ -20,7 +20,7 @@
 12. 点击数字改变权重和偏置，观察整条直线及完整预测的变化，理解第一个神经元。
 13. 将输出权重明确设为10，点击增加1，再让电脑通过平方评分实际训练这个权重。
 14. 观察变化经过ReLU与输出放大，展开局部影响为什么相乘，再实际训练偏置。
-15. 接上内部权重的输入影响，再从明确起始值同时训练三个参数，观察整体预测与三个差距平方。
+15. 在同一函数图上比较ReLU前后的两个权重；先看一轮，再一键连续训练三个参数，保留暂停、单步和逐轮回退。
 
 可直接访问 [第二幕](https://pingjiang2013.github.io/tui/ai-design/#act-2)、[第三幕](https://pingjiang2013.github.io/tui/ai-design/#act-3)、[第四幕](https://pingjiang2013.github.io/tui/ai-design/#act-4)、[第五幕](https://pingjiang2013.github.io/tui/ai-design/#act-5)。
 

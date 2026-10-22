@@ -1088,7 +1088,7 @@ for(const width of [736,360,280]) {
   app.automatic.fire('click');let rounds=0;while(app.timers.size&&rounds++<100)app.tick();assert.ok(rounds<100);
   const final=Number(app.svg.getAttribute('data-ma-relay-current'));assert.ok(final<-2&&final>-2.01);assert.ok(relayMath.evaluate(final).loss>0&&relayMath.evaluate(final).loss<=0.001);assertRelayPrediction(app,width,final,false,true);assert.equal(app.automatic.hidden,true);
   app.retreat();assert.ok(relayMath.evaluate(Number(app.svg.getAttribute('data-ma-relay-current'))).loss>0.001);app.advance();assertRelayPrediction(app,width,final,false,true);
-  app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/链式法则/);app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/一起调整/);app.advance();assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'joint-trial');
+  app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/链式法则/);app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/一起训练/);app.advance();assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'weight-roles');
   app.goToChapter(13);assert.equal(app.figure.hidden,true);app.advance();assertOutputGraph(app,width,10);app.goToChapter(14);app.advance();assertRelayFunction(app,width,-2.4);
   console.log('PASS relay width='+width+': explicit experiment, +0.1, blocked/preserved function differences, 20-fold contribution, true bias training, rollback, tolerance and isolated replay');
 }
@@ -1195,38 +1195,52 @@ function assertJointTraining(app,width,params) {
   const knot=-params.bias/params.weight;jointClose(path[1][0],X(knot));jointClose(path[1][1],Y(40+30*knot));
   assert.ok(app.copy.children.length<=4);
 }
+function roleNumber(app){return app.copy.querySelectorAll('[data-ma-role-number]')[0];}
+function assertRoles(app,width,step,amount=0) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'weight-roles');assert.equal(app.svg.getAttribute('data-ma-role-step'),String(step));
+  const gray=app.svg.querySelectorAll('[data-ma-role-curve]').find(n=>n.getAttribute('data-ma-role-curve')==='gray'),orange=app.svg.querySelectorAll('[data-ma-role-curve]').find(n=>n.getAttribute('data-ma-role-curve')==='orange');
+  const current=step===0?{w:1+0.5*amount,b:-1.8,c:12}:{w:1,b:-1.8,c:12+6*amount};
+  for(const [node,p] of [[gray,step===2?current:{w:1,b:-1.8,c:12}],[orange,step===2?{w:1.5,b:-1.8,c:12}:current]]) {
+    jointClose(node.getAttribute('data-ma-role-root'),-p.b/p.w);jointClose(node.getAttribute('data-ma-role-slope'),p.w*p.c);
+    const values=points(node);assert.equal(values.length,3);jointClose(values[1][0],54+(-p.b/p.w)/3.5*(width-76));jointClose(values[1][1],250);jointClose(values[2][1],250-p.c*Math.max(0,p.w*3.5+p.b)/48*217);
+  }
+  assert.equal(app.jointMath.cursor(),0);assert.equal(app.jointMath.history().length,1);assert.ok(app.copy.children.length<=3);
+}
+// Positive homogeneity: scaling both preactivation parameters and compensating the
+// output weight preserves this one-branch model, rather than proving two are essential.
+for(let t=0;t<=3.5;t+=0.125) {
+  const first=12*Math.max(0,t-1.8),equivalent=8*Math.max(0,1.5*t-2.7);jointClose(first,equivalent);
+}
 for(const width of [736,360,280]) {
   const app=mount(width,'#act-15',jointProgram);
-  assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/换一组起始值/);app.advance();assert.equal(app.figure.hidden,false);assert.equal(app.next.disabled,true);
-  app.advance();assert.equal(app.svg.getAttribute('data-ma-joint-phase'),'0');
-  jointButton(app,'weight').fire('click');jointClose(Number(jointButton(app,'weight').textContent),1.1);assert.equal(app.jointMath.cursor(),0);
-  app.svg.querySelectorAll('[data-ma-joint-change-input]').forEach((node,i)=>jointClose(node.getAttribute('data-ma-joint-change'),0.1*(i+1)));
-  app.advance();assert.equal(app.svg.getAttribute('data-ma-joint-phase'),'1');
-  app.svg.querySelectorAll('[data-ma-joint-change-input]').forEach((node,i)=>jointClose(node.getAttribute('data-ma-joint-change'),[0,0.2,0.3][i]));
-  app.advance();assert.equal(app.svg.getAttribute('data-ma-joint-phase'),'2');
-  app.svg.querySelectorAll('[data-ma-joint-change-input]').forEach((node,i)=>jointClose(node.getAttribute('data-ma-joint-change'),[0,2.4,3.6][i]));
-  jointButton(app,'bias').fire('click');assert.equal(app.svg.getAttribute('data-ma-joint-phase'),'0');jointClose(Number(jointButton(app,'weight').textContent),1);jointClose(Number(jointButton(app,'bias').textContent),-1.7);
-  jointButton(app,'output').fire('click');assert.equal(app.svg.getAttribute('data-ma-joint-phase'),'2');jointClose(Number(jointButton(app,'output').textContent),13);jointClose(Number(jointButton(app,'bias').textContent),-1.8);
-  assert.equal(app.jointMath.history().length,1);app.advance();assertJointTraining(app,width,initialJoint);assert.match(app.copy.textContent,/撤回刚才的试算/);assert.equal(app.automatic.hidden,true);
+  assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/换一组起始值/);assert.match(app.copy.textContent,/输入权重是之前所说的内部权重/);
+  app.advance();assertRoles(app,width,0);assert.equal(app.next.disabled,true);app.advance();assertRoles(app,width,0);
+  roleNumber(app).fire('click');assertRoles(app,width,0,1);jointClose(Number(roleNumber(app).textContent),1.5);roleNumber(app).fire('click');assertRoles(app,width,0,1);
+  app.advance();assertRoles(app,width,1);assert.equal(app.next.disabled,true);roleNumber(app).fire('click');assertRoles(app,width,1,1);jointClose(Number(roleNumber(app).textContent),18);
+  app.advance();assertRoles(app,width,2,1);assert.match(app.copy.textContent,/并非必须用两个权重/);assert.match(app.copy.textContent,/曲线会完全不变/);
+  app.retreat();assertRoles(app,width,1,1);app.advance();app.advance();assertJointTraining(app,width,initialJoint);assert.match(app.copy.textContent,/不需要反复点击/);assert.equal(app.automatic.textContent,'单步调整');
   for(const key of ['weight','bias','output']){jointButton(app,key).fire('click');assert.match(app.copy.textContent,/局部影响/);assert.equal(app.jointMath.cursor(),0);}
-  app.advance();assertJointTraining(app,width,jointFirst);assert.equal(app.jointMath.cursor(),1);assert.equal(app.automatic.hidden,false);
-  app.retreat();assertJointTraining(app,width,initialJoint);app.advance();assertJointTraining(app,width,jointFirst);assert.equal(app.jointMath.history().length,2);
-  app.automatic.fire('click');app.tick();assert.equal(app.jointMath.cursor(),11);assert.equal(app.jointMath.history().length,12);app.automatic.fire('click');assert.equal(app.timers.size,0);
-  app.retreat();assert.equal(app.jointMath.cursor(),10);assertJointTraining(app,width,app.jointMath.history()[10]);app.advance();assert.equal(app.jointMath.cursor(),11);
-  app.automatic.fire('click');let ticks=0;while(app.timers.size&&ticks++<100)app.tick();assert.ok(ticks<100);assert.equal(app.jointMath.cursor(),630);const history=app.jointMath.history(),end=history.at(-1);
+  app.advance();assertJointTraining(app,width,jointFirst);assert.equal(app.jointMath.cursor(),1);assert.equal(app.next.textContent,'让电脑继续训练');
+  app.advance();assert.equal(app.next.textContent,'暂停训练');assert.equal(app.timers.size,1);app.tick();assert.equal(app.jointMath.cursor(),11);assert.equal(app.jointMath.history().length,12);
+  app.advance();assert.equal(app.timers.size,0);assert.equal(app.jointMath.cursor(),11);assert.equal(app.next.textContent,'让电脑继续训练');
+  app.retreat();assert.equal(app.jointMath.cursor(),10);assertJointTraining(app,width,app.jointMath.history()[10]);app.automatic.fire('click');assert.equal(app.jointMath.cursor(),11);assert.equal(app.timers.size,0);
+  app.advance();app.tick();app.automatic.fire('click');assert.equal(app.jointMath.cursor(),22);assert.equal(app.timers.size,0);
+  app.advance();let ticks=0;while(app.timers.size&&ticks++<100)app.tick();assert.ok(ticks<100);assert.equal(app.jointMath.cursor(),630);const history=app.jointMath.history(),end=history.at(-1);
   for(let i=1;i<history.length;i++){for(const key of ['weight','bias','output'])jointClose(history[i][key],jointMath.step(history[i-1])[key]);assert.ok(jointMath.evaluate(history[i]).loss<=jointMath.evaluate(history[i-1]).loss);}
-  assert.ok(jointMath.evaluate(end).loss>0&&jointMath.evaluate(end).loss<=0.001);assert.notEqual(end.weight,1);assert.notEqual(end.bias,-2);assert.notEqual(end.output,20);assertJointTraining(app,width,end);assert.equal(app.automatic.hidden,true);
-  app.retreat();assert.ok(jointMath.evaluate(app.jointMath.history()[app.jointMath.cursor()]).loss>0.001);app.advance();app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/一个转折/);
-  app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.equal(app.next.disabled,true);assert.equal(app.jointMath.cursor(),0);
-  app.goToChapter('15-train');assertJointTraining(app,width,initialJoint);app.advance();app.automatic.fire('click');app.hide();assert.equal(app.timers.size,0);app.show();app.automatic.fire('click');app.goToChapter(14);assert.equal(app.timers.size,0);app.goToChapter('15-train');assertJointTraining(app,width,jointFirst);
-  console.log('PASS joint width='+width+': explicit reset, real parameter probes, activation gate, simultaneous three-parameter updates, all-data gradients, fixed-area squares, per-round history, convergence, rollback and replay');
+  assert.ok(jointMath.evaluate(end).loss>0&&jointMath.evaluate(end).loss<=0.001);assertJointTraining(app,width,end);assert.equal(app.automatic.hidden,true);
+  app.retreat();assert.ok(jointMath.evaluate(app.jointMath.history()[app.jointMath.cursor()]).loss>0.001);app.advance();app.tick();app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/一个转折/);
+  app.advance();assert.equal(app.figure.hidden,true);app.advance();assertRoles(app,width,0);assert.equal(app.next.disabled,true);
+  app.goToChapter('15-train');app.advance();app.advance();app.hide();assert.equal(app.timers.size,0);app.show();app.advance();app.goToChapter(14);assert.equal(app.timers.size,0);app.goToChapter('15-train');assertJointTraining(app,width,jointFirst);
+  // The default path needs exactly one observation click and one continuous-run click.
+  const direct=mount(width,'#act-15-train',jointProgram);direct.advance();direct.advance();let count=0;while(direct.timers.size&&count++<100)direct.tick();assert.equal(direct.jointMath.cursor(),630);assert.equal(direct.next.textContent,'这次学会了什么？ →');assert.equal(direct.timers.size,0);
+  console.log('PASS joint width='+width+': two weight roles, equal slopes with different roots, explicit reset, two-click default completion, pause/single-step/rollback, all 630 actual snapshots and convergence');
 }
 for(const width of [736,360,280]) {
-  const app=mount(width,'#act-15',jointProgram,true);app.advance();jointButton(app,'weight').fire('click');app.frame(500);jointClose(Number(jointButton(app,'weight').textContent),1.05);assert.equal(app.jointMath.cursor(),0);app.resize();jointClose(Number(jointButton(app,'weight').textContent),1.1);
-  app.advance();app.advance();app.advance();app.advance();app.frame(400);
+  const app=mount(width,'#act-15',jointProgram,true);app.advance();roleNumber(app).fire('click');app.frame(450);assertRoles(app,width,0,0.5);app.resize();assertRoles(app,width,0,1);
+  app.advance();roleNumber(app).fire('click');app.frame(450);assertRoles(app,width,1,0.5);app.hide();assertRoles(app,width,1,1);app.show();app.advance();app.advance();app.advance();app.frame(400);
   const middle={...initialJoint,...Object.fromEntries(['weight','bias','output'].map(key=>[key,(initialJoint[key]+jointFirst[key])/2]))};assertJointTraining(app,width,middle);assert.equal(app.jointMath.history().length,2);
-  app.hide();assertJointTraining(app,width,jointFirst);assert.equal(app.frames.size,0);app.show();jointButton(app,'weight').fire('click');app.advance();app.frame(400);assert.ok(app.frames.size);app.leave();assert.equal(app.frames.size,0);app.resume();
-  app.automatic.fire('click');app.tick();app.frame(400);app.resize();assertJointTraining(app,width,app.jointMath.history()[12]);assert.equal(app.jointMath.cursor(),12);app.goToChapter(13);assert.equal(app.frames.size,0);assert.equal(app.timers.size,0);
+  app.hide();assertJointTraining(app,width,jointFirst);assert.equal(app.frames.size,0);app.show();app.automatic.fire('click');app.frame(400);assert.ok(app.frames.size);app.leave();assert.equal(app.frames.size,0);app.resume();
+  app.advance();app.tick();app.frame(50);app.resize();assertJointTraining(app,width,app.jointMath.history()[12]);assert.equal(app.jointMath.cursor(),12);app.goToChapter(13);assert.equal(app.frames.size,0);assert.equal(app.timers.size,0);
 }
 const reducedJoint=mount(280,'#act-15-train',jointProgram,'reduce');reducedJoint.advance();assertJointTraining(reducedJoint,280,jointFirst);assert.equal(reducedJoint.frames.size,0);
-console.log('PASS joint motion: synchronized intermediate parameters, curves, loss and squares; immutable training snapshots, interruption, narrow layouts and reduced motion');
+console.log('PASS joint motion: computed role curves, synchronized training numbers/curves/squares, pause/navigation cancellation and reduced motion');

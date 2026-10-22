@@ -2280,7 +2280,7 @@
     // A shared, real forward/backward computation for the whole neuron.
     const jointInitial={...bendConfig,weight:1,bias:-1.8,output:12};
     const jointKeys=['weight','bias','output'],jointRate=0.001;
-    const jointNames={weight:'内部权重',bias:'偏置',output:'输出权重'};
+    const jointNames={weight:'输入权重',bias:'偏置',output:'输出权重'};
     let jointLesson=null;
     function jointEvaluate(params,data=shapeRecords) {
       const rows=data.map(record=>{
@@ -2299,7 +2299,7 @@
       return {...params,...Object.fromEntries(jointKeys.map(key=>[key,params[key]-jointRate*result.gradient[key]]))};
     }
     function ensureJointLesson() {
-      if(!jointLesson)jointLesson={key:'weight',probed:false,phase:0,focus:null,history:[{...jointInitial}],cursor:0};
+      if(!jointLesson)jointLesson={roleStep:0,roleChanged:[false,false],focus:null,history:[{...jointInitial}],cursor:0};
     }
     function jointParamsAt(position) {
       const lower=Math.floor(position),upper=Math.min(Math.ceil(position),jointLesson.history.length-1),a=jointLesson.history[lower],b=jointLesson.history[upper],fraction=position-lower;
@@ -2313,43 +2313,29 @@
       if(jointKeys.every(key=>result.gradient[key]===0))return 'flat';
       return jointLesson.cursor>=3000?'limit':'ready';
     }
-    function jointTrial(amount=jointLesson.probed?1:0) {
-      const key=jointLesson.key,delta=key==='output'?1:0.1;
-      return {...jointInitial,[key]:jointInitial[key]+delta*amount};
-    }
     function refreshJoint() {renderCopy();updateNav();renderStage();}
-    function jointEquation(params,probe=false) {
+    function jointEquation(params) {
       const p=paragraph('预测 = 40 + 30 × 时间 + ');p.className='ma-formula';
       function parameter(key) {
         const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=waveNumber(params[key]);
-        button.setAttribute('data-ma-joint-param',key);button.setAttribute('aria-pressed',String(probe?jointLesson.probed&&jointLesson.key===key:jointLesson.focus===key));
-        button.setAttribute('aria-label',probe?jointNames[key]+'，点击查看从起始值增加'+(key==='output'?'1':'0.1')+'的影响':'查看平均平方误差对'+jointNames[key]+'的影响');
-        button.addEventListener('click',()=>{
-          stopAutomation();
-          if(probe){const same=jointLesson.key===key;jointLesson.key=key;jointLesson.probed=true;if(!same){jointLesson.phase=key==='output'?2:0;lastPlot=null;}}
-          else jointLesson.focus=jointLesson.focus===key?null:key;
-          refreshJoint();
-        });p.appendChild(button);
+        button.setAttribute('data-ma-joint-param',key);button.setAttribute('aria-pressed',String(jointLesson.focus===key));
+        button.setAttribute('aria-label','查看平均平方误差对'+jointNames[key]+'的影响');
+        button.addEventListener('click',()=>{stopAutomation();jointLesson.focus=jointLesson.focus===key?null:key;refreshJoint();});p.appendChild(button);
       }
       parameter('output');p.appendChild(document.createTextNode(' × ReLU('));parameter('weight');p.appendChild(document.createTextNode(' × 时间 + ('));parameter('bias');p.appendChild(document.createTextNode('))'));
     }
     function renderJointCopy() {
       if(current()==='joint-purpose') {
-        paragraph('刚才，我们固定其他数字，只让电脑调整偏置。但这个神经元里，还有两个可以调整的数字。能不能一起调整它们，让预测更准确？');
-        paragraph('继续使用原来的三次观测。这次换一组起始值：内部权重1、偏置−1.8、输出权重12。先看尚未展开的一段影响，再让电脑训练整个神经元。');return;
+        paragraph('我们已经分别训练过一个权重和偏置。但公式里为什么出现两个乘数？先看清它们在ReLU两侧的作用，再让电脑一起训练。');
+        paragraph('继续使用原来的三次观测。这次换一组起始值：输入权重1、偏置−1.8、输出权重12。输入权重是之前所说的内部权重；两个名称指同一个数字。');return;
       }
-      if(current()==='joint-path') {
-        const key=jointLesson.key,phase=jointLesson.phase;
-        paragraph(!jointLesson.probed?'偏置直接加进结果；内部权重先乘以输入。点公式中的1，让内部权重增加0.1，观察同一条直线怎样变化。':phase===0?(key==='weight'?'内部权重从1变成1.1。截距不变，整条直线转动；输入越大，增加得越多。深色区域是这一次改动带来的变化。':'偏置从−1.8变成−1.7。整条直线统一上移0.1；它与内部权重转动直线的作用不同。'):phase===1?'让同一次变化经过ReLU。小于0的部分都变成0，那里原本的变化被截去；高于0的部分保留下来，再交给输出权重。':key==='output'?'输出权重从12变成13，放大激活后的补充量。整条预测曲线重新计算；没有激活的位置不受影响。':'把保留下来的变化乘以12，再加回原函数。同一个参数的改动，已经传到了完整预测；它可能改善一处，同时让另一处偏得更远。');
-        jointEquation(jointTrial(),true);
-        paragraph(phase===2?'空心点是预测，实心点是观测。可点其他参数比较；每次只改一个数字，其他数字回到起始值。这些试算不进入训练。':'横轴仍是时间，纵轴是'+(phase===0?'激活前':'激活后')+'的函数值。也可以点另外两个数字，比较它们的作用；这是试算，还没有训练。');return;
-      }
+      if(current()==='joint-path'){renderWeightRolesCopy();return;}
       if(current()==='joint-ending') {
         paragraph('现在，我们能训练整个神经元了。每次先用同一组参数算出全部预测，合并所有观测的影响，再一起调整三个数字。');
         paragraph('得到的参数不必与之前完全相同：不同参数也可能给出相近的预测。不过，这个分支仍只能给曲线增加一个转折。遇到需要更多转折的数据，还够用吗？');return;
       }
       const params=jointLesson.history[jointLesson.cursor],result=jointEvaluate(params),status=jointStatus();
-      paragraph(status==='done'?'平均平方误差已小于0.001，停止调整。参数没有被设成预先写好的答案；它们共同找到了更贴合观测的预测。':status==='corner'?'有观测恰好落在ReLU拐点，局部斜率不唯一。本次实验暂停，不编造调整方向。':status==='flat'?'三个局部影响都为0，但预测仍有误差。这次局部调整无法继续改善。':status==='limit'||status==='invalid'?'已停止这次训练。保留实际计算结果，可以回退查看。':jointLesson.cursor===0?'撤回刚才的试算，从1、−1.8、12开始训练。电脑合并所有观测的影响，再一起调整三个参数，不能只照顾某一个时刻。':'三个参数改变的是同一条预测曲线。某个时刻的差距可能暂时增大；我们要改善的是全部观测的平均平方误差。');
+      paragraph(status==='done'?'平均平方误差已小于0.001，停止调整。参数没有被设成预先写好的答案；它们共同找到了更贴合观测的预测。':status==='corner'?'有观测恰好落在ReLU拐点，局部斜率不唯一。本次实验暂停，不编造调整方向。':status==='flat'?'三个局部影响都为0，但预测仍有误差。这次局部调整无法继续改善。':status==='limit'||status==='invalid'?'已停止这次训练。保留实际计算结果，可以回退查看。':jointLesson.cursor===0?'撤回刚才的试算，从1、−1.8、12开始。先看一次共同调整，再让电脑连续训练；不需要反复点击。每轮都合并全部观测的影响。':autoRunning?'电脑正在连续训练。可随时暂停；每一轮仍重新计算全部预测和三个参数的影响。':'三个参数改变的是同一条预测曲线。某个时刻的差距可能暂时增大；我们要改善的是全部观测的平均平方误差。');
       jointEquation(params);
       const p=paragraph('平均平方误差 ');waveOutput(p,result.loss,'data-ma-joint-loss','平均平方误差');p.appendChild(document.createTextNode('；已调整 '));const rounds=document.createElement('span');rounds.setAttribute('data-ma-joint-round','');rounds.textContent=String(jointLesson.cursor);p.appendChild(rounds);p.appendChild(document.createTextNode(' 次。'));
       if(jointLesson.focus!==null)renderJointDetail(params);
@@ -2370,36 +2356,62 @@
       copy.querySelectorAll('[data-ma-joint-detail-values]').forEach(node=>{node.textContent='平均平方误差对'+jointNames[key]+'的局部影响 ≈ ['+result.rows.map(row=>'2 × ('+waveNumber(row.error)+') × ('+jointExpression(params,row,key)+')').join(' + ')+'] ÷ 3 = '+(result.gradient[key]===null?'未定义':waveNumber(result.gradient[key]))+'。下一次：当前值 − 0.001 × 这个影响。';});
     }
     function updateJointNav() {
-      if(current()==='joint-purpose'){next.textContent='接上内部权重的影响 →';return;}
+      if(current()==='joint-purpose'){next.textContent='先分清两个权重 →';return;}
       if(current()==='joint-path') {
-        next.disabled=!jointLesson.probed;
-        next.textContent=!jointLesson.probed?'先点公式里的1':jointLesson.phase===0?'让这次变化经过ReLU →':jointLesson.phase===1?'带回完整预测 →':'撤回试算，开始一起训练 →';
-        if(jointLesson.phase>0&&jointLesson.key!=='output')back.textContent='← 看上一步';else if(jointLesson.probed)back.textContent='← 撤回试算';return;
+        const step=jointLesson.roleStep;
+        next.disabled=step<2&&!jointLesson.roleChanged[step];
+        next.textContent=step===0?(next.disabled?'先点输入权重1':'比较ReLU之后的权重 →'):step===1?(next.disabled?'先点输出权重12':'把两次结果放在一起 →'):'撤回试算，一起训练 →';
+        if(step>0)back.textContent='← 上一个比较';return;
       }
       if(current()==='joint-ending'){next.textContent='重新探索整个神经元 ↻';return;}
-      const status=jointStatus();next.textContent=status==='ready'?'调整一次':'这次学会了什么？ →';
+      const status=jointStatus();next.textContent=status!=='ready'?'这次学会了什么？ →':autoRunning?'暂停训练':jointLesson.cursor===0?'先看一次调整':'让电脑继续训练';
       if(jointLesson.cursor>0)back.textContent='← 回退一次调整';
-      automatic.hidden=status!=='ready'||jointLesson.cursor<1;automatic.textContent=autoRunning?'暂停':'连续调整（每次10轮）';
+      automatic.hidden=status!=='ready';automatic.textContent='单步调整';
     }
-    function jointBand(width,params,phase) {
-      const X=t=>54+t/3.5*(width-76),Y=phase===2?v=>260-v/260*227:v=>260-(v+2)/4.2*227;
-      const inputs=[...new Set([...bendVertices(jointInitial),...bendVertices(params)])].sort((a,b)=>a-b);
-      const value=(p,t)=>{const v=bendCompute(t,1,1,p);return phase===0?v.shifted:phase===1?v.activated:v.prediction;};
-      const before=inputs.map(t=>[X(t),Y(value(jointInitial,t))]),after=inputs.map(t=>[X(t),Y(value(params,t))]);
-      el('path',{d:[...before,...after.slice().reverse()].map(([x,y],i)=>(i?'L ':'M ')+x+' '+y).join(' ')+' Z',fill:accent,'fill-opacity':0.42,'data-ma-joint-change-band':''});
-      [1,2,3].forEach(t=>{const a=value(jointInitial,t),b=value(params,t);line(X(t),Y(a),X(t),Y(b),{stroke:accent,'stroke-width':5,'data-ma-joint-change-input':t,'data-ma-joint-change':b-a});});
+    function roleParams(step,amount) {
+      return {...jointInitial,...(step===0?{weight:1+0.5*amount}:{output:12+6*amount})};
     }
-    function drawJointTrial(width,amount) {
-      const params=jointTrial(amount),phase=jointLesson.phase;
-      if(phase<2)drawBendFunction(width,params.weight,params.bias,1,phase===1,{min:-2,max:2.2,ticks:[-2,-1,0,1,2]});
-      else drawBendComposition(width,1,params);
-      jointBand(width,params,phase);
-      svg.setAttribute('data-ma-chart-kind','joint-trial');svg.setAttribute('data-ma-joint-phase',String(phase));
-      const key=jointLesson.key;
-      copy.querySelectorAll('[data-ma-joint-param]').forEach(node=>{node.textContent=waveNumber(params[node.getAttribute('data-ma-joint-param')]);});
-      const before=jointEvaluate(jointInitial),after=jointEvaluate(params);
-      if(phase===2){text('第3秒：'+waveNumber(before.rows[2].prediction)+' → '+waveNumber(after.rows[2].prediction),54,340,{fill:accent,'font-size':14});svg.style.height='360px';svg.setAttribute('viewBox','0 0 '+width+' 360');}
-      svg.setAttribute('data-ma-joint-trial-key',key);svg.setAttribute('data-ma-joint-trial-amount',String(amount));
+    function roleEquation(params,key) {
+      const p=paragraph('补充量 = ');p.className='ma-formula';
+      function value(name) {
+        if(name!==key){const span=document.createElement('span');span.textContent=waveNumber(params[name]);p.appendChild(span);return;}
+        const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=waveNumber(params[name]);button.setAttribute('data-ma-role-number',name);
+        button.disabled=jointLesson.roleChanged[jointLesson.roleStep];button.setAttribute('aria-label',name==='weight'?'输入权重：从1增加到1.5':'输出权重：从12增加到18');
+        button.addEventListener('click',()=>{if(jointLesson.roleChanged[jointLesson.roleStep])return;stopAutomation();jointLesson.roleChanged[jointLesson.roleStep]=true;refreshJoint();});p.appendChild(button);
+      }
+      value('output');p.appendChild(document.createTextNode(' × ReLU('));value('weight');p.appendChild(document.createTextNode(' × 时间 − 1.8)'));
+    }
+    function renderWeightRolesCopy() {
+      const step=jointLesson.roleStep,changed=jointLesson.roleChanged[step];
+      if(step===2) {
+        paragraph('两条上升段的斜率都是18，却不是同一个函数：改输入权重，补充从1.2秒开始；改输出权重，仍从1.8秒开始。ReLU夹在两次乘法之间，两个乘数所处的位置很重要。');
+        const p=paragraph('');p.className='ma-formula';
+        const a=document.createElement('span');a.style.display='block';a.style.color=accent;a.textContent='改输入权重：12 × ReLU(1.5 × 时间 − 1.8)';p.appendChild(a);
+        const b=document.createElement('span');b.style.display='block';b.style.color=muted;b.textContent='改输出权重：18 × ReLU(1 × 时间 − 1.8)';p.appendChild(b);
+        paragraph('输入权重参与形成留下的形状，输出权重决定它对预测贡献多少。这个简单分支并非必须用两个权重：把输入权重、偏置都乘1.5，再把输出权重除以1.5，曲线会完全不变。分开保留这两个位置，是为了继续学习如何形成、组合多个分支。');return;
+      }
+      paragraph(step===0?(changed?'输入权重先乘时间，再加偏置、经过ReLU。1变成1.5后，零点从1.8秒移到1.2秒，上升段也变陡：被留下的输入范围和形状一起变了。':'先只看加回预测的补充量。输入权重乘的是输入时间，位于ReLU之前。点公式里的1，把它改成1.5；看补充从哪里开始、怎样上升。'):(changed?'输出权重乘的是ReLU已经留下的结果。12变成18，只把高度放大1.5倍，仍从1.8秒开始；ReLU截成0的部分，再放大也还是0。':'撤回上一次改动，输入权重回到1。这次点12，把ReLU之后的输出权重改成18；观察它会不会改变开始补充的位置。'));
+      roleEquation(roleParams(step,changed?1:0),step===0?'weight':'output');
+      paragraph('灰虚线是本次改动前，橙线是当前补充函数；没有修改观测数据。'+(step===0?'偏置固定为−1.8，输出权重固定为12。':'偏置固定为−1.8，输入权重固定为1。'));
+    }
+    function drawWeightRoles(width,amount) {
+      const step=jointLesson.roleStep,params=roleParams(step,amount),other=step===2?roleParams(0,1):jointInitial;
+      svg.replaceChildren();handle.hidden=true;svg.style.height='310px';svg.setAttribute('viewBox','0 0 '+width+' 310');svg.setAttribute('data-ma-chart-kind','weight-roles');svg.setAttribute('data-ma-role-step',String(step));
+      const left=54,right=width-22,top=33,bottom=250,X=t=>left+t/3.5*(right-left),Y=v=>bottom-v/48*(bottom-top);
+      el('title',{id:'ma-stage-title'}).textContent='横轴时间秒，纵轴分支补充量厘米。输入权重位于ReLU之前，输出权重位于ReLU之后。所有曲线按实际参数计算。';
+      line(left,top,left,bottom);line(left,bottom,right,bottom);
+      [0,10,20,30,40].forEach(v=>text(String(v),left-8,Y(v)+4,{'text-anchor':'end',fill:muted,'font-size':12}));
+      [0,1,2,3].forEach(t=>text(String(t),X(t),bottom+22,{'text-anchor':'middle',fill:muted,'font-size':12}));
+      text('补充量（厘米）',left,17,{fill:muted,'font-size':12});text('时间（秒）',right,306,{'text-anchor':'end',fill:muted,'font-size':12});
+      const path=p=>bendVertices(p).map((t,i)=>(i?'L ':'M ')+X(t)+' '+Y(bendCompute(t,1,1,p).extra)).join(' ');
+      // In the comparison, keep the input-weight curve orange in both appearances.
+      const orange=step===2?other:params,gray=step===2?params:other;
+      el('path',{d:path(gray),fill:'none',stroke:muted,'stroke-width':2,'stroke-dasharray':'5 5','data-ma-role-curve':'gray','data-ma-role-root':-gray.bias/gray.weight,'data-ma-role-slope':gray.weight*gray.output});
+      if(step<2){const vertices=[...new Set([...bendVertices(params),...bendVertices(other)])].sort((a,b)=>a-b);const points=vertices.map(t=>[X(t),Y(bendCompute(t,1,1,params).extra)]).concat(vertices.slice().reverse().map(t=>[X(t),Y(bendCompute(t,1,1,other).extra)]));el('path',{d:points.map(([x,y],i)=>(i?'L ':'M ')+x+' '+y).join(' ')+' Z',fill:accent,'fill-opacity':0.2,'data-ma-role-band':''});}
+      el('path',{d:path(orange),fill:'none',stroke:accent,'stroke-width':3,'data-ma-role-curve':'orange','data-ma-role-root':-orange.bias/orange.weight,'data-ma-role-slope':orange.weight*orange.output});
+      for(const [p,color] of [[gray,muted],[orange,accent]])el('circle',{cx:X(-p.bias/p.weight),cy:Y(0),r:4,fill:color});
+      copy.querySelectorAll('[data-ma-role-number]').forEach(node=>{node.textContent=waveNumber(params[node.getAttribute('data-ma-role-number')]);});
+      svg.setAttribute('data-ma-role-amount',String(amount));
     }
     function drawJointTraining(width,position) {
       const params=jointParamsAt(position),result=jointEvaluate(params);
@@ -2429,8 +2441,8 @@
     }
     function renderJointGraph() {
       const width=Math.max(240,figure.getBoundingClientRect().width||736);
-      if(current()==='joint-path')animatePlot(current()+jointLesson.key+jointLesson.phase,width,jointLesson.probed?1:0,amount=>drawJointTrial(width,amount),1000);
-      if(current()==='joint-train')animatePlot(current(),width,jointLesson.cursor,position=>drawJointTraining(width,position),800);
+      if(current()==='joint-path')animatePlot(current()+jointLesson.roleStep,width,jointLesson.roleStep===2?1:jointLesson.roleChanged[jointLesson.roleStep]?1:0,amount=>drawWeightRoles(width,amount),900);
+      if(current()==='joint-train')animatePlot(current(),width,jointLesson.cursor,position=>drawJointTraining(width,position),autoRunning?100:800);
     }
     function advanceJointTraining() {
       if(jointStatus()!=='ready')return;
@@ -2443,21 +2455,24 @@
         cancelPlotAnimation(true);for(let i=0;i<10&&jointStatus()==='ready';i++)advanceJointTraining();
         if(jointStatus()!=='ready')autoRunning=false;
         refreshJoint();if(autoRunning)scheduleJointTraining();
-      },950);
+      },120);
     }
     function forwardJoint() {
-      stopAutomation();
-      if(current()==='joint-path') {if(!jointLesson.probed)return;if(jointLesson.phase<2){jointLesson.phase++;lastPlot=null;refreshJoint();return;}}
-      if(current()==='joint-train'&&jointStatus()==='ready'){advanceJointTraining();refreshJoint();return;}
+      const wasRunning=autoRunning;stopAutomation();
+      if(current()==='joint-path') {
+        const step=jointLesson.roleStep;if(step<2&&!jointLesson.roleChanged[step])return;
+        if(step<2){jointLesson.roleStep++;lastPlot=null;refreshJoint();return;}
+      }
+      if(current()==='joint-train'&&jointStatus()==='ready'){
+        if(!wasRunning){if(jointLesson.cursor===0)advanceJointTraining();else{autoRunning=true;scheduleJointTraining();}}
+        refreshJoint();return;
+      }
       if(current()==='joint-ending'){jointLesson=null;state.scene=scenes.indexOf('joint-purpose');renderScene();return;}
       state.scene++;renderScene();
     }
     function backwardJoint() {
       stopAutomation();
-      if(current()==='joint-path') {
-        if(jointLesson.phase>0&&jointLesson.key!=='output'){jointLesson.phase--;lastPlot=null;refreshJoint();return;}
-        if(jointLesson.probed){jointLesson.probed=false;jointLesson.phase=0;refreshJoint();return;}
-      }
+      if(current()==='joint-path'&&jointLesson.roleStep>0){jointLesson.roleStep--;lastPlot=null;refreshJoint();return;}
       if(current()==='joint-train'&&jointLesson.cursor>0){jointLesson.cursor--;refreshJoint();return;}
       state.scene--;renderScene();
     }
@@ -2538,9 +2553,8 @@
     });
     automatic.addEventListener('click',()=>{
       if(current()==='joint-train') {
-        if(jointStatus()!=='ready'||jointLesson.cursor<1)return;
-        if(autoRunning)stopAutomation();else{cancelPlotAnimation(true);autoRunning=true;scheduleJointTraining();}
-        updateNav();return;
+        if(jointStatus()!=='ready')return;
+        stopAutomation();advanceJointTraining();refreshJoint();return;
       }
       if(current()==='relay-train') {
         if(relayStatus()!=='ready'||relayLesson.cursor<1)return;
