@@ -35,9 +35,9 @@ function mount(width,hash='',program=script,motion=false) {
   const timers=new Map(),frames=new Map(),documentEvents={},pageEvents={},location={hash},evaluations=[],derivativeInputs=[];let timerId=0,frameId=0,frameTime=0,resizeCallback;
   const document={hidden:false,getElementById:id=>id==='minimal-ai-scene'?root:null,createElement:tag=>new Element(tag),createElementNS:(_,tag)=>new Element(tag),createTextNode:value=>Object.assign(new Element('#text'),{textContent:value}),addEventListener:(name,callback)=>{documentEvents[name]=callback;}};
   const motionPlatform=motion?{performance:{now:()=>frameTime},requestAnimationFrame:callback=>{frames.set(++frameId,callback);return frameId;},cancelAnimationFrame:id=>frames.delete(id),matchMedia:()=>({matches:motion==='reduce'})}:{};
-  let waveMath,bendMath,outputMath,relayMath,jointMath;
-  vm.runInNewContext(program,{document,ResizeObserver:class{constructor(callback){resizeCallback=callback;}observe(){}},Math,Number,String,location,__captureWaveMath:value=>{waveMath=value;},__captureBendMath:value=>{bendMath=value;},__captureOutputMath:value=>{outputMath=value;},__captureRelayMath:value=>{relayMath=value;},__captureJointMath:value=>{jointMath=value;},__recordParameter:value=>evaluations.push(value),__recordDerivative:value=>derivativeInputs.push(value),setTimeout:callback=>{timers.set(++timerId,callback);return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,callback)=>{pageEvents[name]=callback;},...motionPlatform});
-  return {root,copy,figure,svg,handle,back,next,automatic,timers,frames,evaluations,derivativeInputs,waveMath,bendMath,outputMath,relayMath,jointMath,
+  let waveMath,bendMath,outputMath,relayMath,jointMath,pairMath;
+  vm.runInNewContext(program,{document,ResizeObserver:class{constructor(callback){resizeCallback=callback;}observe(){}},Math,Number,String,location,__captureWaveMath:value=>{waveMath=value;},__captureBendMath:value=>{bendMath=value;},__captureOutputMath:value=>{outputMath=value;},__captureRelayMath:value=>{relayMath=value;},__captureJointMath:value=>{jointMath=value;},__capturePairMath:value=>{pairMath=value;},__recordParameter:value=>evaluations.push(value),__recordDerivative:value=>derivativeInputs.push(value),setTimeout:callback=>{timers.set(++timerId,callback);return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,callback)=>{pageEvents[name]=callback;},...motionPlatform});
+  return {root,copy,figure,svg,handle,back,next,automatic,timers,frames,evaluations,derivativeInputs,waveMath,bendMath,outputMath,relayMath,jointMath,pairMath,
     advance(){next.fire('click');},retreat(){back.fire('click');},key(key){handle.fire('keydown',{key});},
     goToChapter(number){location.hash='#act-'+number;pageEvents.hashchange();},
     tick(){const [id,callback]=timers.entries().next().value;timers.delete(id);callback();},
@@ -1229,8 +1229,8 @@ for(const width of [736,360,280]) {
   for(let i=1;i<history.length;i++){for(const key of ['weight','bias','output'])jointClose(history[i][key],jointMath.step(history[i-1])[key]);assert.ok(jointMath.evaluate(history[i]).loss<=jointMath.evaluate(history[i-1]).loss);}
   assert.ok(jointMath.evaluate(end).loss>0&&jointMath.evaluate(end).loss<=0.001);assertJointTraining(app,width,end);assert.equal(app.automatic.hidden,true);
   app.retreat();assert.ok(jointMath.evaluate(app.jointMath.history()[app.jointMath.cursor()]).loss>0.001);app.advance();app.tick();app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/一个转折/);
-  app.advance();assert.equal(app.figure.hidden,true);app.advance();assertRoles(app,width,0);assert.equal(app.next.disabled,true);
-  app.goToChapter('15-train');app.advance();app.advance();app.hide();assert.equal(app.timers.size,0);app.show();app.advance();app.goToChapter(14);assert.equal(app.timers.size,0);app.goToChapter('15-train');assertJointTraining(app,width,jointFirst);
+  app.advance();assert.equal(app.figure.hidden,false);assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'pair-observe');assert.equal(app.jointMath.cursor(),630);app.retreat();assert.equal(app.figure.hidden,true);
+  app.goToChapter('15-train');assertJointTraining(app,width,end);const paused=mount(width,'#act-15-train',jointProgram);paused.advance();paused.advance();paused.hide();assert.equal(paused.timers.size,0);paused.show();paused.advance();paused.goToChapter(14);assert.equal(paused.timers.size,0);paused.goToChapter('15-train');assertJointTraining(paused,width,jointFirst);
   // The default path needs exactly one observation click and one continuous-run click.
   const direct=mount(width,'#act-15-train',jointProgram);direct.advance();direct.advance();let count=0;while(direct.timers.size&&count++<100)direct.tick();assert.equal(direct.jointMath.cursor(),630);assert.equal(direct.next.textContent,'这次学会了什么？ →');assert.equal(direct.timers.size,0);
   console.log('PASS joint width='+width+': two weight roles, equal slopes with different roots, explicit reset, two-click default completion, pause/single-step/rollback, all 630 actual snapshots and convergence');
@@ -1244,3 +1244,52 @@ for(const width of [736,360,280]) {
 }
 const reducedJoint=mount(280,'#act-15-train',jointProgram,'reduce');reducedJoint.advance();assertJointTraining(reducedJoint,280,jointFirst);assert.equal(reducedJoint.frames.size,0);
 console.log('PASS joint motion: computed role curves, synchronized training numbers/curves/squares, pause/navigation cancellation and reduced motion');
+// Chapter sixteen keeps the trained model for the new observation, then explicitly
+// switches to a hand-constructed two-branch example, with no new optimizer steps.
+const pairProgram=jointProgram.replace('    const waveChapter=', '    globalThis.__capturePairMath({compute:pairCompute,snapshot:()=>({...pairLesson.snapshot}),rebuilt:()=>pairLesson.rebuilt,rounds:()=>pairLesson.rounds,jointExists:()=>!!jointLesson});\n    const waveChapter=');
+const pairMath=mount(736,'#act-16',pairProgram).pairMath;
+for(const amount of [0,0.25,0.5,0.75,1]) {
+  for(let t=0;t<=4.5;t+=0.125) {
+    const r=pairMath.compute(t,amount),original=40+30*t+20*Math.max(0,t-2),negative=-20*amount*Math.max(0,t-3);
+    jointClose(r.base,original);jointClose(r.extra,negative);jointClose(r.prediction,original+negative);jointClose(r.activation,Math.max(0,t-3));assert.ok(r.activation>=0);
+    if(t<=3)jointClose(r.prediction,original);
+  }
+  jointClose(pairMath.compute(4,amount).prediction,200-20*amount);
+}
+function pairXY(width){return {X:t=>54+t/4.5*(width-76),Y:v=>300-(v+40)/280*267};}
+function assertPairObserved(app,width) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'pair-observe');const params=app.pairMath.snapshot(),result=jointMath.evaluate(params),{X,Y}=pairXY(width);
+  assert.ok(result.loss<=0.001&&result.loss>0);assert.notEqual(params.output,20);
+  app.svg.querySelectorAll('[data-ma-pair-input]').forEach((node,i)=>{const t=i+1,z=params.weight*t+params.bias,p=40+30*t+params.output*Math.max(0,z);jointClose(node.getAttribute('data-ma-pair-prediction'),p);jointClose(node.getAttribute('cx'),X(t));jointClose(node.getAttribute('cy'),Y(p));});
+  assert.equal(app.svg.querySelectorAll('[data-ma-pair-record]').length,4);assert.ok(Number(app.svg.querySelectorAll('[data-ma-pair-gap]')[0].getAttribute('data-ma-pair-gap'))>19);
+}
+function assertPairAddition(app,width,amount) {
+  assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'pair-add');const {X,Y}=pairXY(width);jointClose(app.svg.getAttribute('data-ma-pair-amount'),amount);
+  app.svg.querySelectorAll('[data-ma-pair-input]').forEach((node,i)=>{const t=i+1,r=pairMath.compute(t,amount);jointClose(node.getAttribute('data-ma-pair-prediction'),r.prediction);jointClose(node.getAttribute('cx'),X(t));jointClose(node.getAttribute('cy'),Y(r.prediction));});
+  const prediction=points(app.svg.querySelectorAll('[data-ma-pair-function]')[0]),branch=points(app.svg.querySelectorAll('[data-ma-pair-new-branch]')[0]),before=points(app.svg.querySelectorAll('[data-ma-pair-before]')[0]),band=points(app.svg.querySelectorAll('[data-ma-pair-subtracted-band]')[0]);
+  const inputs=[0,2,3,4.5];assert.equal(prediction.length,4);assert.equal(branch.length,4);assert.equal(band.length,8);
+  inputs.forEach((t,i)=>{const r=pairMath.compute(t,amount);jointClose(prediction[i][0],X(t));jointClose(prediction[i][1],Y(r.prediction));jointClose(branch[i][1],Y(r.extra));jointClose(before[i][1],Y(r.base));jointClose(band[i][1],Y(r.base));jointClose(band[7-i][1],Y(r.prediction));});
+  jointClose(app.svg.querySelectorAll('[data-ma-pair-gap]')[0].getAttribute('data-ma-pair-gap'),20*(1-amount));
+  for(const [key,value] of [['data-ma-pair-output',-20*amount],['data-ma-pair-fourth',200-20*amount]]){const node=app.copy.querySelectorAll('['+key+']')[0];if(node)jointClose(Number(node.textContent),value,0.000051);}
+  assert.ok(app.copy.children.length<=3);assert.equal(app.timers.size,0);
+}
+for(const width of [736,360,280]) {
+  const app=mount(width,'#act-16',pairProgram);assertPairObserved(app,width);assert.equal(app.pairMath.rebuilt(),true);assert.equal(app.pairMath.rounds(),630);assert.match(app.copy.textContent,/实时完成训练/);assert.equal(app.pairMath.jointExists(),false);
+  app.advance();for(let i=0;i<3;i++) {
+    assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'pair-shape');const increment=app.svg.querySelectorAll('[data-ma-pair-increment]')[0];assert.equal(Number(increment.getAttribute('data-ma-pair-increment')),[30,50,30][i]);
+    const intervals=app.svg.querySelectorAll('[data-ma-pair-observed-interval]');assert.equal(intervals.length,3);assert.equal(intervals.filter(n=>n.getAttribute('stroke-width')==='4').length,1);assert.equal(intervals[i].getAttribute('opacity'),'1');assert.match(app.copy.textContent,/不是额外测得|仅用于比较/);
+    if(i<2)app.advance();
+  }
+  app.retreat();assert.equal(Number(app.svg.querySelectorAll('[data-ma-pair-increment]')[0].getAttribute('data-ma-pair-increment')),50);app.advance();app.advance();assertPairAddition(app,width,0);assert.match(app.copy.textContent,/还没有训练新参数/);assert.equal(app.copy.querySelectorAll('[data-ma-pair-output]').length,0);
+  app.advance();assertPairAddition(app,width,1);assert.match(app.copy.textContent,/输出权重为负/);assert.match(app.copy.textContent,/ReLU的结果仍不小于0/);
+  app.retreat();assertPairAddition(app,width,0);app.advance();assertPairAddition(app,width,1);app.advance();assert.equal(app.figure.hidden,true);assert.match(app.copy.textContent,/手动选定/);app.retreat();assertPairAddition(app,width,1);app.advance();app.advance();assertPairObserved(app,width);
+  const trained=mount(width,'#act-15-train',pairProgram);trained.advance();trained.advance();let n=0;while(trained.timers.size&&n++<100)trained.tick();const history=JSON.stringify(trained.jointMath.history()),params=trained.jointMath.history().at(-1);trained.advance();trained.advance();assertPairObserved(trained,width);assert.equal(trained.pairMath.rebuilt(),false);assert.equal(trained.pairMath.rounds(),0);assert.equal(JSON.stringify(trained.pairMath.snapshot()),JSON.stringify(params));
+  trained.goToChapter('16-add');trained.advance();assertPairAddition(trained,width,1);assert.equal(JSON.stringify(trained.jointMath.history()),history);assert.equal(trained.jointMath.cursor(),630);trained.goToChapter('15-train');assertJointTraining(trained,width,params);
+  console.log('PASS second branch width='+width+': actual trained snapshot retained, new fourth observation, 30/50/30 shape, explicit canonical switch, exact negative contribution and pointwise addition, no extra training, rollback and replay');
+}
+for(const width of [736,360,280]) {
+  const app=mount(width,'#act-16-add',pairProgram,true);assertPairAddition(app,width,0);app.advance();app.frame(700);assertPairAddition(app,width,0.5);app.hide();assertPairAddition(app,width,1);assert.equal(app.frames.size,0);app.show();app.retreat();app.frame(700);assertPairAddition(app,width,0.5);app.resize();assertPairAddition(app,width,0);
+  app.advance();app.frame(700);app.goToChapter(13);assert.equal(app.frames.size,0);app.goToChapter('16-add');assertPairAddition(app,width,1);app.retreat();app.advance();app.advance();assert.equal(app.figure.hidden,true);assert.equal(app.frames.size,0);
+}
+const reducedPair=mount(280,'#act-16-add',pairProgram,'reduce');reducedPair.advance();assertPairAddition(reducedPair,280,1);assert.equal(reducedPair.frames.size,0);
+console.log('PASS second-branch motion: same computed curves, signed contribution, subtraction area and live numbers at intermediate frames; navigation/visibility/resize cancellation, reduced motion');
