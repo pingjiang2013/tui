@@ -70,7 +70,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -82,7 +82,7 @@
     let plotFrame=null,plotMotion=null,lastPlot=null;
     let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null,outputLesson=null,relayLesson=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending'].includes(current());
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending'].includes(current());
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -112,6 +112,7 @@
     }
     function renderCopy() {
       copy.replaceChildren();feedback=null;
+      if(current().startsWith('onset-')) {renderOnsetCopy();return;}
       if(current().startsWith('duo-')) {renderDuoCopy();return;}
       if(current().startsWith('pair-')) {renderPairCopy();return;}
       if(current().startsWith('joint-')) {renderJointCopy();return;}
@@ -197,6 +198,7 @@
       back.disabled=state.scene===0;
       next.disabled=false;
       back.textContent='← 上一页';automatic.hidden=true;
+      if(current().startsWith('onset-')) {updateOnsetNav();return;}
       if(current().startsWith('duo-')) {updateDuoNav();return;}
       if(current().startsWith('pair-')) {updatePairNav();return;}
       if(current().startsWith('joint-')) {updateJointNav();return;}
@@ -213,6 +215,7 @@
     }
     function renderStage() {
       if(textOnly()) return;
+      if(current().startsWith('onset-')) {renderOnsetGraph();return;}
       if(current().startsWith('duo-')) {renderDuoGraph();return;}
       if(current().startsWith('pair-')) {renderPairGraph();return;}
       if(current().startsWith('joint-')) {renderJointGraph();return;}
@@ -2656,7 +2659,7 @@
     }
     function updateDuoNav() {
       if(current()==='duo-purpose'){next.textContent='从两个起始权重开始 →';return;}
-      if(current()==='duo-ending'){next.textContent='重看两个分支的训练 ↻';return;}
+      if(current()==='duo-ending'){next.textContent='让分支学习从哪里启动 →';return;}
       const status=duoStatus();next.textContent=status!=='ready'?'这次学会了什么？ →':autoRunning?'暂停训练':duoLesson.cursor===0?'调整一次，看哪里变了':duoLesson.cursor===1?'再调整一次，看第二个分支':'让电脑继续训练';
       if(duoLesson.cursor>0)back.textContent='← 回退一次调整';
       automatic.hidden=status!=='ready';automatic.textContent='单步调整';
@@ -2697,12 +2700,94 @@
     function forwardDuo(){
       const wasRunning=autoRunning;stopAutomation();
       if(current()==='duo-train'&&duoStatus()==='ready'){if(!wasRunning){if(duoLesson.cursor<2)advanceDuoTraining();else{autoRunning=true;scheduleDuoTraining();}}refreshDuo();return;}
-      if(current()==='duo-ending'){duoLesson=null;state.scene=scenes.indexOf('duo-purpose');renderScene();return;}
+      if(current()==='duo-ending'){state.scene++;renderScene();return;}
       state.scene++;renderScene();
     }
     function backwardDuo(){stopAutomation();if(current()==='duo-train'&&duoLesson.cursor>0){duoLesson.cursor--;refreshDuo();return;}state.scene--;renderScene();}
+    // Output weights are frozen snapshots; only the two biases are learned.
+    const onsetRate=0.001;
+    let onsetLesson=null;
+    function onsetCompute(input,biases,outputs,config=duoConfig) {
+      const branches=config.branches.map((branch,i)=>({...branch,bias:biases[duoKeys[i]]}));
+      const r=duoCompute(input,outputs,{...config,branches}),shifted=branches.map(branch=>branch.weight*input+branch.bias),gates=shifted.map(z=>z>0?1:z<0?0:null);
+      return {...r,shifted,gates};
+    }
+    function onsetEvaluate(biases,outputs,data=pairRecords,config=duoConfig) {
+      const rows=data.map(record=>{const r=onsetCompute(record.seconds,biases,outputs,config);return {...r,actual:record.position,error:r.prediction-record.position};});
+      const gradient=Object.fromEntries(duoKeys.map((key,i)=>[key,rows.some(row=>row.gates[i]===null)?null:rows.reduce((s,row)=>s+2*row.error*outputs[key]*row.gates[i],0)/rows.length]));
+      return {rows,gradient,loss:rows.reduce((s,row)=>s+row.error*row.error,0)/rows.length};
+    }
+    function onsetStep(biases,outputs,data=pairRecords,config=duoConfig) {
+      const r=onsetEvaluate(biases,outputs,data,config);if(duoKeys.some(key=>r.gradient[key]===null))return null;
+      return Object.fromEntries(duoKeys.map(key=>[key,biases[key]-onsetRate*r.gradient[key]]));
+    }
+    function ensureOnsetLesson() {
+      if(onsetLesson)return;
+      const retained=duoLesson&&duoStatus()==='done';let outputs={...(retained?duoLesson.history[duoLesson.cursor]:{first:10,second:0})},rounds=0;
+      if(!retained)while(duoEvaluate(outputs).loss>0.001&&rounds<1000){outputs=duoStep(outputs);rounds++;}
+      onsetLesson={outputs,rebuilt:!retained,rebuildRounds:rounds,history:[{first:-1.6,second:-3.4}],cursor:0,focus:'first',detail:false};
+    }
+    function onsetParamsAt(position){const lower=Math.floor(position),upper=Math.min(Math.ceil(position),onsetLesson.history.length-1),a=onsetLesson.history[lower],b=onsetLesson.history[upper],f=position-lower;return Object.fromEntries(duoKeys.map(key=>[key,a[key]+f*(b[key]-a[key])]));}
+    function onsetStatus() {
+      const r=onsetEvaluate(onsetLesson.history[onsetLesson.cursor],onsetLesson.outputs);
+      if(!Number.isFinite(r.loss))return 'invalid';if(r.loss<=0.001)return 'done';if(duoKeys.some(key=>r.gradient[key]===null))return 'corner';if(duoKeys.every(key=>r.gradient[key]===0))return 'flat';return onsetLesson.cursor>=1000?'limit':'ready';
+    }
+    function refreshOnset(){renderCopy();updateNav();renderStage();}
+    function selectOnset(key){stopAutomation();onsetLesson.detail=onsetLesson.focus===key?!onsetLesson.detail:true;onsetLesson.focus=key;refreshOnset();}
+    function onsetPositions(biases) {
+      const p=paragraph('');p.className='ma-formula ma-controls';
+      duoKeys.forEach((key,i)=>{const group=document.createElement('span');group.appendChild(document.createTextNode('分支'+(i+1)+'从 '));const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=waveNumber(-biases[key]);button.setAttribute('data-ma-onset-position',key);button.setAttribute('aria-pressed',String(onsetLesson.focus===key));button.setAttribute('aria-label','查看分支'+(i+1)+'启动位置对应的偏置');button.addEventListener('click',()=>selectOnset(key));group.appendChild(button);group.appendChild(document.createTextNode(' 秒启动'));p.appendChild(group);});
+    }
+    function renderOnsetCopy() {
+      if(current()==='onset-purpose') {
+        paragraph('输出权重决定贡献多少，电脑已经会调整了。这次沿用刚才学到的两个输出权重，固定输入权重为1，只学习两个偏置，让分支找到更合适的启动位置。');
+        paragraph('另开位置实验：第一个分支提前到第1.6秒启动，第二个推迟到第3.4秒。正贡献来得过早，负贡献来得过晚，预测因此偏高。上一幕的训练历史保留。'+(onsetLesson.rebuilt?'直接进入本幕时，电脑已实时完成上一幕的输出权重训练；这里使用实际结果。':''));return;
+      }
+      if(current()==='onset-ending') {
+        paragraph('第一个分支增加预测，晚一点启动可以少增加；第二个分支减少预测，早一点启动可以多减少。电脑追踪各自的计算路径，用同一轮误差共同调整两个偏置。');
+        paragraph('输出权重决定贡献多少，输入权重和偏置共同决定激活响应的形状与位置。接近观测不代表找到了唯一正确的内部参数。接下来，把这些计算合成小网络完整的一轮前向计算与反向传播。');return;
+      }
+      const biases=onsetLesson.history[onsetLesson.cursor],r=onsetEvaluate(biases,onsetLesson.outputs),status=onsetStatus();
+      paragraph(status==='done'?'平均平方误差已小于0.001，停止调整。两个启动位置由实际更新得到，没有被强行设成第2秒和第3秒。':status==='corner'?'有观测恰好落在ReLU拐点，局部斜率不唯一，本次暂停，不编造调整方向。':status==='flat'?'当前局部影响都为0，但误差仍在；这一轮局部调整无法继续改善。':status==='invalid'||status==='limit'?'停止这次训练，保留实际参数和历史，可逐轮回退。':onsetLesson.cursor===0?'先调整一次，观察两个编号标记：为了降低偏高的预测，两个分支应该怎样改变启动位置？虚线突出当前选中的分支贡献。':onsetLesson.cursor===1?'同一轮里，第一个启动位置后移，正贡献减少；第二个前移，负贡献增加。两者都降低预测，却沿相反方向移动。点另一个启动位置，可查看它的贡献变化。':autoRunning?'电脑正在继续调整。每轮重新计算全部观测对两个偏置的影响，更新方向也可能改变。':'两个偏置继续根据当前误差共同调整。可一键继续，也可单步或逐轮回退。');
+      onsetPositions(biases);
+      const p=paragraph('平均平方误差 ');waveOutput(p,r.loss,'data-ma-onset-loss','平均平方误差');p.appendChild(document.createTextNode('；已调整 '));const count=document.createElement('span');count.setAttribute('data-ma-onset-round','');count.textContent=String(onsetLesson.cursor);p.appendChild(count);p.appendChild(document.createTextNode(' 次。'));
+      if(onsetLesson.detail){const detail=paragraph('');detail.className='ma-formula';detail.setAttribute('data-ma-onset-detail','');syncOnsetDetail(biases);}
+      else paragraph('橙色实线是完整预测，时间轴上的编号标记对应两个启动位置。虚线是选中分支的贡献，灰线是它本轮改动前的贡献，阴影是两者的差。点击位置可看对应偏置；位置不是新增加的独立参数。');
+    }
+    function syncOnsetDetail(biases) {
+      if(!onsetLesson.detail)return;
+      const key=onsetLesson.focus,i=duoKeys.indexOf(key),r=onsetEvaluate(biases,onsetLesson.outputs),bias=biases[key],output=onsetLesson.outputs[key];
+      copy.querySelectorAll('[data-ma-onset-detail]').forEach(node=>{node.textContent='分支'+(i+1)+'的补充 = '+waveNumber(output)+' × ReLU(时间 + ('+waveNumber(bias)+'))。输入权重固定为1，因此启动位置 = −偏置 = '+waveNumber(-bias)+'秒。'+(output>0?'偏置减小，零点后移，正贡献减少。':'偏置增大，零点前移，负贡献增加。')+' 当前评分对偏置的局部影响'+(r.gradient[key]===null?'未定义。':'约为'+waveNumber(r.gradient[key])+'；下一轮用偏置 − 0.001 × 这个影响。');});
+    }
+    function updateOnsetNav() {
+      if(current()==='onset-purpose'){next.textContent='看启动位置怎样影响预测 →';return;}if(current()==='onset-ending'){next.textContent='重看位置学习 ↻';return;}
+      const status=onsetStatus();next.textContent=status!=='ready'?'这次学会了什么？ →':autoRunning?'暂停训练':onsetLesson.cursor===0?'先调整一次':'继续训练';if(onsetLesson.cursor>0)back.textContent='← 回退一轮';automatic.hidden=status!=='ready';automatic.textContent='单步调整';
+    }
+    function drawOnsetGraph(width,position) {
+      const biases=onsetParamsAt(position),outputs=onsetLesson.outputs,previous=onsetLesson.history[Math.max(0,Math.ceil(position)-1)],focus=onsetLesson.focus,r=onsetEvaluate(biases,outputs);
+      svg.replaceChildren();handle.hidden=true;svg.style.height='360px';svg.setAttribute('viewBox','0 0 '+width+' 360');svg.setAttribute('data-ma-chart-kind','onset-training');
+      const left=54,right=width-22,top=33,bottom=300,X=t=>left+t/4.5*(right-left),Y=v=>bottom-(v+40)/280*(bottom-top);
+      el('title',{id:'ma-stage-title'}).textContent='学习两个偏置。横轴时间秒，纵轴位置或分支贡献厘米。时间轴上的编号标记随真实启动位置移动；实线是完整预测，虚线是选中分支的贡献，阴影为本轮该贡献的变化。输出权重固定为上一幕训练的实际结果。';
+      line(left,top,left,bottom);line(left,bottom,right,bottom);line(left,Y(0),right,Y(0),{opacity:0.5});[-40,0,50,100,150,200].forEach(v=>text(String(v),left-8,Y(v)+4,{'text-anchor':'end',fill:muted,'font-size':12}));[0,1,2,3,4].forEach(t=>text(String(t),X(t),bottom+23,{'text-anchor':'middle',fill:muted,'font-size':12}));text('位置 / 分支贡献（厘米）',left,17,{fill:muted,'font-size':12});text('时间（秒）',right,353,{'text-anchor':'end',fill:muted,'font-size':12});
+      const inputs=[...new Set([0,4.5,...duoKeys.flatMap(key=>[-biases[key],-previous[key]])])].filter(t=>t>=0&&t<=4.5).sort((a,b)=>a-b),path=points=>points.map(([t,v],i)=>(i?'L ':'M ')+X(t)+' '+Y(v)).join(' '),value=(params,t)=>onsetCompute(t,params,outputs),extra=row=>focus==='first'?row.firstExtra:row.secondExtra;
+      const now=inputs.map(t=>value(biases,t)),before=inputs.map(t=>value(previous,t));
+      el('path',{d:path(before.map(row=>[row.input,extra(row)])),fill:'none',stroke:muted,'stroke-width':1.5,'data-ma-onset-before':''});
+      el('path',{d:path(before.map(row=>[row.input,extra(row)]).concat(now.slice().reverse().map(row=>[row.input,extra(row)])))+' Z',fill:accent,'fill-opacity':0.3,'data-ma-onset-change-band':''});
+      el('path',{d:path(now.map(row=>[row.input,extra(row)])),fill:'none',stroke:accent,'stroke-width':2,'stroke-dasharray':'5 5','data-ma-onset-contribution':focus});
+      el('path',{d:path(now.map(row=>[row.input,row.prediction])),fill:'none',stroke:accent,'stroke-width':3,'data-ma-onset-function':''});
+      r.rows.forEach(row=>{line(X(row.input),Y(row.actual),X(row.input),Y(row.prediction),{stroke:accent,'stroke-width':3});el('circle',{cx:X(row.input),cy:Y(row.prediction),r:6,fill:'var(--ma-paper)',stroke:accent,'stroke-width':2,'data-ma-onset-input':row.input,'data-ma-onset-prediction':row.prediction});el('circle',{cx:X(row.input),cy:Y(row.actual),r:4,fill:ink});});
+      duoKeys.forEach((key,i)=>{const start=-biases[key],prediction=value(biases,start).prediction;if(start<0||start>4.5)return;line(X(start),Y(prediction),X(start),bottom,{stroke:accent,'stroke-dasharray':'3 5',opacity:0.45});const mark=el('circle',{cx:X(start),cy:bottom,r:10,fill:'var(--ma-paper)',stroke:accent,'stroke-width':key===focus?3:1.5,tabindex:0,role:'button','aria-label':'查看分支'+(i+1)+'的启动位置与偏置','aria-pressed':String(focus===key),'data-ma-onset-marker':key,'data-ma-onset-start':start});mark.addEventListener('click',()=>selectOnset(key));mark.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectOnset(key);}});text(String(i+1),X(start),bottom+4,{'text-anchor':'middle',fill:ink,'font-size':11,'pointer-events':'none'});});
+      copy.querySelectorAll('[data-ma-onset-position]').forEach(node=>{node.textContent=waveNumber(-biases[node.getAttribute('data-ma-onset-position')]);});copy.querySelectorAll('[data-ma-onset-loss]').forEach(node=>{node.textContent=waveNumber(r.loss);});copy.querySelectorAll('[data-ma-onset-round]').forEach(node=>{node.textContent=Number.isInteger(position)?String(position):Math.floor(position)+' → '+Math.ceil(position)+'（过渡）';});syncOnsetDetail(biases);
+      svg.setAttribute('data-ma-onset-position',String(position));svg.setAttribute('data-ma-onset-loss',String(r.loss));duoKeys.forEach(key=>{svg.setAttribute('data-ma-onset-bias-'+key,String(biases[key]));svg.setAttribute('data-ma-onset-output-'+key,String(outputs[key]));});
+    }
+    function renderOnsetGraph(){const width=Math.max(240,figure.getBoundingClientRect().width||736);animatePlot(current(),width,onsetLesson.cursor,position=>drawOnsetGraph(width,position),autoRunning?120:1400);}
+    function advanceOnsetTraining(){if(onsetStatus()!=='ready')return;const biases=onsetStep(onsetLesson.history[onsetLesson.cursor],onsetLesson.outputs);if(!biases)return;onsetLesson.history=onsetLesson.history.slice(0,onsetLesson.cursor+1);onsetLesson.history.push(biases);onsetLesson.cursor++;}
+    function scheduleOnsetTraining(){autoTimer=setTimeout(()=>{autoTimer=null;if(!autoRunning||current()!=='onset-train')return;cancelPlotAnimation(true);for(let i=0;i<2&&onsetStatus()==='ready';i++)advanceOnsetTraining();if(onsetStatus()!=='ready')autoRunning=false;refreshOnset();if(autoRunning)scheduleOnsetTraining();},150);}
+    function forwardOnset(){const wasRunning=autoRunning;stopAutomation();if(current()==='onset-train'&&onsetStatus()==='ready'){if(!wasRunning){if(onsetLesson.cursor===0)advanceOnsetTraining();else{autoRunning=true;scheduleOnsetTraining();}}refreshOnset();return;}if(current()==='onset-ending'){onsetLesson=null;state.scene=scenes.indexOf('onset-purpose');renderScene();return;}state.scene++;renderScene();}
+    function backwardOnset(){stopAutomation();if(current()==='onset-train'&&onsetLesson.cursor>0){onsetLesson.cursor--;refreshOnset();return;}state.scene--;renderScene();}
     function renderScene() {
       stopAutomation();lastPlot=null;drag=null;feedback=null;
+      if(current().startsWith('onset-'))ensureOnsetLesson();
       if(current().startsWith('duo-'))ensureDuoLesson();
       if(current().startsWith('pair-'))ensurePairLesson();
       if(current().startsWith('joint-'))ensureJointLesson();
@@ -2752,6 +2837,7 @@
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(current().startsWith('onset-')) {backwardOnset();return;}
       if(current().startsWith('duo-')) {backwardDuo();return;}
       if(current().startsWith('pair-')) {backwardPair();return;}
       if(current().startsWith('joint-')) {backwardJoint();return;}
@@ -2766,6 +2852,7 @@
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(current().startsWith('onset-')) {forwardOnset();return;}
       if(current().startsWith('duo-')) {forwardDuo();return;}
       if(current().startsWith('pair-')) {forwardPair();return;}
       if(current().startsWith('joint-')) {forwardJoint();return;}
@@ -2783,6 +2870,7 @@
       state.scene++;state.highlight=null;renderScene();
     });
     automatic.addEventListener('click',()=>{
+      if(current()==='onset-train'){if(onsetStatus()!=='ready')return;stopAutomation();advanceOnsetTraining();refreshOnset();return;}
       if(current()==='duo-train'){if(duoStatus()!=='ready')return;stopAutomation();advanceDuoTraining();refreshDuo();return;}
       if(current()==='joint-train') {
         if(jointStatus()!=='ready')return;
@@ -2820,7 +2908,7 @@
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
-      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train'}[globalThis.location?.hash];
+      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train'}[globalThis.location?.hash];
       if(chapter){state.scene=scenes.indexOf(chapter);renderScene();}
     });
     document.addEventListener('visibilitychange',()=>{
@@ -2830,7 +2918,7 @@
     if(globalThis.location?.hash==='#act-3') state.scene=14;
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
     if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
-    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train'}[globalThis.location?.hash];
+    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train'}[globalThis.location?.hash];
     if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     new ResizeObserver(()=>{

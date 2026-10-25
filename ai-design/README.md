@@ -4,7 +4,7 @@
 
 在线体验：<https://pingjiang2013.github.io/tui/ai-design/>
 
-目前包含十七幕：
+目前包含十八幕：
 
 1. 根据已有记录做出预测。
 2. 衡量预测差距，让电脑自己调整。
@@ -23,6 +23,7 @@
 15. 在同一函数图上比较ReLU前后的两个权重；先看一轮，再一键连续训练三个参数，保留暂停、单步和逐轮回退。
 16. 新增第4秒观测，比较30、50、30的增量，再用第二个ReLU分支的负贡献形成第二次转折。
 17. 两个输出权重从10和0开始，共同学习贡献大小，观察负权重如何由误差产生；两次引导更新后，一键训练到停止。
+18. 沿用学到的两个输出权重，只训练偏置；观察两个启动位置沿相反方向移动，以及正、负贡献区域如何变化。
 
 可直接访问 [第二幕](https://pingjiang2013.github.io/tui/ai-design/#act-2)、[第三幕](https://pingjiang2013.github.io/tui/ai-design/#act-3)、[第四幕](https://pingjiang2013.github.io/tui/ai-design/#act-4)、[第五幕](https://pingjiang2013.github.io/tui/ai-design/#act-5)。
 
@@ -41,6 +42,8 @@
 为什么需要第二个神经元：[第十六幕](https://pingjiang2013.github.io/tui/ai-design/#act-16)，或[直接拼合第二个分支](https://pingjiang2013.github.io/tui/ai-design/#act-16-add)。
 
 让两个分支自己协调：[第十七幕](https://pingjiang2013.github.io/tui/ai-design/#act-17)，或[直接进入共同训练](https://pingjiang2013.github.io/tui/ai-design/#act-17-train)。
+
+让分支学习从哪里启动：[第十八幕](https://pingjiang2013.github.io/tui/ai-design/#act-18)，或[直接进入位置学习](https://pingjiang2013.github.io/tui/ai-design/#act-18-train)。
 
 ## 本地开发
 
