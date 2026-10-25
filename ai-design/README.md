@@ -4,7 +4,7 @@
 
 在线体验：<https://pingjiang2013.github.io/tui/ai-design/>
 
-目前包含十八幕：
+目前包含十九幕：
 
 1. 根据已有记录做出预测。
 2. 衡量预测差距，让电脑自己调整。
@@ -24,6 +24,7 @@
 16. 新增第4秒观测，比较30、50、30的增量，再用第二个ReLU分支的负贡献形成第二次转折。
 17. 两个输出权重从10和0开始，共同学习贡献大小，观察负权重如何由误差产生；两次引导更新后，一键训练到停止。
 18. 沿用学到的两个输出权重，只训练偏置；观察两个启动位置沿相反方向移动，以及正、负贡献区域如何变化。
+19. 完整追踪一次前向计算与反向传播，合并四次观测，再真实共同更新六个分支参数。
 
 可直接访问 [第二幕](https://pingjiang2013.github.io/tui/ai-design/#act-2)、[第三幕](https://pingjiang2013.github.io/tui/ai-design/#act-3)、[第四幕](https://pingjiang2013.github.io/tui/ai-design/#act-4)、[第五幕](https://pingjiang2013.github.io/tui/ai-design/#act-5)。
 
@@ -44,6 +45,8 @@
 让两个分支自己协调：[第十七幕](https://pingjiang2013.github.io/tui/ai-design/#act-17)，或[直接进入共同训练](https://pingjiang2013.github.io/tui/ai-design/#act-17-train)。
 
 让分支学习从哪里启动：[第十八幕](https://pingjiang2013.github.io/tui/ai-design/#act-18)，或[直接进入位置学习](https://pingjiang2013.github.io/tui/ai-design/#act-18-train)。
+
+完整小网络训练循环：[第十九幕](https://pingjiang2013.github.io/tui/ai-design/#act-19)，或[反向追踪](https://pingjiang2013.github.io/tui/ai-design/#act-19-back)、[合并观测](https://pingjiang2013.github.io/tui/ai-design/#act-19-batch)、[六参数训练](https://pingjiang2013.github.io/tui/ai-design/#act-19-train)。
 
 ## 本地开发
 
