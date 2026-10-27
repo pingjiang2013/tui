@@ -26,7 +26,7 @@
 18. 沿用学到的两个输出权重，只训练偏置；观察两个启动位置沿相反方向移动，以及正、负贡献区域如何变化。
 19. 从函数交点取激活值，将正负贡献逐点叠到预测上，把同一条误差展开为平方；点击参数直接观察函数、预测与平方误差变化，缩回原值读取局部影响，再真实共同训练六个分支参数。
 20. 区分已有记录与尚无答案可核对的预测，再把第一层的整条输出函数送入第二层，观察翻转、平移和ReLU的组合；改前层影响两层，改后层只影响后层。
-21. 用真实的1→3→2→1网络联动节点与整条函数：拖动输入观察计算，临时让单个节点输出0，比较下游与完整曲线，再恢复原模型。
+21. 用真实的1→3→2→1网络联动节点与整条函数：拖动输入观察计算，临时让单个节点输出0；还可展开每个神经元，让输入经权重变成贡献、首尾相接、加偏置并得到输出，再对比局部参数怎样改变整个函数。
 
 可直接访问 [第二幕](https://pingjiang2013.github.io/tui/ai-design/#act-2)、[第三幕](https://pingjiang2013.github.io/tui/ai-design/#act-3)、[第四幕](https://pingjiang2013.github.io/tui/ai-design/#act-4)、[第五幕](https://pingjiang2013.github.io/tui/ai-design/#act-5)。
 
@@ -53,6 +53,8 @@
 收拢训练与层间组合：[第二十幕](https://pingjiang2013.github.io/tui/ai-design/#act-20)，或[直接进入层间组合实验](https://pingjiang2013.github.io/tui/ai-design/#act-20-compose)。实验使用独立的手工小模型，未继续训练原模型；随后进入整张网络的观察。
 
 看整张网络：[第二十一幕](https://pingjiang2013.github.io/tui/ai-design/#act-21)，或[直接操作网络](https://pingjiang2013.github.io/tui/ai-design/#act-21-network)、[临时让节点输出0](https://pingjiang2013.github.io/tui/ai-design/#act-21-remove)。使用手工参数，全部节点和曲线实时计算。
+
+查看权重与偏置：[展开第二层上方节点](https://pingjiang2013.github.io/tui/ai-design/#act-21-node)。详情替换下方函数图，保留上方网络；可切换查看所有六个神经元，输出节点按真实结构不加ReLU。
 
 ## 本地开发
 
