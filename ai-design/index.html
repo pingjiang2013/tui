@@ -23,9 +23,12 @@
     #minimal-ai-scene .ma-handle { position:absolute; width:34px; height:34px; padding:0; transform:translate(-50%,-50%); border:2px solid var(--ma-accent); border-radius:50%; background:var(--ma-paper); cursor:ew-resize; touch-action:none; }
     #minimal-ai-scene .ma-handle::after { content:""; position:absolute; left:11px; top:11px; width:8px; height:8px; border-radius:50%; background:var(--ma-accent); pointer-events:none; }
     #minimal-ai-scene .ma-handle[aria-orientation="vertical"] { cursor:ns-resize; }
+    #minimal-ai-scene .ma-handle[role="group"] { border-color:transparent; background:transparent; }
+    #minimal-ai-scene .ma-handle[role="group"]::after { display:none; }
     #minimal-ai-scene button:focus-visible { outline:2px solid var(--ma-ink); outline-offset:5px; }
     #minimal-ai-scene [data-ma-mesh-node]:focus-visible { outline:2px solid var(--ma-ink); outline-offset:4px; }
     #minimal-ai-scene [data-ma-text-token]:focus-visible { outline:2px solid var(--ma-ink); outline-offset:3px; }
+    #minimal-ai-scene [data-ma-emb-token]:focus-visible { outline:2px solid var(--ma-ink); outline-offset:3px; }
     #minimal-ai-scene .ma-text-controls button { min-height:42px; padding:4px 6px; }
     #minimal-ai-scene .ma-text-controls button:disabled { opacity:0.35; cursor:default; }
     #minimal-ai-scene .ma-formula { font-variant-numeric:tabular-nums; }
@@ -74,7 +77,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','mesh-purpose','mesh-input','mesh-ablate','mesh-ending','whole-purpose','whole-goal','whole-records','whole-paths','whole-average','whole-train','whole-ending','text-purpose','text-pairs','text-ids','text-renumber','text-ending'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','mesh-purpose','mesh-input','mesh-ablate','mesh-ending','whole-purpose','whole-goal','whole-records','whole-paths','whole-average','whole-train','whole-ending','text-purpose','text-pairs','text-ids','text-renumber','text-ending','emb-purpose','emb-lookup','emb-vector','emb-compute','emb-ending'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -86,7 +89,7 @@
     let plotFrame=null,plotMotion=null,lastPlot=null;
     let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null,outputLesson=null,relayLesson=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','mesh-purpose','mesh-ending','whole-purpose','whole-ending','text-purpose','text-ending'].includes(current());
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','mesh-purpose','mesh-ending','whole-purpose','whole-ending','text-purpose','text-ending','emb-purpose','emb-ending'].includes(current());
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -116,6 +119,7 @@
     }
     function renderCopy() {
       copy.replaceChildren();feedback=null;
+      if(current().startsWith('emb-')) {renderEmbCopy();return;}
       if(current().startsWith('text-')) {renderTextCopy();return;}
       if(wholeMode()) {renderWholeCopy();return;}
       if(current().startsWith('mesh-')) {renderMeshCopy();return;}
@@ -207,6 +211,7 @@
       back.disabled=state.scene===0;
       next.disabled=false;
       back.textContent='← 上一页';automatic.hidden=true;
+      if(current().startsWith('emb-')) {updateEmbNav();return;}
       if(current().startsWith('text-')) {updateTextNav();return;}
       if(wholeMode()) {updateWholeNav();return;}
       if(current().startsWith('mesh-')) {updateMeshNav();return;}
@@ -229,6 +234,7 @@
     }
     function renderStage() {
       if(textOnly()) return;
+      if(current().startsWith('emb-')) {drawEmbGraph();return;}
       if(current().startsWith('text-')) {drawTextGraph();return;}
       if(wholeMode()) {renderWholeGraph();return;}
       if(current().startsWith('mesh-')) {renderMeshGraph();return;}
@@ -3354,7 +3360,7 @@
       paragraph(current()==='text-pairs'?'移动橙色分界，看看同一句话怎样提供不同的预测练习。分界前的文字是输入，紧接着的一个字是答案；后文暂不使用。答案来自原文，这里还没有运行模型预测。':current()==='text-ids'?'先给每种字和标点一个编号，方便接下来找到它对应的数值。同一个字在不同位置共用同一个编号。点选字块，蓝色短线会标出同字同编号的位置；分界仍决定输入与答案。':'这些处理单位叫Token。这一幕选择一个字或标点作为一个Token，其他模型可以采用不同切分。换一套编号：数字改变，原句和预测配对仍然相同。编号接近，不代表意思接近。');
       textControls();
     }
-    function updateTextNav(){next.textContent=({'text-purpose':'从一句话取出输入与答案 →','text-pairs':'给每种字一个编号 →','text-ids':'编号代表什么意思？ →','text-renumber':'这些编号怎样参与计算？ →','text-ending':'回看文字训练任务 ↻'})[current()];}
+    function updateTextNav(){next.textContent=({'text-purpose':'从一句话取出输入与答案 →','text-pairs':'给每种字一个编号 →','text-ids':'编号代表什么意思？ →','text-renumber':'这些编号怎样参与计算？ →','text-ending':'用编号取出可计算的数 →'})[current()];}
     function drawTextGraph(){
       const width=Math.max(240,figure.getBoundingClientRect().width||736),ids=current()!=='text-pairs',columns=width>=660?12:6,gap=columns===12?8:6,cell=Math.min(44,(width-20-(columns-1)*gap)/columns),total=columns*cell+(columns-1)*gap,left=(width-total)/2,rows=Math.ceil(textUnits.length/columns),height=rows===1?285:400,caption=rows===1?212:336,record=textRecord(),codec=textCodec(textLesson.scheme),encoded=codec.encode(textSentence),decoded=Array.from(codec.decode(encoded));
       svg.replaceChildren();handle.hidden=true;svg.style.height=height+'px';svg.setAttribute('viewBox','0 0 '+width+' '+height);svg.setAttribute('role',ids?'group':'img');svg.setAttribute('data-ma-chart-kind',current());el('title',{id:'ma-stage-title'}).textContent='原句：'+textSentence+'；当前输入：'+record.input+'；下一字训练答案：'+record.target+(ids?'；答案编号：'+record.targetId+'。可点选字块，查看同字同编号的位置。':'。移动分界生成训练配对，尚未运行模型预测。');
@@ -3371,10 +3377,73 @@
       else if(current()==='text-renumber')text(codec.decode(encoded)===textSentence?'读回的原句与原来相同':'',width/2,caption+36,{'text-anchor':'middle','font-size':13,fill:muted,'data-ma-text-feedback':''});
       svg.setAttribute('data-ma-text-cut',textLesson.cut);svg.setAttribute('data-ma-text-scheme',textLesson.scheme);svg.setAttribute('data-ma-text-input',record.input);svg.setAttribute('data-ma-text-target',record.target);svg.setAttribute('data-ma-text-input-ids',JSON.stringify(record.inputIds));svg.setAttribute('data-ma-text-target-id',record.targetId);svg.setAttribute('data-ma-text-decoded',codec.decode(encoded));
     }
-    function forwardText(){stopAutomation();if(current()==='text-ending'){textLesson=null;state.scene=scenes.indexOf('text-purpose');renderScene();return;}state.scene++;renderScene();}
+    function forwardText(){stopAutomation();state.scene++;renderScene();}
     function backwardText(){stopAutomation();state.scene--;renderScene();}
+    // Chapter 24: token-ID lookup of an editable, hand-set two-number representation.
+    const embInitial=[[0.4,0.8],[-0.6,0.5],[1,-0.5],[0.6,-0.3],[-0.2,-0.7],[0.1,-0.4]];
+    const embWeights=[0.8,-1.2],embBias=-0.2;
+    let embLesson=null,embGeometry=null;
+    function ensureEmbLesson(){
+      const scheme=textLesson?.scheme??0,codec=textCodec(scheme),rows=[];
+      if(embLesson){if(embLesson.scheme!==scheme){embLesson.rows.forEach(row=>{const id=codec.encode(row.glyph)[0];rows[id]={id,glyph:row.glyph,values:[...row.values]};});embLesson.rows=rows;embLesson.scheme=scheme;}return;}
+      textVocabulary.forEach((glyph,i)=>{const id=codec.encode(glyph)[0];rows[id]={id,glyph,values:[...embInitial[i]]};});embLesson={scheme,rows,selected:2,inspect:false};
+    }
+    function embEntry(index=embLesson.selected){return embLesson.rows[textCodec(embLesson.scheme).encode(textUnits[index])[0]];}
+    function embCompute(values=embEntry().values){const contributions=values.map((value,i)=>value*embWeights[i]),sum=contributions.reduce((a,b)=>a+b,0),raw=sum+embBias;return {contributions,sum,raw,output:Math.max(0,raw)};}
+    function embCanMove(){return ['emb-vector','emb-compute'].includes(current())&&!embLesson.inspect;}
+    function refreshEmb(){renderCopy();updateNav();renderStage();}
+    function embSelect(index){if(index<0||index>=3)return;stopAutomation();embLesson.selected=index;refreshEmb();Array.from(svg.querySelectorAll('[data-ma-emb-token]')).find(n=>Number(n.getAttribute('data-ma-emb-token'))===index)?.focus?.();}
+    function embSet(values){if(!embCanMove())return;embEntry().values=values.map(value=>Math.round(clamp(value,-1.5,1.5)*100)/100);refreshEmb();}
+    function embReset(){stopAutomation();const entry=embEntry(),i=textVocabulary.indexOf(entry.glyph);entry.values=[...embInitial[i]];refreshEmb();copy.querySelectorAll('[data-ma-emb-reset]')[0]?.focus?.();}
+    function embDrag(event){if(drag?.kind!=='emb'||drag.id!==event.pointerId)return;embSet([drag.values[0]+(event.clientX-drag.clientX)/drag.scale,drag.values[1]-(event.clientY-drag.clientY)/drag.scale]);}
+    function renderEmbCopy(){
+      if(current()==='emb-purpose'){paragraph('编号只负责找到字。找到以后，我们希望取出一组真正能参与网络计算的数值，而不是直接使用编号的大小。');paragraph('回到“小猫看”这条输入，先追踪其中一个字。为方便观察，每种字先存两个数，初值手工设定；怎样合并整段前文，留到后面。');return;}
+      if(current()==='emb-ending'){paragraph('用Token编号，找到为它保存的一组数值，这就是这里使用的Embedding。它是一份数值表示，训练时也可以像权重、偏置那样根据误差调整。');paragraph('这次只是手工设置和修改，没有学到字义，也还没有预测下一字。下一步，让这些表示产生各个候选字的分数，再利用原文答案训练它。');return;}
+      paragraph(current()==='emb-lookup'?'点选输入中的字，用编号找到它存的两个数。只有当前一组展开；同字的其他出现位置共用这一组，答案和后文不会进入这次计算。初值都是手工设定。':current()==='emb-vector'?'把取出的两个数展开：第一个决定横向位置，第二个决定纵向位置。这一组数称为向量。拖动点或用方向键，真正修改这个字保存的数；切换字再回来，修改仍在。':'把同一组数送进节点。两条连接权重固定为0.8、−1.2，偏置固定为−0.2。拖动时改变的是字的表示，节点真实重算；它只是内部计算，还不是下一字预测。');
+      if(current()!=='emb-lookup'){
+        const p=paragraph('');p.className='ma-controls ma-text-controls';const reset=document.createElement('button');reset.type='button';reset.textContent='恢复初值';reset.setAttribute('data-ma-emb-reset','');reset.addEventListener('click',embReset);p.appendChild(reset);
+        if(current()==='emb-compute'){const toggle=document.createElement('button');toggle.type='button';toggle.textContent=embLesson.inspect?'回到坐标点':'展开节点';toggle.setAttribute('data-ma-emb-inspect','');toggle.setAttribute('aria-expanded',String(embLesson.inspect));toggle.addEventListener('click',()=>{stopAutomation();embLesson.inspect=!embLesson.inspect;refreshEmb();copy.querySelectorAll('[data-ma-emb-inspect]')[0]?.focus?.();});p.appendChild(toggle);}
+      }
+    }
+    function updateEmbNav(){next.textContent=({'emb-purpose':'用编号取出一组数 →','emb-lookup':'把两个数展开成一个点 →','emb-vector':'把同一组数送进节点 →','emb-compute':'这组数在模型里是什么？ →','emb-ending':'重新开始本幕 ↻'})[current()];}
+    function drawEmbGraph(){
+      const width=Math.max(240,figure.getBoundingClientRect().width||736),columns=width>=660?12:6,gap=columns===12?8:6,cell=Math.min(44,(width-20-(columns-1)*gap)/columns),left=(width-columns*cell-(columns-1)*gap)/2,wordBottom=columns===12?74:150,entry=embEntry(),values=entry.values,result=embCompute(),codec=textCodec(embLesson.scheme),selectedGlyph=entry.glyph,blue='var(--ma-net-second)';
+      svg.replaceChildren();handle.hidden=!embCanMove();svg.setAttribute('role','group');svg.setAttribute('data-ma-chart-kind',current());el('title',{id:'ma-stage-title'}).textContent='固定输入小猫看，下一字答案小。当前只追踪输入里的'+selectedGlyph+'，编号'+entry.id+'，取出两个数'+values.join('、')+'。初值手工设定，尚未训练文字模型。';
+      textUnits.forEach((glyph,i)=>{const x=left+(i%columns)*(cell+gap),y=24+Math.floor(i/columns)*76,input=i<3,target=i===3,match=glyph===selectedGlyph,g=el('g',input?{'data-ma-emb-token':i,role:'button',tabindex:0,'aria-label':'选择输入中的'+glyph+'，编号'+codec.encode(glyph)[0],'aria-pressed':String(i===embLesson.selected)}:{});if(input){g.style.cursor='pointer';g.addEventListener('click',()=>embSelect(i));g.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();embSelect(i);}});}el('rect',{x,y,width:cell,height:50,rx:4,fill:input?accent:'var(--ma-paper)','fill-opacity':input?0.06:1,stroke:target?accent:i===embLesson.selected?ink:axis,'stroke-width':target||i===embLesson.selected?2:1,opacity:i>3?0.4:1,'data-ma-emb-role':input?'input':target?'target':'future'},g);text(glyph,x+cell/2,y+22,{'text-anchor':'middle','font-size':18,fill:target?accent:ink,opacity:i>3?0.3:1},g);text(String(codec.encode(glyph)[0]),x+cell/2,y+42,{'text-anchor':'middle','font-size':11,fill:muted,opacity:i>3?0.4:1},g);if(match)line(x+6,y+46,x+cell-6,y+46,{stroke:ink,'stroke-width':2,'data-ma-emb-shared':i},g);if(target)line(x-gap/2,y-8,x-gap/2,y+58,{stroke:accent,'stroke-width':2});});
+      if(current()==='emb-lookup'){
+        const top=wordBottom+56,w=(width-64)/3,h=64;
+        embLesson.rows.forEach(row=>{const x=20+(row.id%3)*(w+12),y=top+Math.floor(row.id/3)*80,chosen=row.id===entry.id,g=el('g',{'data-ma-emb-slot':row.id,'data-ma-emb-slot-glyph':row.glyph,'data-ma-emb-slot-values':JSON.stringify(row.values)});el('rect',{x,y,width:w,height:h,rx:5,fill:'var(--ma-paper)',stroke:chosen?ink:axis,'stroke-width':chosen?2:1},g);text(row.glyph+' · '+row.id,x+w/2,y+22,{'text-anchor':'middle','font-size':14},g);for(let j=0;j<2;j++){el('rect',{x:x+6+j*(w/2-3),y:y+32,width:w/2-9,height:23,rx:3,fill:chosen?(j===0?accent:blue):axis,'fill-opacity':chosen?0.12:0.1},g);if(chosen)text(waveNumber(row.values[j]),x+w*(j===0?0.25:0.75),y+48,{'text-anchor':'middle','font-size':12,fill:j===0?accent:blue,'data-ma-emb-lookup-value':j},g);}});
+        const sx=left+(embLesson.selected%columns)*(cell+gap)+cell/2,sy=24+Math.floor(embLesson.selected/columns)*76+50,tx=20+(entry.id%3)*(w+12)+w/2,ty=top+Math.floor(entry.id/3)*80;el('path',{d:'M '+sx+' '+sy+' L '+sx+' '+(sy+12)+' L '+(width-5)+' '+(sy+12)+' L '+(width-5)+' '+(ty-10)+' L '+tx+' '+(ty-10)+' L '+tx+' '+ty,fill:'none',stroke:ink,'stroke-width':1.5,'data-ma-emb-lookup-connection':entry.id});text('编号'+entry.id+'取出：'+values.map(waveNumber).join('，'),width/2,top+186,{'text-anchor':'middle','font-size':14});svg.style.height=(top+210)+'px';svg.setAttribute('viewBox','0 0 '+width+' '+(top+210));
+      }else{
+        const top=wordBottom+34; text(selectedGlyph+' · 编号'+entry.id,width/2,top,{'text-anchor':'middle','font-size':13});
+        [0,1].forEach(j=>{const x=width/2+(j===0?-50:50);el('rect',{x:x-38,y:top+12,width:76,height:32,rx:4,fill:j===0?accent:blue,'fill-opacity':0.1});text(waveNumber(values[j]),x,top+34,{'text-anchor':'middle','font-size':17,fill:j===0?accent:blue,'data-ma-emb-component':j});});
+        const plotTop=top+86;
+        if(embLesson.inspect){drawEmbCalculation(width,plotTop,result,values);}
+        else{
+          const size=Math.min(180,width-76),plotLeft=(width-size)/2,X=v=>plotLeft+(v+1.5)/3*size,Y=v=>plotTop+(1.5-v)/3*size,zeroX=X(0),zeroY=Y(0);
+          text('第二个数',plotLeft,plotTop-12,{'font-size':12,fill:blue});line(plotLeft,zeroY,plotLeft+size,zeroY,{stroke:axis});line(zeroX,plotTop,zeroX,plotTop+size,{stroke:axis});for(const v of [-1,1]){line(X(v),zeroY-3,X(v),zeroY+3,{});text(String(v),X(v),zeroY+18,{'text-anchor':'middle','font-size':11,fill:muted});line(zeroX-3,Y(v),zeroX+3,Y(v),{});text(String(v),zeroX-8,Y(v)+4,{'text-anchor':'end','font-size':11,fill:muted});}text('0',zeroX-8,zeroY+17,{'text-anchor':'end','font-size':11,fill:muted});text('第一个数',plotLeft+size,plotTop+size+28,{'text-anchor':'end','font-size':12,fill:accent});line(zeroX,zeroY,X(values[0]),zeroY,{stroke:accent,'stroke-width':3,'data-ma-emb-first-leg':values[0]});line(X(values[0]),zeroY,X(values[0]),Y(values[1]),{stroke:blue,'stroke-width':3,'data-ma-emb-second-leg':values[1]});el('circle',{cx:X(values[0]),cy:Y(values[1]),r:7,fill:ink,'data-ma-emb-point':''});
+          handle.hidden=false;handle.style.left=X(values[0])+'px';handle.style.top=Y(values[1])+'px';handle.style.cursor='move';handle.setAttribute('role','group');for(const attr of ['aria-valuemin','aria-valuemax','aria-valuenow','aria-valuetext','aria-orientation'])handle.removeAttribute?.(attr);handle.setAttribute('aria-label',selectedGlyph+'的二维表示，第一个数'+waveNumber(values[0])+'，第二个数'+waveNumber(values[1])+'。左右方向键调整第一个数，上下方向键调整第二个数。');embGeometry={scale:size/3};
+          let height=plotTop+size+64;
+          if(current()==='emb-compute'){
+            const cy=plotTop+size+91,cx=width/2;
+            el('path',{d:'M '+(cx-50)+' '+(top+44)+' L 15 '+(top+54)+' L 15 '+cy+' L '+(cx-24)+' '+cy,fill:'none',stroke:accent,'stroke-width':1.5});el('path',{d:'M '+(cx+50)+' '+(top+44)+' L '+(width-15)+' '+(top+54)+' L '+(width-15)+' '+cy+' L '+(cx+24)+' '+cy,fill:'none',stroke:blue,'stroke-width':1.5});text('× 0.8',25,plotTop+size+60,{'font-size':11,fill:accent});text('× −1.2',width-25,plotTop+size+60,{'text-anchor':'end','font-size':11,fill:blue});text('偏置 −0.2',cx,cy-30,{'text-anchor':'middle','font-size':12});el('circle',{cx,cy,r:24,fill:'var(--ma-paper)',stroke:ink,'stroke-width':1.5});text(waveNumber(result.output),cx,cy+4,{'text-anchor':'middle','font-size':12,'data-ma-emb-node-output':result.output});text('内部节点 · ReLU',cx,cy+47,{'text-anchor':'middle','font-size':12});height=cy+70;
+          }
+          svg.style.height=height+'px';svg.setAttribute('viewBox','0 0 '+width+' '+height);
+        }
+      }
+      svg.setAttribute('data-ma-emb-glyph',entry.glyph);svg.setAttribute('data-ma-emb-id',entry.id);svg.setAttribute('data-ma-emb-scheme',embLesson.scheme);svg.setAttribute('data-ma-emb-first',values[0]);svg.setAttribute('data-ma-emb-second',values[1]);svg.setAttribute('data-ma-emb-raw',result.raw);svg.setAttribute('data-ma-emb-output',result.output);svg.setAttribute('data-ma-emb-inspect',String(embLesson.inspect));
+    }
+    function drawEmbCalculation(width,top,result,values){
+      const X=v=>30+(v+3.5)/7*(width-60),zero=X(0),blue='var(--ma-net-second)',arrow=(a,b,y,color,attrs={})=>{line(X(a),y,X(b),y,{stroke:color,'stroke-width':5,...attrs});if(Math.abs(b-a)>1e-9){const sign=Math.sign(b-a);el('path',{d:'M '+X(b)+' '+y+' L '+(X(b)-sign*5)+' '+(y-4)+' L '+(X(b)-sign*5)+' '+(y+4)+' Z',fill:color});}};
+      text('节点内部：贡献相加，再加偏置',width/2,top-10,{'text-anchor':'middle','font-size':12});line(zero,top+12,zero,top+211,{stroke:axis,'stroke-dasharray':'3 5'});let sum=0;
+      result.contributions.forEach((value,i)=>{const y=top+43+i*68;el('rect',{x:Math.min(zero,X(values[i])),y:y-5,width:Math.abs(X(values[i])-zero),height:10,fill:axis,'fill-opacity':0.3});text('输入 '+waveNumber(values[i])+' · 权重 '+waveNumber(embWeights[i]),24,y-18,{'font-size':12,fill:i===0?accent:blue});arrow(sum,sum+value,y,i===0?accent:blue,{'data-ma-emb-contribution':i,'data-ma-emb-product':value,'data-ma-emb-start':sum,'data-ma-emb-end':sum+value});sum+=value;});
+      line(X(result.contributions[0]),top+48,X(result.contributions[0]),top+106,{stroke:axis});line(X(result.sum),top+116,X(result.sum),top+182,{stroke:axis});line(25,top+188,width-25,top+188,{});[-3,0,3].forEach(v=>text(String(v),X(v),top+211,{'text-anchor':'middle','font-size':11,fill:muted}));el('circle',{cx:X(result.sum),cy:top+188,r:3,fill:'var(--ma-paper)',stroke:axis});arrow(result.sum,result.raw,top+188,ink,{'data-ma-emb-bias':embBias});if(result.raw<0){el('rect',{x:25,y:top+171,width:zero-25,height:32,fill:axis,'fill-opacity':0.12});line(X(result.raw),top+188,X(0),top+188,{stroke:accent,'stroke-width':2});el('circle',{cx:X(result.raw),cy:top+188,r:4,fill:'var(--ma-paper)',stroke:axis,'data-ma-emb-before-relu':result.raw});}el('circle',{cx:X(result.output),cy:top+188,r:6,fill:accent,'data-ma-emb-after-relu':result.output});text('偏置 −0.2',width/2,top+240,{'text-anchor':'middle','font-size':12});text('乘加 '+waveNumber(result.raw)+' → 内部输出 '+waveNumber(result.output),width/2,top+273,{'text-anchor':'middle','font-size':13});svg.style.height=(top+297)+'px';svg.setAttribute('viewBox','0 0 '+width+' '+(top+297));
+    }
+    function forwardEmb(){stopAutomation();if(current()==='emb-ending'){embLesson=null;state.scene=scenes.indexOf('emb-purpose');renderScene();return;}embLesson.inspect=false;state.scene++;renderScene();}
+    function backwardEmb(){stopAutomation();embLesson.inspect=false;state.scene--;renderScene();}
     function renderScene() {
       stopAutomation();lastPlot=null;drag=null;feedback=null;
+      if(current().startsWith('emb-'))ensureEmbLesson();
       if(current().startsWith('text-'))ensureTextLesson();
       if(wholeMode()){ensureWholeLesson();wholeLesson.detail=null;}
       if(current().startsWith('mesh-')){ensureMeshLesson();meshLesson.detail=null;}
@@ -3393,7 +3462,7 @@
       if(current().startsWith('learn-')) ensureLearning();
       if(current().startsWith('direction-')) ensureDirection();
       if(current()==='predict'||current()==='calculation') ensureSnapshot();
-      svg.setAttribute('role','img');
+      svg.setAttribute('role','img');handle.setAttribute('role','slider');handle.style.cursor='';
       root.className=textOnly()?'ma-text-page':'ma-interactive-page';
       figure.hidden=textOnly();handle.hidden=true;renderCopy();updateNav();renderStage();
     }
@@ -3406,6 +3475,7 @@
       if(feedback) feedback.textContent=adjustmentFeedback();renderStage();
     }
     handle.addEventListener('pointerdown',event=>{
+      if(current().startsWith('emb-')&&embCanMove()&&embGeometry&&event.button<=0){drag={kind:'emb',id:event.pointerId,clientX:event.clientX,clientY:event.clientY,values:[...embEntry().values],scale:embGeometry.scale};handle.setPointerCapture(event.pointerId);event.preventDefault();return;}
       if(['mesh-input','mesh-ablate','whole-goal','whole-train'].includes(current())&&meshGeometry&&event.button<=0 ){if(wholeMode()){stopAutomation();wholeLesson.display=null;refreshMesh();}drag={kind:'mesh',id:event.pointerId,clientX:event.clientX,input:meshView().input,scale:meshGeometry.scale};handle.setPointerCapture(event.pointerId);event.preventDefault();return;}
       if(current()==='bias-shift'){beginBiasDrag(event);return;}
       if(current()!=='adjust'||!geometry||event.button>0) return;
@@ -3414,6 +3484,7 @@
     });
     handle.addEventListener('pointermove',event=>{
       if(!drag||drag.id!==event.pointerId) return;
+      if(drag.kind==='emb'){embDrag(event);return;}
       if(drag.kind==='mesh'){meshSetInput(drag.input+(event.clientX-drag.clientX)/drag.scale);return;}
       if(drag.kind==='bias'){changeBiasOffset(drag.offset-(event.clientY-drag.clientY)/drag.scale);return;}
       changeRule(drag.distance+(event.clientX-drag.clientX)/(3*drag.scale));
@@ -3424,11 +3495,13 @@
     }
     handle.addEventListener('pointerup',endDrag);handle.addEventListener('pointercancel',endDrag);
     document.addEventListener('pointermove',event=>{
+      if(drag?.kind==='emb'&&event.target!==handle)embDrag(event);
       if(drag?.kind==='mesh'&&drag.id===event.pointerId&&event.target!==handle)meshSetInput(drag.input+(event.clientX-drag.clientX)/drag.scale);
     });
-    document.addEventListener('pointerup',event=>{if(drag?.kind==='mesh')endDrag(event);});
-    document.addEventListener('pointercancel',event=>{if(drag?.kind==='mesh')endDrag(event);});
+    document.addEventListener('pointerup',event=>{if(['mesh','emb'].includes(drag?.kind))endDrag(event);});
+    document.addEventListener('pointercancel',event=>{if(['mesh','emb'].includes(drag?.kind))endDrag(event);});
     handle.addEventListener('keydown',event=>{
+      if(current().startsWith('emb-')&&embCanMove()){const [a,b]=embEntry().values,values={ArrowLeft:[a-0.1,b],ArrowRight:[a+0.1,b],ArrowUp:[a,b+0.1],ArrowDown:[a,b-0.1]};if(event.key in values){event.preventDefault();embSet(values[event.key]);}return;}
       if(['mesh-input','mesh-ablate','whole-goal','whole-train'].includes(current())){const x=meshView().input,values={ArrowLeft:x-0.1,ArrowRight:x+0.1,PageDown:x-1,PageUp:x+1,Home:0,End:5};if(event.key in values){event.preventDefault();meshSetInput(values[event.key]);}return;}
       if(current()==='bias-shift') {
         const b=biasLesson.offset,values={ArrowUp:b+1,ArrowDown:b-1,PageUp:b+5,PageDown:b-5,Home:0,End:80};
@@ -3439,6 +3512,7 @@
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(current().startsWith('emb-')) {backwardEmb();return;}
       if(current().startsWith('text-')) {backwardText();return;}
       if(wholeMode()) {backwardWhole();return;}
       if(current().startsWith('mesh-')) {backwardMesh();return;}
@@ -3459,6 +3533,7 @@
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(current().startsWith('emb-')) {forwardEmb();return;}
       if(current().startsWith('text-')) {forwardText();return;}
       if(wholeMode()) {forwardWhole();return;}
       if(current().startsWith('mesh-')) {forwardMesh();return;}
@@ -3524,7 +3599,7 @@
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
-      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber'}[globalThis.location?.hash];
+      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber','#act-24':'emb-purpose','#act-24-lookup':'emb-lookup','#act-24-vector':'emb-vector','#act-24-compute':'emb-compute'}[globalThis.location?.hash];
       if(chapter){state.scene=scenes.indexOf(chapter);renderScene();if(globalThis.location?.hash==='#act-21-node')meshOpenDetail('d');}
     });
     document.addEventListener('visibilitychange',()=>{
@@ -3534,7 +3609,7 @@
     if(globalThis.location?.hash==='#act-3') state.scene=14;
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
     if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
-    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber'}[globalThis.location?.hash];
+    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber','#act-24':'emb-purpose','#act-24-lookup':'emb-lookup','#act-24-vector':'emb-vector','#act-24-compute':'emb-compute'}[globalThis.location?.hash];
     if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     if(globalThis.location?.hash==='#act-21-node'){
