@@ -59,7 +59,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','text-purpose'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -71,7 +71,7 @@
     let plotFrame=null,plotMotion=null,lastPlot=null;
     let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null,outputLesson=null,relayLesson=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending'].includes(current());
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','text-purpose'].includes(current());
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -101,6 +101,7 @@
     }
     function renderCopy() {
       copy.replaceChildren();feedback=null;
+      if(current().startsWith('deep-')||current()==='text-purpose') {renderDeepCopy();return;}
       if(current().startsWith('net-')) {renderNetCopy();return;}
       if(current().startsWith('onset-')) {renderOnsetCopy();return;}
       if(current().startsWith('duo-')) {renderDuoCopy();return;}
@@ -188,6 +189,7 @@
       back.disabled=state.scene===0;
       next.disabled=false;
       back.textContent='← 上一页';automatic.hidden=true;
+      if(current().startsWith('deep-')||current()==='text-purpose') {updateDeepNav();return;}
       if(current().startsWith('net-')) {updateNetNav();return;}
       if(current().startsWith('onset-')) {updateOnsetNav();return;}
       if(current().startsWith('duo-')) {updateDuoNav();return;}
@@ -206,6 +208,7 @@
     }
     function renderStage() {
       if(textOnly()) return;
+      if(current().startsWith('deep-')) {renderDeepGraph();return;}
       if(current().startsWith('net-')) {renderNetGraph();return;}
       if(current().startsWith('onset-')) {renderOnsetGraph();return;}
       if(current().startsWith('duo-')) {renderDuoGraph();return;}
@@ -2841,7 +2844,7 @@
       }
       if(current()==='net-ending') {
         paragraph('我们完成了一轮：做出预测，衡量误差，沿计算路径反向求出影响，再共同调整全部六个参数。反向传播提供影响，优化步骤用它更新参数。');
-        paragraph('不同参数组合也可能给出相近预测。现在，我们已经能训练一个很小的神经网络；如果输入和目标变成文字，下一步要先解决文字怎样参与数值计算。');return;
+        paragraph('不同参数组合也可能给出相近预测。现在，我们已经能训练一个很小的神经网络；在换成文字之前，再分清预测的边界，以及把计算接成多层意味着什么。');return;
       }
       const params=netLesson.history[netLesson.cursor],result=netEvaluate(params),status=netStatus();
       paragraph(status==='done'?'平均平方误差已小于0.001，停止训练。六个参数来自真实更新，没有被设成预先写好的答案；内部组合不必与之前相同。':status==='corner'?'有观测恰好落在ReLU拐点，局部斜率不唯一，这一轮暂停。':status==='flat'?'当前局部影响都为0，但误差仍在，本次调整无法继续改善。':status==='limit'||status==='invalid'?'已停止本次训练，保留真实参数与历史供回退。':netLesson.cursor===0?'回到完整预测图。六个平均影响都来自同一组旧参数；执行一次共同更新，再重算全部预测。现在同时改变更多参数，步幅改为已验证的0.0001。':autoRunning?'电脑正在重复完整训练循环。每轮都重新计算全部预测和六个平均影响，所有参数一起更新。':'六个参数已共同更新，完整曲线与误差随之重算。可以一键继续到停止，或暂停、单步和逐轮回退。');
@@ -2853,7 +2856,7 @@
       if(current()==='net-forward'){next.textContent=['从函数取出分支1的结果 →','把正贡献叠到预测上 →','从函数取出分支2的结果 →','把负贡献叠到预测上 →','展开这一条误差 →','沿这块误差反向追踪 →'][netLesson.forward];if(netLesson.forward>0)back.textContent='← 上一步';return;}
       if(current()==='net-backward'){next.textContent=['试改一个参数，观察变化 →','缩回原值，读取局部影响 →','撤回试改，合并四次观测 →'][netLesson.backward];if(netLesson.backward>0)back.textContent='← 上一步';return;}
       if(current()==='net-batch'){next.textContent=netLesson.batch===4?'共同更新六个参数 →':autoRunning?'暂停追踪':netLesson.batch===0?'依次追踪四次观测':'继续追踪';automatic.hidden=netLesson.batch===4;automatic.textContent='下一次观测';if(netLesson.batch>0)back.textContent='← 上一次观测';return;}
-      if(current()==='net-ending'){next.textContent='重看完整训练循环 ↻';return;}
+      if(current()==='net-ending'){next.textContent='看看预测的边界 →';return;}
       const status=netStatus();next.textContent=status!=='ready'?'这一轮怎样连接起来？ →':autoRunning?'暂停训练':netLesson.cursor===0?'共同调整一次':'继续训练';if(netLesson.cursor>0)back.textContent='← 回退一轮';automatic.hidden=status!=='ready';automatic.textContent='单步调整';
     }
     function netBranchColor(index){return index===0?accent:'var(--ma-net-second)';}
@@ -2981,10 +2984,99 @@
     function advanceNetTraining(){if(netStatus()!=='ready')return;const next=netStep(netLesson.history[netLesson.cursor]);if(!next)return;netLesson.history=netLesson.history.slice(0,netLesson.cursor+1);netLesson.history.push(next);netLesson.cursor++;}
     function scheduleNetTraining(){autoTimer=setTimeout(()=>{autoTimer=null;if(!autoRunning||current()!=='net-train')return;cancelPlotAnimation(true);for(let i=0;i<50&&netStatus()==='ready';i++)advanceNetTraining();if(netStatus()!=='ready')autoRunning=false;refreshNet();if(autoRunning)scheduleNetTraining();},90);}
     function scheduleNetBatch(){autoTimer=setTimeout(()=>{autoTimer=null;if(!autoRunning||current()!=='net-batch')return;netLesson.probe.active=false;lastPlot=null;netLesson.batch=Math.min(4,netLesson.batch+1);if(netLesson.batch===4)autoRunning=false;refreshNet();if(autoRunning)scheduleNetBatch();},650);}
-    function forwardNet(){const wasRunning=autoRunning;stopAutomation();if(current()==='net-forward'&&netLesson.forward<5){netLesson.forward++;refreshNet();return;}if(current()==='net-backward'&&netLesson.backward<2){netLesson.backward++;if(netLesson.backward===1){netLesson.probe.active=false;startNetProbe(netLesson.key);return;}refreshNet();return;}if(current()==='net-backward'){netLesson.probe.active=false;lastPlot=null;}if(current()==='net-batch'&&netLesson.batch<4){if(!wasRunning){netLesson.probe.active=false;lastPlot=null;autoRunning=true;scheduleNetBatch();}refreshNet();return;}if(current()==='net-train'&&netStatus()==='ready'){if(!wasRunning){if(netLesson.cursor===0)advanceNetTraining();else{autoRunning=true;scheduleNetTraining();}}refreshNet();return;}if(current()==='net-ending'){netLesson=null;state.scene=scenes.indexOf('net-purpose');renderScene();return;}state.scene++;renderScene();}
+    function forwardNet(){const wasRunning=autoRunning;stopAutomation();if(current()==='net-forward'&&netLesson.forward<5){netLesson.forward++;refreshNet();return;}if(current()==='net-backward'&&netLesson.backward<2){netLesson.backward++;if(netLesson.backward===1){netLesson.probe.active=false;startNetProbe(netLesson.key);return;}refreshNet();return;}if(current()==='net-backward'){netLesson.probe.active=false;lastPlot=null;}if(current()==='net-batch'&&netLesson.batch<4){if(!wasRunning){netLesson.probe.active=false;lastPlot=null;autoRunning=true;scheduleNetBatch();}refreshNet();return;}if(current()==='net-train'&&netStatus()==='ready'){if(!wasRunning){if(netLesson.cursor===0)advanceNetTraining();else{autoRunning=true;scheduleNetTraining();}}refreshNet();return;}if(current()==='net-ending'){state.scene=scenes.indexOf('deep-limits');renderScene();return;}state.scene++;renderScene();}
     function backwardNet(){stopAutomation();if(current()==='net-forward'&&netLesson.forward>0){netLesson.forward--;refreshNet();return;}if(current()==='net-backward'&&netLesson.backward>0){netLesson.backward--;if(netLesson.backward===0){netLesson.probe.active=false;lastPlot=null;}refreshNet();return;}if(current()==='net-batch'&&netLesson.batch>0){netLesson.batch--;refreshNet();return;}if(current()==='net-train'&&netLesson.cursor>0){netLesson.cursor--;refreshNet();return;}state.scene--;renderScene();}
+    // Chapter 20: an explicit teaching model, separate from the trained predictor.
+    let deepLesson=null;
+    function ensureDeepLesson(){
+      if(deepLesson)return;
+      ensureNetLesson();
+      deepLesson={snapshot:{...netLesson.history[netLesson.cursor]},round:netLesson.cursor,step:0,history:[{b1:-2,b2:2}],cursor:0};
+    }
+    function deepCompute(input,p){const z=input+p.b1,h=Math.max(0,z),next=p.b2-h;return {input,z,h,next,output:Math.max(0,next)};}
+    function deepParamsAt(position){const lo=Math.floor(position),hi=Math.min(Math.ceil(position),deepLesson.history.length-1),f=position-lo;return Object.fromEntries(['b1','b2'].map(key=>[key,deepLesson.history[lo][key]*(1-f)+deepLesson.history[hi][key]*f]));}
+    function deepVertices(p){return [...new Set([0,5,-p.b1,p.b2-p.b1])].filter(x=>x>=0&&x<=5).sort((a,b)=>a-b);}
+    function refreshDeep(){renderCopy();updateNav();renderStage();}
+    function deepParameters(){
+      const p=paragraph('');p.className='ma-formula';
+      for(const [key,prefix,suffix] of [['b1','第一层：ReLU(输入 + (','))'],['b2','第二层：ReLU(',' − 第一层输出)']]){
+        const row=document.createElement('span');row.style.display='block';row.appendChild(document.createTextNode(prefix));const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=waveNumber(deepLesson.history[deepLesson.cursor][key]);button.setAttribute('data-ma-deep-parameter',key);button.setAttribute('aria-label',key==='b1'?'切换第一层偏置−2与−1，观察两层变化':'切换第二层偏置2与1，观察第一层是否改变');button.addEventListener('click',()=>{
+          if(current()!=='deep-compose'||deepLesson.step!==2)return;stopAutomation();const width=Math.max(240,figure.getBoundingClientRect().width||736);lastPlot={scene:'deep-parameters',width,distance:deepLesson.cursor};const value=deepLesson.history[deepLesson.cursor][key],params={...deepLesson.history[deepLesson.cursor],[key]:key==='b1'?(value===-2?-1:-2):(value===2?1:2)};deepLesson.history=deepLesson.history.slice(0,deepLesson.cursor+1);deepLesson.history.push(params);deepLesson.cursor++;refreshDeep();Array.from(copy.querySelectorAll('[data-ma-deep-parameter]')).find(node=>node.getAttribute('data-ma-deep-parameter')===key)?.focus?.();
+        });row.appendChild(button);row.appendChild(document.createTextNode(suffix));p.appendChild(row);
+      }
+    }
+    function renderDeepCopy(){
+      if(current()==='deep-summary'){
+        paragraph('回头看，我们没有直接指定两个分支应该在哪里转折、各自补充多少。我们给电脑记录和评分方法，它沿计算路径求出参数的影响，再一步步改善预测。');
+        paragraph('这就是刚才的学习过程：参数决定怎样预测，数据和误差帮助它调整参数。但在已知记录上表现好，还不是全部。');return;
+      }
+      if(current()==='deep-limits'){
+        paragraph('实心点是我们已有的四次记录。把同一个模型继续画到第6秒：线仍然能给出预测，但那里没有记录，暂时无法核对。');
+        paragraph('对上已有记录，不保证对没见过的情况也准确。图中没有补造新答案。'+(deepLesson.round===0?'这里保留上一幕的起始参数，未补做训练。':'这里保留上一幕第'+deepLesson.round+'轮的实际参数。'));return;
+      }
+      if(current()==='deep-purpose'){
+        paragraph('刚才，两个分支各自读取时间，最后相加。还有另一种连接方式：把前一步算出的结果，直接交给后一步继续加工。');
+        paragraph('另开一个小实验，不再拟合位置：先让输入超过2的部分升起来，再把这条结果翻转、抬高，最后截去低于0的部分。看看两次计算怎样组成一条新函数。');return;
+      }
+      if(current()==='deep-compose'){
+        const step=deepLesson.step;
+        paragraph([
+          '先只看第一层：输入减2，再经过ReLU。橙线就是它算出的整条函数；在输入3处，结果是1。下一层将直接使用这份结果。',
+          '橙线的副本被送到下方，乘−1翻转，再加2抬高。蓝色虚线是第二层激活前的结果：2减去第一层输出。上方第一层始终保留。',
+          '第二层也经过ReLU，把蓝色虚线低于0的部分截平，得到蓝色实线。点击第一层的偏置，看两层一起变化；再点第二层的偏置，观察第一层是否改变。'
+        ][step]);
+        if(step===2)deepParameters();
+        else paragraph('两个图的横轴都保留原始输入，竖线始终选定输入3。下图画的是继续加工后的函数，不是重新从原始输入独立计算的另一个分支。');return;
+      }
+      if(current()==='deep-ending'){
+        paragraph('第一层把原始输入变成中间结果，第二层再加工它。前面的参数会影响后面，后面的参数不会反过来改变已经算出的前一步。');
+        paragraph('把这样的计算接成多层，就有了“深度”。更多层允许组合更多变换，并不保证一定更好。训练仍沿同一条计算路径反向求影响；分支汇合时相加，再共同调整参数。');return;
+      }
+      paragraph('接下来，把预测的对象换成文字：根据已经出现的内容，预测后面可能出现什么。一次次接上预测，就有机会生成一段文字。');
+      paragraph('目标依然是预测。新的问题是：文字怎样成为能参与计算的输入？下一幕从这里开始；当前还没有训练文字模型。');
+    }
+    function updateDeepNav(){
+      next.textContent=({'deep-summary':'看看预测的边界 →','deep-limits':'把计算继续接下去 →','deep-purpose':'看第一层怎样计算 →','deep-ending':'把目标换成文字 →','text-purpose':'回看层间组合 ↻'})[current()]||['把输出送到下一层 →','经过第二层的ReLU →','这怎样成为多层网络？ →'][deepLesson.step];
+      if(current()==='deep-compose'&&deepLesson.step>0)back.textContent='← 上一步';
+    }
+    function deepFrame(width,height,kind,title){svg.replaceChildren();handle.hidden=true;svg.style.height=height+'px';svg.setAttribute('viewBox','0 0 '+width+' '+height);svg.setAttribute('data-ma-chart-kind',kind);el('title',{id:'ma-stage-title'}).textContent=title;}
+    function drawDeepLimits(width){
+      deepFrame(width,320,'deep-limits','保留上一幕的真实参数；实心点为已有记录，第4秒之后仅有预测，没有新观测。');
+      const p=deepLesson.snapshot,range=[0,6,...[1,2].map(i=>-p['b'+i]/p['w'+i])].filter(x=>Number.isFinite(x)&&x>=0&&x<=6).sort((a,b)=>a-b),values=range.map(x=>netTrace(x,0,p).prediction),min=Math.min(0,...values),max=Math.max(200,...values),X=x=>48+x/6*(width-68),Y=y=>270-(y-min)/(max-min)*230,path=xs=>xs.map((x,i)=>(i?'L ':'M ')+X(x)+' '+Y(netTrace(x,0,p).prediction)).join(' ');
+      el('rect',{x:X(4),y:30,width:X(6)-X(4),height:240,fill:muted,'fill-opacity':0.08,'data-ma-deep-unobserved':''});line(48,30,48,270,{});line(48,270,width-20,270,{});[0,100,200].filter(y=>y>=min&&y<=max).forEach(y=>text(String(y),40,Y(y)+4,{'text-anchor':'end',fill:muted,'font-size':11}));[0,2,4,6].forEach(x=>text(String(x),X(x),291,{'text-anchor':'middle',fill:muted,'font-size':11}));text('位置（厘米）',48,17,{'font-size':12});text('时间（秒）',width-20,315,{'text-anchor':'end',fill:muted,'font-size':11});
+      el('path',{d:path([...range.filter(x=>x<=4),4]),fill:'none',stroke:ink,'stroke-width':2.5,'data-ma-deep-known-function':''});el('path',{d:path([4,...range.filter(x=>x>4)]),fill:'none',stroke:ink,'stroke-width':2.5,'stroke-dasharray':'5 5','data-ma-deep-unseen-function':''});
+      pairRecords.forEach(r=>el('circle',{cx:X(r.seconds),cy:Y(r.position),r:4,fill:ink,'data-ma-deep-record':r.seconds}));text('只有预测',X(5),48,{'text-anchor':'middle','font-size':12,fill:muted});svg.setAttribute('data-ma-deep-round',deepLesson.round);
+    }
+    function drawDeepCompose(width,progress,p){
+      deepFrame(width,530,'deep-compose','第一层的输出函数送入第二层，依次乘负权重、加偏置、经过ReLU；两幅图共享原始输入。');
+      const left=44,right=width-22,X=x=>left+x/5*(right-left),Y=(v,top)=>top+170-(v+3.5)/8*170,path=(values,top)=>values.map(([x,v],i)=>(i?'L ':'M ')+X(x)+' '+Y(v,top)).join(' '),inputs=deepVertices(p),upper=[0,-p.b1,5].filter(x=>x>=0&&x<=5).sort((a,b)=>a-b).map(x=>[x,deepCompute(x,p).h]),blue='var(--ma-net-second)',probe=deepCompute(3,p),lift=clamp(progress/0.45,0,1),transform=clamp((progress-0.45)/0.55,0,1),gate=clamp(progress-1,0,1),a=1-2*clamp(transform/0.55,0,1),b=p.b2*clamp((transform-0.55)/0.45,0,1),raw=x=>a*deepCompute(x,p).h+b,display=x=>raw(x)+(Math.max(0,raw(x))-raw(x))*gate;
+      const movingTop=28+lift*260;
+      for(const [top,label] of [[28,'第一层输出'],[288,'第二层输出']]){
+        if(top===288&&progress===0)continue;
+        text(top===288?(progress<0.45?'送来的第一层输出':gate===0?'第二层：激活前':'第二层输出'):label,left,top-12,{'font-size':12,fill:top===28?accent:blue});line(left,top,left,top+170,{});line(left,Y(0,top),right,Y(0,top),{});[-2,0,2,4].forEach(v=>text(String(v),left-8,Y(v,top)+4,{'text-anchor':'end','font-size':11,fill:muted}));[0,1,2,3,4,5].forEach(x=>text(String(x),X(x),top+190,{'text-anchor':'middle','font-size':11,fill:muted}));text('原始输入',right,top+205,{'text-anchor':'end','font-size':11,fill:muted});line(X(3),top,X(3),top+170,{stroke:muted,'stroke-dasharray':'3 5'});
+      }
+      el('path',{d:path(upper,28),fill:'none',stroke:accent,'stroke-width':3,'data-ma-deep-first-function':''});el('circle',{cx:X(3),cy:Y(probe.h,28),r:5,fill:accent,'data-ma-deep-first-output':probe.h});text('输入3 → '+waveNumber(probe.h),left,245,{'font-size':12,fill:accent,'data-ma-deep-transfer':probe.h});
+      if(progress>0){
+        const curve=inputs.map(x=>[x,display(x)]);el('path',{d:path(inputs.map(x=>[x,raw(x)]),movingTop),fill:'none',stroke:blue,'stroke-width':1.5,'stroke-dasharray':'5 5','data-ma-deep-second-raw':''});el('path',{d:path(curve,movingTop),fill:'none',stroke:progress<0.45?accent:blue,'stroke-width':3,'data-ma-deep-second-function':''});el('circle',{cx:X(3),cy:Y(display(3),movingTop),r:5,fill:blue,'data-ma-deep-second-output':display(3)});
+        const displayText=progress<0.45?'同一条输出曲线，送到下方':progress<1?waveNumber(a)+' × 第一层输出 + '+waveNumber(b):gate===0?waveNumber(p.b2)+' − '+waveNumber(probe.h)+' = '+waveNumber(probe.next):gate<1?'低于0的部分正在截平':'接收 '+waveNumber(probe.h)+' → 输出 '+waveNumber(probe.output);
+        text(displayText,left,520,{'font-size':12,fill:blue,'data-ma-deep-readout':''});
+      }
+      copy.querySelectorAll('[data-ma-deep-parameter]').forEach(node=>{node.textContent=waveNumber(p[node.getAttribute('data-ma-deep-parameter')]);});
+      svg.setAttribute('data-ma-deep-progress',progress);svg.setAttribute('data-ma-deep-b1',p.b1);svg.setAttribute('data-ma-deep-b2',p.b2);svg.setAttribute('data-ma-deep-first',probe.h);svg.setAttribute('data-ma-deep-second',probe.output);svg.setAttribute('data-ma-deep-a',a);svg.setAttribute('data-ma-deep-b',b);svg.setAttribute('data-ma-deep-gate',gate);
+    }
+    function renderDeepGraph(){
+      const width=Math.max(240,figure.getBoundingClientRect().width||736);
+      if(current()==='deep-limits')drawDeepLimits(width);
+      if(current()==='deep-compose'){
+        if(deepLesson.step===2&&deepLesson.cursor>0)animatePlot('deep-parameters',width,deepLesson.cursor,position=>drawDeepCompose(width,2,deepParamsAt(position)),1000);
+        else animatePlot('deep-compose',width,deepLesson.step,progress=>drawDeepCompose(width,progress,deepLesson.history[deepLesson.cursor]),deepLesson.step===1?2000:1000);
+      }
+    }
+    function forwardDeep(){stopAutomation();if(current()==='deep-compose'&&deepLesson.step<2){deepLesson.step++;refreshDeep();return;}if(current()==='text-purpose'){state.scene=scenes.indexOf('deep-purpose');renderScene();return;}state.scene++;renderScene();}
+    function backwardDeep(){stopAutomation();if(current()==='deep-compose'&&deepLesson.step>0){deepLesson.step--;deepLesson.history=[{b1:-2,b2:2}];deepLesson.cursor=0;refreshDeep();return;}state.scene--;renderScene();}
     function renderScene() {
       stopAutomation();lastPlot=null;drag=null;feedback=null;
+      if(current().startsWith('deep-')||current()==='text-purpose')ensureDeepLesson();
       if(current().startsWith('net-'))ensureNetLesson();
       if(current().startsWith('onset-'))ensureOnsetLesson();
       if(current().startsWith('duo-'))ensureDuoLesson();
@@ -3036,6 +3128,7 @@
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(current().startsWith('deep-')||current()==='text-purpose') {backwardDeep();return;}
       if(current().startsWith('net-')) {backwardNet();return;}
       if(current().startsWith('onset-')) {backwardOnset();return;}
       if(current().startsWith('duo-')) {backwardDuo();return;}
@@ -3052,6 +3145,7 @@
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(current().startsWith('deep-')||current()==='text-purpose') {forwardDeep();return;}
       if(current().startsWith('net-')) {forwardNet();return;}
       if(current().startsWith('onset-')) {forwardOnset();return;}
       if(current().startsWith('duo-')) {forwardDuo();return;}
@@ -3111,7 +3205,7 @@
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
-      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train'}[globalThis.location?.hash];
+      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'text-purpose'}[globalThis.location?.hash];
       if(chapter){state.scene=scenes.indexOf(chapter);renderScene();}
     });
     document.addEventListener('visibilitychange',()=>{
@@ -3121,7 +3215,7 @@
     if(globalThis.location?.hash==='#act-3') state.scene=14;
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
     if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
-    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train'}[globalThis.location?.hash];
+    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'text-purpose'}[globalThis.location?.hash];
     if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     new ResizeObserver(()=>{
