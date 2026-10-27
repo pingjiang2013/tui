@@ -60,7 +60,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','mesh-purpose','mesh-input','mesh-ablate','mesh-ending','text-purpose'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','mesh-purpose','mesh-input','mesh-ablate','mesh-ending','whole-purpose','whole-goal','whole-records','whole-paths','whole-average','whole-train','whole-ending','text-purpose'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -72,7 +72,7 @@
     let plotFrame=null,plotMotion=null,lastPlot=null;
     let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null,outputLesson=null,relayLesson=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','mesh-purpose','mesh-ending','text-purpose'].includes(current());
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','mesh-purpose','mesh-ending','whole-purpose','whole-ending','text-purpose'].includes(current());
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -102,6 +102,7 @@
     }
     function renderCopy() {
       copy.replaceChildren();feedback=null;
+      if(wholeMode()) {renderWholeCopy();return;}
       if(current().startsWith('mesh-')) {renderMeshCopy();return;}
       if(current().startsWith('deep-')||current()==='text-purpose') {renderDeepCopy();return;}
       if(current().startsWith('net-')) {renderNetCopy();return;}
@@ -191,6 +192,7 @@
       back.disabled=state.scene===0;
       next.disabled=false;
       back.textContent='← 上一页';automatic.hidden=true;
+      if(wholeMode()) {updateWholeNav();return;}
       if(current().startsWith('mesh-')) {updateMeshNav();return;}
       if(current().startsWith('deep-')||current()==='text-purpose') {updateDeepNav();return;}
       if(current().startsWith('net-')) {updateNetNav();return;}
@@ -211,6 +213,7 @@
     }
     function renderStage() {
       if(textOnly()) return;
+      if(wholeMode()) {renderWholeGraph();return;}
       if(current().startsWith('mesh-')) {renderMeshGraph();return;}
       if(current().startsWith('deep-')) {renderDeepGraph();return;}
       if(current().startsWith('net-')) {renderNetGraph();return;}
@@ -3084,102 +3087,105 @@
     const meshBias={a:0,b:-1.5,c:-3,d:-0.2,e:1,y:0.2};
     const meshEdges=[['x','a',1],['x','b',1],['x','c',1],['a','d',0.8],['b','d',-1.2],['c','d',0.4],['a','e',-0.3],['b','e',1.3],['c','e',-1.1],['d','y',0.6],['e','y',0.9]];
     let meshLesson=null,meshGeometry=null;
+    const wholeMode=()=>current().startsWith('whole-');
+    const meshView=()=>wholeMode()?wholeLesson:meshLesson;
+    const meshBarLimit=()=>wholeMode()?6:5;
     function ensureMeshLesson(){if(!meshLesson)meshLesson={input:2.5,selected:null,muted:false,detail:null,edit:null};if(current()==='mesh-ablate'&&!meshLesson.selected)meshLesson.selected='b';}
-    function meshParameters(edit=meshLesson?.edit){return edit==='weight'?{weights:{'a-d':1.2}}:edit==='bias'?{biases:{d:-1}}:{};}
+    function meshParameters(edit=meshView()?.edit){if(wholeMode())return wholeViewParameters();return edit==='weight'?{weights:{'a-d':1.2}}:edit==='bias'?{biases:{d:-1}}:{};}
     function meshRun(input,muted=null,parameters={}){
       const values={x:input},raw={};
       meshOrder.forEach(key=>{raw[key]=(parameters.biases?.[key]??meshBias[key])+meshEdges.filter(edge=>edge[1]===key).reduce((sum,[from,,weight])=>sum+values[from]*(parameters.weights?.[from+'-'+key]??weight),0);values[key]=key==='y'?raw[key]:Math.max(0,raw[key]);if(key===muted)values[key]=0;});
       return {values,raw};
     }
     function meshVertices(muted=null,parameters={}){
-      const initial=[0,1.5,3,5],xs=[...initial];
+      const initial=[...new Set([0,5,...['a','b','c'].map(key=>{const w=parameters.weights?.['x-'+key]??1;return w?-(parameters.biases?.[key]??meshBias[key])/w:-1;})])].filter(x=>x>=0&&x<=5).sort((a,b)=>a-b),xs=[...initial];
       for(let i=1;i<initial.length;i++)for(const key of ['d','e']){const lo=initial[i-1],hi=initial[i],a=meshRun(lo,muted,parameters).raw[key],b=meshRun(hi,muted,parameters).raw[key];if(a*b<0)xs.push(lo-a*(hi-lo)/(b-a));}
       return [...new Set(xs)].sort((a,b)=>a-b);
     }
-    function meshMuted(){return current()==='mesh-ablate'&&meshLesson.muted?meshLesson.selected:null;}
+    function meshMuted(){return current()==='mesh-ablate'&&meshView().muted?meshView().selected:null;}
     function refreshMesh(){renderCopy();updateNav();renderStage();}
     function meshSelect(key){
-      if(!meshNames[key])return;stopAutomation();if(meshLesson.detail){meshOpenDetail(key);return;}if(meshLesson.selected!==key)meshLesson.muted=false;meshLesson.selected=key;refreshMesh();Array.from(svg.querySelectorAll('[data-ma-mesh-node]')).find(node=>node.getAttribute('data-ma-mesh-node')===key)?.focus?.();
+      if(!meshNames[key]||(wholeMode()&&!['whole-goal','whole-train'].includes(current())))return;stopAutomation();if(wholeMode()&&meshView().selected!==key)wholeLesson.focus='b:'+key;if(meshView().detail){meshOpenDetail(key);return;}if(meshView().selected!==key)meshView().muted=false;meshView().selected=key;refreshMesh();Array.from(svg.querySelectorAll('[data-ma-mesh-node]')).find(node=>node.getAttribute('data-ma-mesh-node')===key)?.focus?.();
     }
-    function meshSetInput(value){if(meshLesson.detail||(current()!=='mesh-input'&&current()!=='mesh-ablate'))return;meshLesson.input=Math.round(clamp(value,0,5)*100)/100;refreshMesh();}
+    function meshSetInput(value){if(meshView().detail||!['mesh-input','mesh-ablate','whole-goal','whole-train'].includes(current()))return;if(wholeMode()){if(autoRunning||plotMotion)stopAutomation();wholeLesson.display=null;}meshView().input=Math.round(clamp(value,0,5)*100)/100;refreshMesh();}
     function renderMeshCopy(){
-      if(meshLesson.detail){renderMeshDetailCopy();return;}
+      if(meshView().detail){renderMeshDetailCopy();return;}
       if(current()==='mesh-purpose'){
         paragraph('刚才，一个结果交给下一个神经元。现在，让几个神经元分别加工，再把它们的结果交给下一层。这样的计算就组成了一张网络。');
         paragraph('下面用手工设定的参数搭一个小网络，不训练它。先移动输入，看所有节点怎样计算出同一个输出；再暂时让一个节点输出0，看看整条函数怎样改变。');return;
       }
       if(current()==='mesh-ending'){
         paragraph('网络变大了，每个节点仍在做熟悉的计算。前一层的结果交给后一层，整张网络合起来，仍然是一条从输入到输出的规则。');
-        paragraph('刚才暂时让一个节点输出0，是为了观察它怎样参与计算。训练则要根据数据和误差，调整这些连接的权重与节点的偏置。接下来，把预测的对象换成文字。');return;
+        paragraph('刚才暂时让一个节点输出0，是为了观察它怎样参与计算。训练则要根据数据和误差，调整这些连接的权重与节点的偏置。接下来，让这张网络真正根据固定记录一起学习。');return;
       }
-      const ablate=current()==='mesh-ablate',key=meshLesson.selected,muted=meshMuted(),now=meshRun(meshLesson.input,muted,meshParameters());
-      paragraph(meshLesson.edit?'实线与节点显示刚才的参数试改，淡色曲线保留原参数。可展开另一个节点继续追踪，或恢复原参数。':ablate?'让选中的节点暂时输出0，观察下游和整条函数。淡色曲线是原网络；换节点会先恢复上一处。':'拖动下方圆点，改变输入，看各节点与最终输出一起变化。短条表示节点输出，统一按0到5绘制。点选节点，可展开权重与偏置的计算。');
+      const ablate=current()==='mesh-ablate',key=meshView().selected,muted=meshMuted(),now=meshRun(meshView().input,muted,meshParameters());
+      paragraph(meshView().edit?'实线与节点显示刚才的参数试改，淡色曲线保留原参数。可展开另一个节点继续追踪，或恢复原参数。':ablate?'让选中的节点暂时输出0，观察下游和整条函数。淡色曲线是原网络；换节点会先恢复上一处。':'拖动下方圆点，改变输入，看各节点与最终输出一起变化。短条表示节点输出，统一按0到5绘制。点选节点，可展开权重与偏置的计算。');
       const p=paragraph('');p.setAttribute('data-ma-mesh-inspect','');
       if(!key){p.textContent='想知道节点里的数字从哪来？';meshDetailButton(p,'d','展开第二层上方节点');return;}
       p.appendChild(document.createTextNode(meshNames[key]+'：当前输出 '+waveNumber(now.values[key])+'。'));
-      meshDetailButton(p,key,'展开计算');if(meshLesson.edit)meshResetButton(p);
-      if(ablate&&!meshLesson.edit){
-        const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=muted?'恢复这个节点':'让这个节点输出0';button.setAttribute('data-ma-mesh-toggle','');button.setAttribute('aria-pressed',String(Boolean(muted)));button.addEventListener('click',()=>{if(current()!=='mesh-ablate')return;meshLesson.muted=!meshLesson.muted;refreshMesh();copy.querySelectorAll('[data-ma-mesh-toggle]')[0]?.focus?.();});p.appendChild(button);
+      meshDetailButton(p,key,'展开计算');if(meshView().edit)meshResetButton(p);
+      if(ablate&&!meshView().edit){
+        const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=muted?'恢复这个节点':'让这个节点输出0';button.setAttribute('data-ma-mesh-toggle','');button.setAttribute('aria-pressed',String(Boolean(muted)));button.addEventListener('click',()=>{if(current()!=='mesh-ablate')return;meshView().muted=!meshView().muted;refreshMesh();copy.querySelectorAll('[data-ma-mesh-toggle]')[0]?.focus?.();});p.appendChild(button);
         // A zero local effect is explained beside the graph, without moving the stage.
       }
     }
-    function updateMeshNav(){if(meshLesson.detail){next.textContent=['把这些贡献首尾相接 →','再加入节点的偏置 →','得到这个节点的输出 →','回到整张网络的函数 →'][meshLesson.detail.step];back.textContent=meshLesson.detail.step?'← 上一步':'← 收起计算';return;}next.textContent=({'mesh-purpose':'把网络放到眼前 →','mesh-input':'试着让一个节点输出0 →','mesh-ablate':'这些节点合起来是什么？ →','mesh-ending':'把目标换成文字 →'})[current()];}
+    function updateMeshNav(){if(meshView().detail){next.textContent=['把这些贡献首尾相接 →','再加入节点的偏置 →','得到这个节点的输出 →','回到整张网络的函数 →'][meshView().detail.step];back.textContent=meshView().detail.step?'← 上一步':'← 收起计算';return;}next.textContent=({'mesh-purpose':'把网络放到眼前 →','mesh-input':'试着让一个节点输出0 →','mesh-ablate':'这些节点合起来是什么？ →','mesh-ending':'让整张网络一起学习 →'})[current()];}
     function drawMeshGraph(progress){
-      const width=Math.max(240,figure.getBoundingClientRect().width||736),height=515,key=meshLesson.selected,muted=meshMuted(),input=meshLesson.input,now=meshRun(input,muted,meshParameters()),original=meshRun(input),C=i=>25+i*(width-50)/3,positions={x:[C(0),125],a:[C(1),65],b:[C(1),125],c:[C(1),185],d:[C(2),95],e:[C(2),155],y:[C(3),125]},X=x=>44+x/5*(width-64),Y=y=>435-y/4.5*170,curve=(which,parameters=meshParameters())=>meshVertices(which,parameters).map((x,i)=>(i?'L ':'M ')+X(x)+' '+Y(meshRun(x,which,parameters).values.y)).join(' ');
-      svg.replaceChildren();svg.style.height=height+'px';svg.setAttribute('viewBox','0 0 '+width+' '+height);svg.setAttribute('role','group');svg.setAttribute('data-ma-mesh-edit',meshLesson.edit||'');svg.setAttribute('data-ma-chart-kind','mesh-network');el('title',{id:'ma-stage-title'}).textContent='真实的小网络与同一函数的曲线。可点选五个神经元，键盘Enter或空格操作；曲线圆点可左右拖动或用方向键改变输入。';
+      const width=Math.max(240,figure.getBoundingClientRect().width||736),height=515,key=meshView().selected,muted=meshMuted(),input=meshView().input,now=meshRun(input,muted,meshParameters()),original=meshRun(input),C=i=>25+i*(width-50)/3,positions={x:[C(0),125],a:[C(1),65],b:[C(1),125],c:[C(1),185],d:[C(2),95],e:[C(2),155],y:[C(3),125]},X=x=>44+x/5*(width-64),Y=y=>435-y/4.5*170,curve=(which,parameters=meshParameters())=>meshVertices(which,parameters).map((x,i)=>(i?'L ':'M ')+X(x)+' '+Y(meshRun(x,which,parameters).values.y)).join(' ');
+      svg.replaceChildren();svg.style.height=height+'px';svg.setAttribute('viewBox','0 0 '+width+' '+height);svg.setAttribute('role','group');svg.setAttribute('data-ma-mesh-edit',meshView().edit||'');svg.setAttribute('data-ma-chart-kind','mesh-network');el('title',{id:'ma-stage-title'}).textContent='真实的小网络与同一函数的曲线。可点选五个神经元，键盘Enter或空格操作；曲线圆点可左右拖动或用方向键改变输入。';
       ['输入','第一层','第二层','输出'].forEach((name,i)=>text(name,C(i),22,{'text-anchor':'middle','font-size':12,fill:ink}));
       meshEdges.forEach(([from,to,base])=>{const weight=meshParameters().weights?.[from+'-'+to]??base;const [x1,y1]=positions[from],[x2,y2]=positions[to],focused=key&&(from===key||to===key);line(x1,y1,x2,y2,{stroke:focused?accent:axis,'stroke-width':1.5,opacity:key&&!focused?0.3:1,'data-ma-mesh-edge':from+'-'+to,'data-ma-mesh-weight':weight,'data-ma-mesh-contribution':now.values[from]*weight});});
       for(const id of ['x',...meshOrder]){
-        const [x,y]=positions[id],interactive=Boolean(meshNames[id]),g=el('g',interactive?{'data-ma-mesh-node':id,role:'button',tabindex:0,'aria-label':meshNames[id]+'，输出'+waveNumber(now.values[id]),'aria-pressed':String(key===id)}:{});
+        const [x,y]=positions[id],interactive=Boolean(meshNames[id])&&(!wholeMode()||['whole-goal','whole-train'].includes(current())),g=el('g',interactive?{'data-ma-mesh-node':id,role:'button',tabindex:0,'aria-label':meshNames[id]+'，输出'+waveNumber(now.values[id]),'aria-pressed':String(key===id)}:{});
         if(interactive){g.style.cursor='pointer';g.addEventListener('click',()=>meshSelect(id));g.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();meshSelect(id);}});}
         el('circle',{cx:x,cy:y,r:21,fill:'var(--ma-paper)',stroke:key===id?accent:axis,'stroke-width':key===id?2.5:1.5},g);
-        if(interactive&&id!=='y'){el('rect',{x:x-13,y:y-3,width:26,height:6,rx:2,fill:axis,'fill-opacity':0.25},g);if(muted)el('rect',{x:x-13,y:y-3,width:26*original.values[id]/5,height:6,rx:2,fill:axis,'fill-opacity':0.65,'data-ma-mesh-reference-bar':id},g);el('rect',{x:x-13,y:y-3,width:26*now.values[id]/5,height:6,rx:2,fill:accent,'data-ma-mesh-bar':id,'data-ma-mesh-value':now.values[id]},g);if(muted===id)line(x-10,y+10,x+10,y+10,{stroke:accent,'stroke-width':2},g);}
+        if(id!=='x'&&id!=='y'){el('rect',{x:x-13,y:y-3,width:26,height:6,rx:2,fill:axis,'fill-opacity':0.25},g);if(muted)el('rect',{x:x-13,y:y-3,width:26*original.values[id]/meshBarLimit(),height:6,rx:2,fill:axis,'fill-opacity':0.65,'data-ma-mesh-reference-bar':id},g);el('rect',{x:x-13,y:y-3,width:26*now.values[id]/meshBarLimit(),height:6,rx:2,fill:accent,'data-ma-mesh-bar':id,'data-ma-mesh-value':now.values[id]},g);if(muted===id)line(x-10,y+10,x+10,y+10,{stroke:accent,'stroke-width':2},g);}
         else text(Number((now.values[id]+Number.EPSILON).toFixed(2)).toString(),x,y+4,{'text-anchor':'middle','font-size':12,'data-ma-mesh-endpoint':id},g);
       }
-      if(meshLesson.detail){svg.setAttribute('data-ma-mesh-input',input);svg.setAttribute('data-ma-mesh-output',now.values.y);svg.setAttribute('data-ma-mesh-muted',muted||'');svg.setAttribute('data-ma-mesh-selected',key||'');drawMeshDetail(width,progress,positions);return;}
+      if(meshView().detail){svg.setAttribute('data-ma-mesh-input',input);svg.setAttribute('data-ma-mesh-output',now.values.y);svg.setAttribute('data-ma-mesh-muted',muted||'');svg.setAttribute('data-ma-mesh-selected',key||'');drawMeshDetail(width,progress,positions);return;}
       if(muted&&(original.values[key]===0||Math.abs(now.values.y-original.values.y)<1e-9))text(original.values[key]===0?'它原本输出0，向右拖动再看':'当前点未变，请同时看整条曲线',width/2,225,{'text-anchor':'middle','font-size':12,fill:'var(--ma-muted)','data-ma-mesh-zero-note':''});
       text('整张网络的函数',44,244,{'font-size':12});line(44,265,44,435,{});line(44,435,width-20,435,{});[0,1,2,3,4].forEach(value=>text(String(value),36,Y(value)+4,{'text-anchor':'end','font-size':11,fill:'var(--ma-muted)'}));[0,1,2,3,4,5].forEach(value=>text(String(value),X(value),457,{'text-anchor':'middle','font-size':11,fill:'var(--ma-muted)'}));text('输入',width-20,478,{'text-anchor':'end','font-size':11,fill:'var(--ma-muted)'});
-      if(muted||meshLesson.edit)el('path',{d:curve(null,{}),fill:'none',stroke:axis,'stroke-width':2,'stroke-dasharray':'5 5','data-ma-mesh-reference-function':''});el('path',{d:curve(muted),fill:'none',stroke:ink,'stroke-width':2.5,'data-ma-mesh-function':''});line(X(input),265,X(input),435,{stroke:axis,'stroke-dasharray':'3 5'});
+      if(muted||meshView().edit)el('path',{d:curve(null,{}),fill:'none',stroke:axis,'stroke-width':2,'stroke-dasharray':'5 5','data-ma-mesh-reference-function':''});el('path',{d:curve(muted),fill:'none',stroke:ink,'stroke-width':2.5,'data-ma-mesh-function':''});line(X(input),265,X(input),435,{stroke:axis,'stroke-dasharray':'3 5'});
       el('circle',{cx:X(input),cy:Y(now.values.y),r:5,fill:accent,'data-ma-mesh-point':now.values.y});if(muted)el('circle',{cx:X(input),cy:Y(original.values.y),r:4,fill:'var(--ma-paper)',stroke:axis,'stroke-width':1.5,'data-ma-mesh-reference-point':original.values.y});text('输入 '+waveNumber(input)+' → 输出 '+waveNumber(now.values.y),width/2,506,{'text-anchor':'middle','font-size':13,'data-ma-mesh-readout':''});
       handle.hidden=false;handle.style.left=X(input)+'px';handle.style.top=Y(now.values.y)+'px';handle.setAttribute('aria-label','改变网络的输入，观察节点与最终输出');handle.setAttribute('aria-orientation','horizontal');handle.setAttribute('aria-valuemin','0');handle.setAttribute('aria-valuemax','5');handle.setAttribute('aria-valuenow',String(input));handle.setAttribute('aria-valuetext','输入'+waveNumber(input)+'，输出'+waveNumber(now.values.y));meshGeometry={scale:(width-64)/5};
       svg.setAttribute('data-ma-mesh-input',input);svg.setAttribute('data-ma-mesh-output',now.values.y);svg.setAttribute('data-ma-mesh-muted',muted||'');svg.setAttribute('data-ma-mesh-selected',key||'');
     }
     function meshFacts(key,parameters=meshParameters()){
-      const result=meshRun(meshLesson.input,null,parameters);let sum=0;
+      const result=meshRun(meshView().input,null,parameters);let sum=0;
       const rows=meshEdges.filter(edge=>edge[1]===key).map(([from,,base])=>{const weight=parameters.weights?.[from+'-'+key]??base,input=result.values[from],product=input*weight,start=sum;sum+=product;return {from,input,weight,product,start,end:sum};});
       return {rows,sum,bias:parameters.biases?.[key]??meshBias[key],raw:result.raw[key],output:result.values[key]};
     }
     function meshDetailButton(parent,key,label){const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=label;button.setAttribute('data-ma-mesh-open',key);button.addEventListener('click',()=>meshOpenDetail(key));parent.appendChild(button);}
-    function meshResetButton(parent){const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent='恢复原参数';button.setAttribute('data-ma-mesh-reset','');button.addEventListener('click',()=>{stopAutomation();meshLesson.edit=null;refreshMesh();const selector=meshLesson.detail?'[data-ma-mesh-edit-choice]':'[data-ma-mesh-open]';copy.querySelectorAll(selector)[0]?.focus?.();});parent.appendChild(button);}
+    function meshResetButton(parent){const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent='恢复原参数';button.setAttribute('data-ma-mesh-reset','');button.addEventListener('click',()=>{stopAutomation();meshView().edit=null;refreshMesh();const selector=meshView().detail?'[data-ma-mesh-edit-choice]':'[data-ma-mesh-open]';copy.querySelectorAll(selector)[0]?.focus?.();});parent.appendChild(button);}
     function meshOpenDetail(key){
-      stopAutomation();meshLesson.selected=key;meshLesson.muted=false;
+      stopAutomation();meshView().selected=key;meshView().muted=false;
       const values=[-0.5,0.5];for(const mode of [null,'weight','bias']){const f=meshFacts(key,meshParameters(mode));values.push(f.sum,f.raw,f.output,...f.rows.flatMap(row=>[row.input,row.product,row.start,row.end]));}
-      meshLesson.detail={key,step:0,min:Math.floor(Math.min(...values))-0.25,max:Math.ceil(Math.max(...values))+0.25};const width=Math.max(240,figure.getBoundingClientRect().width||736);lastPlot={scene:'mesh-detail-'+key,width,distance:0};refreshMesh();
+      meshView().detail={key,step:0,min:Math.floor(Math.min(...values))-0.25,max:Math.ceil(Math.max(...values))+0.25};const width=Math.max(240,figure.getBoundingClientRect().width||736);lastPlot={scene:'mesh-detail-'+key,width,distance:0};refreshMesh();
     }
-    function meshCloseDetail(){stopAutomation();meshLesson.detail=null;lastPlot=null;refreshMesh();copy.querySelectorAll('[data-ma-mesh-open]')[0]?.focus?.();}
+    function meshCloseDetail(){stopAutomation();meshView().detail=null;lastPlot=null;refreshMesh();copy.querySelectorAll('[data-ma-mesh-open]')[0]?.focus?.();}
     function renderMeshDetailCopy(){
-      const {key,step}=meshLesson.detail;
-      paragraph('固定输入 '+waveNumber(meshLesson.input)+'，展开'+meshNames[key]+'的同一次计算。'+[
+      const {key,step}=meshView().detail;
+      paragraph((wholeMode()?'第'+wholeLesson.cursor+'轮，':'')+'固定输入 '+waveNumber(meshView().input)+'，展开'+meshNames[key]+'的同一次计算。'+[
         '灰条是上游送来的输入，橙条是乘权重后的贡献。权重分别改变每份输入的大小与方向；负权重会让贡献向左。',
         '把刚才这些贡献首尾相接。每条的有符号长度保持不变，向左的贡献抵消一部分向右的贡献，最后端点就是合并结果。',
         '各条输入贡献保持不变。现在才加入这个节点的偏置，让合并结果整体移动一次；偏置不附在每条输入上。',
         key==='y'?'这是输出节点，当前模型没有在这里加ReLU。加上偏置的结果，直接成为最终输出。':'继续使用同一条数轴上的终点：正值保留，负值取0。这个结果回到上方同一个节点，成为它的输出。'
       ][step]);
-      if(step===3){const p=paragraph('');if(key==='d'){
+      if(step===3){const p=paragraph('');if(key==='d'&&!wholeMode()){
         p.appendChild(document.createTextNode('单项比较：'));
-        for(const [mode,label] of [['weight','连接权重 0.8 → 1.2'],['bias','偏置 −0.2 → −1']]){const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=label;button.setAttribute('data-ma-mesh-edit-choice',mode);button.setAttribute('aria-pressed',String(meshLesson.edit===mode));button.addEventListener('click',()=>{stopAutomation();meshLesson.edit=meshLesson.edit===mode?null:mode;refreshMesh();Array.from(copy.querySelectorAll('[data-ma-mesh-edit-choice]')).find(node=>node.getAttribute('data-ma-mesh-edit-choice')===mode)?.focus?.();});p.appendChild(button);p.appendChild(document.createTextNode(' '));}
+        for(const [mode,label] of [['weight','连接权重 0.8 → 1.2'],['bias','偏置 −0.2 → −1']]){const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=label;button.setAttribute('data-ma-mesh-edit-choice',mode);button.setAttribute('aria-pressed',String(meshView().edit===mode));button.addEventListener('click',()=>{stopAutomation();meshView().edit=meshView().edit===mode?null:mode;refreshMesh();Array.from(copy.querySelectorAll('[data-ma-mesh-edit-choice]')).find(node=>node.getAttribute('data-ma-mesh-edit-choice')===mode)?.focus?.();});p.appendChild(button);p.appendChild(document.createTextNode(' '));}
         // The two preset comparisons are mutually exclusive.
-      }else p.appendChild(document.createTextNode('点选上方其他节点，可以沿同一过程查看它的计算。'));
-      if(meshLesson.edit)meshResetButton(p);}
+      }else p.appendChild(document.createTextNode(wholeMode()?'这里是当前轮的真实参数；点选其他节点，可继续追踪。':'点选上方其他节点，可以沿同一过程查看它的计算。'));
+      if(meshView().edit)meshResetButton(p);}
     }
     function drawMeshDetail(width,progress,positions){
-      const detail=meshLesson.detail,f=meshFacts(detail.key),p=progress??detail.step+1,X=value=>40+(value-detail.min)/(detail.max-detail.min)*(width-65),zero=X(0),extract=clamp(p/0.35,0,1),multiply=clamp((p-0.35)/0.65,0,1),merge=clamp(p-1,0,1),bias=clamp(p-2,0,1),gate=clamp(p-3,0,1),sourceNames={x:'原始输入',a:'上方输入',b:'中间输入',c:'下方输入',d:'上方输入',e:'下方输入'};
+      const detail=meshView().detail,f=meshFacts(detail.key),p=progress??detail.step+1,X=value=>40+(value-detail.min)/(detail.max-detail.min)*(width-65),zero=X(0),extract=clamp(p/0.35,0,1),multiply=clamp((p-0.35)/0.65,0,1),merge=clamp(p-1,0,1),bias=clamp(p-2,0,1),gate=clamp(p-3,0,1),sourceNames={x:'原始输入',a:'上方输入',b:'中间输入',c:'下方输入',d:'上方输入',e:'下方输入'};
       handle.hidden=true;svg.style.height='555px';svg.setAttribute('viewBox','0 0 '+width+' 555');svg.setAttribute('data-ma-chart-kind','mesh-detail');text(meshNames[detail.key]+'的内部计算',20,238,{'font-size':12,fill:accent});line(zero,255,zero,430,{stroke:axis,'stroke-dasharray':'3 5'});
       const arrow=(start,end,y,attrs={})=>{const left=X(start),right=X(end);if(Math.abs(end-start)<1e-9){el('circle',{cx:left,cy:y,r:3,fill:'var(--ma-paper)',stroke:accent,...attrs});return;}line(left,y,right,y,{stroke:accent,'stroke-width':6,...attrs});const sign=Math.sign(end-start);el('path',{d:'M '+right+' '+y+' L '+(right-sign*6)+' '+(y-5)+' L '+(right-sign*6)+' '+(y+5)+' Z',fill:accent});};
       f.rows.forEach((row,i)=>{
         const y=280+i*64,[sx,sy]=positions[row.from],display=row.input*(1+(row.weight-1)*multiply),start=row.start*merge;
         text(sourceNames[row.from]+' '+waveNumber(row.input)+' · 权重 '+waveNumber(row.weight),20,y-18,{'font-size':12,'data-ma-mesh-detail-weight':row.weight,'data-ma-mesh-detail-source':row.from});
-        if(extract<1){el('rect',{x:(sx-13)*(1-extract)+zero*extract,y:(sy-3)*(1-extract)+(y-5)*extract,width:(26*row.input/5)*(1-extract)+(X(row.input)-zero)*extract,height:6+4*extract,fill:accent,'data-ma-mesh-detail-extract':row.from});}
+        if(extract<1){el('rect',{x:(sx-13)*(1-extract)+zero*extract,y:(sy-3)*(1-extract)+(y-5)*extract,width:(26*row.input/meshBarLimit())*(1-extract)+(X(row.input)-zero)*extract,height:6+4*extract,fill:accent,'data-ma-mesh-detail-extract':row.from});}
         else {el('rect',{x:zero,y:y-5,width:X(row.input)-zero,height:10,fill:axis,'fill-opacity':0.35,'data-ma-mesh-detail-input-bar':row.from,'data-ma-mesh-detail-input':row.input});arrow(start,start+display,y,{'data-ma-mesh-detail-contribution':row.from,'data-ma-mesh-detail-value':row.product,'data-ma-mesh-detail-display':display,'data-ma-mesh-detail-start':start,'data-ma-mesh-detail-end':start+display});}
         if(p>=1)text('贡献 '+(row.product>0?'+':'')+waveNumber(row.product),width-20,y+22,{'text-anchor':'end','font-size':12,fill:accent});
         if(i<f.rows.length-1&&merge>0)line(X(row.end*merge),y+5,X(row.end*merge),y+59,{stroke:axis,opacity:merge,'data-ma-mesh-detail-join':i});
@@ -3191,13 +3197,121 @@
       if(gate>0&&detail.key!=='y'){el('rect',{x:25,y:439,width:Math.max(0,zero-25),height:34,fill:axis,'fill-opacity':0.12,'data-ma-mesh-detail-negative':''});line(zero,438,zero,476,{stroke:ink,'stroke-width':2});if(raw<0)el('circle',{cx:X(raw),cy:458,r:5,fill:'var(--ma-paper)',stroke:axis,'data-ma-mesh-detail-raw-point':raw});}
       if(p>=2)el('circle',{cx:X(output),cy:458,r:6,fill:accent,'data-ma-mesh-detail-output-point':output});
       text(p<1?'输入正在变为贡献':p===1?'各份贡献已算出':p<2?'贡献条正在首尾相接':p===2?'合并结果 '+waveNumber(f.sum):p<3?'正在加入偏置':p===3?'加偏置后 '+waveNumber(f.raw):p<4?'正在得到节点输出':detail.key==='y'?'最终输出 '+waveNumber(f.output):'乘加结果 '+waveNumber(f.raw)+' → 输出 '+waveNumber(f.output),width/2,540,{'text-anchor':'middle','font-size':13,'data-ma-mesh-detail-readout':''});
-      svg.setAttribute('data-ma-mesh-detail-key',detail.key);svg.setAttribute('data-ma-mesh-detail-progress',p);svg.setAttribute('data-ma-mesh-detail-min',detail.min);svg.setAttribute('data-ma-mesh-detail-max',detail.max);svg.setAttribute('data-ma-mesh-detail-sum',f.sum);svg.setAttribute('data-ma-mesh-detail-bias',f.bias);svg.setAttribute('data-ma-mesh-detail-raw',f.raw);svg.setAttribute('data-ma-mesh-detail-output',f.output);svg.setAttribute('data-ma-mesh-edit',meshLesson.edit||'');
+      svg.setAttribute('data-ma-mesh-detail-key',detail.key);svg.setAttribute('data-ma-mesh-detail-progress',p);svg.setAttribute('data-ma-mesh-detail-min',detail.min);svg.setAttribute('data-ma-mesh-detail-max',detail.max);svg.setAttribute('data-ma-mesh-detail-sum',f.sum);svg.setAttribute('data-ma-mesh-detail-bias',f.bias);svg.setAttribute('data-ma-mesh-detail-raw',f.raw);svg.setAttribute('data-ma-mesh-detail-output',f.output);svg.setAttribute('data-ma-mesh-edit',meshView().edit||'');
     }
-    function renderMeshGraph(){const width=Math.max(240,figure.getBoundingClientRect().width||736);if(meshLesson.detail)animatePlot('mesh-detail-'+meshLesson.detail.key,width,meshLesson.detail.step+1,p=>drawMeshGraph(p),1500);else drawMeshGraph();}
-    function forwardMesh(){stopAutomation();if(meshLesson.detail){if(meshLesson.detail.step<3){meshLesson.detail.step++;refreshMesh();}else meshCloseDetail();return;}if(current()==='mesh-input'){meshLesson.muted=false;meshLesson.edit=null;if(!meshLesson.selected)meshLesson.selected='b';}state.scene++;renderScene();}
-    function backwardMesh(){stopAutomation();if(meshLesson.detail){if(meshLesson.detail.step){meshLesson.detail.step--;refreshMesh();}else meshCloseDetail();return;}meshLesson.muted=false;meshLesson.edit=null;state.scene--;renderScene();}
+    function renderMeshGraph(){const width=Math.max(240,figure.getBoundingClientRect().width||736),view=meshView(),scene=current();if(view.detail)animatePlot('mesh-detail-'+view.detail.key,width,view.detail.step+1,p=>{if(current()===scene&&meshView()===view)drawMeshGraph(p);},1500);else drawMeshGraph();}
+    function forwardMesh(){stopAutomation();if(meshView().detail){if(meshView().detail.step<3){meshView().detail.step++;refreshMesh();}else meshCloseDetail();return;}if(current()==='mesh-input'){meshView().muted=false;meshView().edit=null;if(!meshView().selected)meshView().selected='b';}state.scene++;renderScene();}
+    function backwardMesh(){stopAutomation();if(meshView().detail){if(meshView().detail.step){meshView().detail.step--;refreshMesh();}else meshCloseDetail();return;}meshView().muted=false;meshView().edit=null;state.scene--;renderScene();}
+    // Chapter 22: all 17 parameters learn from the same five fixed records.
+    const wholeRecords=[0.4,1.4,2.4,3.4,4.4].map((input,i)=>({input,actual:[0.6,1.3,2.8,1.9,1.2][i]}));
+    const wholeKeys=[...meshEdges.map(([a,b])=>'w:'+a+'-'+b),...meshOrder.map(key=>'b:'+key)];
+    const wholeRate=0.01;
+    let wholeLesson=null;
+    function wholeBase(){return {weights:Object.fromEntries(meshEdges.map(([a,b,w])=>[a+'-'+b,w])),biases:{...meshBias}};}
+    function wholeTrace(record,parameters){
+      const result=meshRun(record.input,null,parameters),error=result.values.y-record.actual,influence={y:2*error},gradient={},paths={};
+      for(const key of meshOrder.slice().reverse()){
+        const gate=key==='y'?1:result.raw[key]>0?1:result.raw[key]<0?0:null,dz=gate===null||influence[key]===null?null:(influence[key]??0)*gate;gradient['b:'+key]=dz;
+        for(const [from,to] of meshEdges.filter(edge=>edge[1]===key)){
+          const weight=parameters.weights[from+'-'+to];gradient['w:'+from+'-'+to]=dz===null?null:dz*result.values[from];
+          if(from!=='x'){const contribution=dz===null?null:dz*weight;(paths[from]??=[]).push({via:to,value:contribution});influence[from]=contribution===null||influence[from]===null?null:(influence[from]??0)+contribution;}
+        }
+      }
+      return {...result,input:record.input,actual:record.actual,error,loss:error*error,gradient,paths,influence};
+    }
+    function wholeEvaluate(parameters,data=wholeRecords){const rows=data.map(row=>wholeTrace(row,parameters)),gradient=Object.fromEntries(wholeKeys.map(key=>[key,rows.some(row=>row.gradient[key]===null)?null:rows.reduce((sum,row)=>sum+row.gradient[key],0)/rows.length]));return {rows,loss:rows.reduce((sum,row)=>sum+row.loss,0)/rows.length,gradient};}
+    function wholeStep(parameters,data=wholeRecords){const r=wholeEvaluate(parameters,data);if(wholeKeys.some(key=>r.gradient[key]===null))return null;return {weights:Object.fromEntries(Object.entries(parameters.weights).map(([key,value])=>[key,value-wholeRate*r.gradient['w:'+key]])),biases:Object.fromEntries(Object.entries(parameters.biases).map(([key,value])=>[key,value-wholeRate*r.gradient['b:'+key]]))};}
+    function ensureWholeLesson(){if(!wholeLesson)wholeLesson={history:[wholeBase()],cursor:0,input:2.4,selected:'a',focus:'b:a',sample:0,detail:null,edit:null,muted:false,display:null,pathShown:false};}
+    function wholeAt(position){const lo=Math.floor(position),hi=Math.min(Math.ceil(position),wholeLesson.history.length-1),f=position-lo,a=wholeLesson.history[lo],b=wholeLesson.history[hi];return {weights:Object.fromEntries(Object.keys(a.weights).map(key=>[key,a.weights[key]*(1-f)+b.weights[key]*f])),biases:Object.fromEntries(Object.keys(a.biases).map(key=>[key,a.biases[key]*(1-f)+b.biases[key]*f]))};}
+    function wholeViewParameters(){if(['whole-records','whole-paths','whole-average'].includes(current()))return wholeLesson.history[0];return wholeAt(wholeLesson.display??wholeLesson.cursor);}
+    function wholeStatus(){const r=wholeEvaluate(wholeLesson.history[wholeLesson.cursor]);if(!Number.isFinite(r.loss)||wholeKeys.some(key=>r.gradient[key]!==null&&!Number.isFinite(r.gradient[key])))return 'invalid';if(r.loss<=0.001)return 'done';if(wholeKeys.some(key=>r.gradient[key]===null))return 'corner';if(wholeKeys.every(key=>Math.abs(r.gradient[key])<1e-10))return 'flat';return wholeLesson.cursor>=5000?'limit':'ready';}
+    function wholeAdvance(){if(wholeStatus()!=='ready')return;if(wholeLesson.cursor===wholeLesson.history.length-1){const next=wholeStep(wholeLesson.history[wholeLesson.cursor]);if(!next)return;wholeLesson.history.push(next);}wholeLesson.cursor++;}
+    function wholeParamValue(parameters,key){const [kind,name]=key.split(':');return kind==='w'?parameters.weights[name]:parameters.biases[name];}
+    function wholeTrackLabel(key){if(key.startsWith('b:'))return '偏置';const from=key.slice(2).split('-')[0];return ({x:'输入',a:'上方',b:'中间',c:'下方',d:'上方',e:'下方'})[from]+'连接权重';}
+    function wholeTracking(parent){
+      const key=wholeLesson.selected;parent.appendChild(document.createTextNode(meshNames[key]+'：'));
+      const button=document.createElement('button');button.type='button';button.className='ma-term';button.setAttribute('data-ma-whole-track','');button.setAttribute('title','切换追踪的参数');button.setAttribute('aria-label','切换查看这个节点的偏置与输入连接权重');button.addEventListener('click',()=>{stopAutomation();const choices=['b:'+key,...meshEdges.filter(e=>e[1]===key).map(e=>'w:'+e[0]+'-'+key)];wholeLesson.focus=choices[(choices.indexOf(wholeLesson.focus)+1)%choices.length];wholeLesson.display=null;refreshMesh();copy.querySelectorAll('[data-ma-whole-track]')[0]?.focus?.();});parent.appendChild(button);parent.appendChild(document.createTextNode(' '));meshDetailButton(parent,key,'展开当前计算');
+    }
+    function renderWholeCopy(){
+      if(wholeLesson.detail){renderMeshDetailCopy();return;}
+      if(current()==='whole-purpose'){paragraph('这次，让整张网络为了同一个预测目标一起学习。五个点是固定的教学记录；我们希望网络算出的同一条曲线更接近它们。');paragraph('沿用刚才的1→3→2→1结构，恢复最初手工参数，另开训练。11个连接权重、6个偏置，共17个参数都参与学习，节点短条统一按0到6显示，前面的实验和历史保留。');return;}
+      if(current()==='whole-ending'){paragraph('每一轮都从同一组旧参数计算五次预测与误差，沿各条路径求影响，在汇合处相加，再对记录取平均，共同更新17个参数。');paragraph('接近这些记录，说明网络学会了拟合这组数据，还不保证它在其他情况也准确。现在可以把同样的预测目标转向文字。');return;}
+      if(current()==='whole-records'){paragraph('回看第一轮更新前的计算。每次只换一条记录的输入，17个参数始终不变。上方显示当前这次预测；下方逐个留下各条记录的平方误差。');paragraph('当前输入 '+waveNumber(wholeRecords[wholeLesson.sample].input)+'。可暂停、单条推进或回看；五条都计算后，再追踪影响怎样汇合。');return;}
+      if(current()==='whole-paths'){paragraph('回到输入2.4这条记录，看第一层上方节点。它通过第二层的两条路径影响误差，两份有正负方向的局部影响，需要在这里相加。');paragraph('上方仍是这条记录的正向计算；颜色对应下方的两条影响。这里合并的不是节点输出，也不是误差值本身；得到的仍只是这一条记录的影响。');return;}
+      if(current()==='whole-average'){paragraph('同一个偏置，五条记录各给出一份影响。它们都来自同一组旧参数，取平均后才用于更新。这里只展开第一层上方节点的偏置。');paragraph('有的记录希望增大，有的希望减小。这次平均影响为正，所以该偏置在首轮实际减小。17份平均影响均已算好，接下来回到更新结果。');return;}
+      const p=paragraph('第 '),round=document.createElement('span');round.setAttribute('data-ma-whole-round','');p.appendChild(round);p.appendChild(document.createTextNode(' 轮，平均平方误差 '));const loss=document.createElement('span');loss.setAttribute('data-ma-whole-loss','');p.appendChild(loss);p.appendChild(document.createTextNode('。'));
+      if(current()==='whole-goal')p.appendChild(document.createTextNode(wholeLesson.cursor===0?'实心点是固定答案，短线表示预测差距。先共同调整一轮，看完整曲线怎样变化。':'已保留共同更新的结果。接下来回看第一轮怎样使用这五条记录；参数不会再偷偷更新一次。'));
+      else {const status=wholeStatus(),r=wholeEvaluate(wholeLesson.history[wholeLesson.cursor]),old=wholeEvaluate(wholeLesson.history[Math.max(0,wholeLesson.cursor-1)]);p.appendChild(document.createTextNode(status==='done'?'评分已小于0.001，停止更新；结果来自实际训练，没有吸附到答案。':status==='corner'?'有记录落在ReLU拐点，局部斜率不唯一，本次停止。':status==='flat'?'局部方向已全为0，当前误差仍在，本次停止。':status==='invalid'||status==='limit'?'已停止训练，保留实际历史供回看。':autoRunning?'正在真实更新17个参数。拖动只改变观察输入，点选节点会暂停，便于追踪。':wholeLesson.cursor===0?'先共同更新一轮，再继续学习。记录固定，拖动圆点只改变正在查看的输入。':r.loss>old.loss?'本轮评分略升，固定步幅不保证逐轮下降。可继续、单步或回退，查看真实结果。':'可继续学习、暂停、单步或回退。淡线是上一轮，阴影是本轮函数的真实改动。'));}
+      const inspect=paragraph('');wholeTracking(inspect);
+    }
+    function updateWholeNav(){
+      if(wholeLesson.detail){updateMeshNav();return;}
+      if(current()==='whole-purpose'){next.textContent='让整张网络开始预测 →';return;}
+      if(current()==='whole-goal'){next.textContent=wholeLesson.cursor===0?'共同调整一轮':'回看这一轮怎样算 →';return;}
+      if(current()==='whole-records'){next.textContent=wholeLesson.sample===4?'追踪两条路径的影响 →':autoRunning?'暂停逐条观察':'继续观察五条记录';automatic.hidden=wholeLesson.sample===4;automatic.textContent='下一条记录';if(wholeLesson.sample>0)back.textContent='← 上一条记录';return;}
+      if(current()==='whole-paths'){next.textContent='再合并五条记录的影响 →';return;}
+      if(current()==='whole-average'){next.textContent='回到更新结果，继续学习 →';return;}
+      if(current()==='whole-ending'){next.textContent='把目标换成文字 →';return;}
+      next.textContent=wholeStatus()!=='ready'?'网络学到了什么？ →':autoRunning?'暂停学习':wholeLesson.cursor===0?'共同更新一轮':'继续学习';automatic.hidden=wholeStatus()!=='ready';automatic.textContent='单步更新';if(wholeLesson.cursor>0)back.textContent='← 回退一轮';
+    }
+    function wholeStamp(position,parameters){
+      const result=wholeEvaluate(parameters),old=wholeLesson.history[Math.max(0,Math.ceil(position)-1)],key=wholeLesson.focus;
+      copy.querySelectorAll('[data-ma-whole-round]').forEach(n=>{n.textContent=Number.isInteger(position)?String(position):Math.floor(position)+' → '+Math.ceil(position)+'（过渡）';});copy.querySelectorAll('[data-ma-whole-loss]').forEach(n=>{n.textContent=result.loss<0.01?Number(result.loss.toFixed(6)).toString():waveNumber(result.loss);});copy.querySelectorAll('[data-ma-whole-track]').forEach(n=>{n.textContent=wholeTrackLabel(key)+' '+(position>0?waveNumber(wholeParamValue(old,key))+' → ':'')+waveNumber(wholeParamValue(parameters,key));});
+      svg.setAttribute('data-ma-whole-position',position);svg.setAttribute('data-ma-whole-cursor',wholeLesson.cursor);svg.setAttribute('data-ma-whole-loss',result.loss);wholeKeys.forEach(k=>svg.setAttribute('data-ma-whole-'+k.replace(':','-'),wholeParamValue(parameters,k)));
+    }
+    function drawWholePrediction(position){
+      const width=Math.max(240,figure.getBoundingClientRect().width||736),parameters=wholeViewParameters(),result=wholeEvaluate(parameters),X=x=>44+x/5*(width-64),Y=y=>435-y/4.5*170;drawMeshGraph();
+      svg.setAttribute('data-ma-chart-kind',current());
+      if(current()==='whole-goal'||current()==='whole-train'){
+        const previous=wholeLesson.history[Math.max(0,Math.ceil(position)-1)],xs=[...new Set([...meshVertices(null,parameters),...meshVertices(null,previous)])].sort((a,b)=>a-b),path=points=>points.map(([x,y],i)=>(i?'L ':'M ')+X(x)+' '+Y(y)).join(' '),before=xs.map(x=>[x,meshRun(x,null,previous).values.y]),now=xs.map(x=>[x,meshRun(x,null,parameters).values.y]);
+        if(position>0){el('path',{d:path(before.concat(now.slice().reverse()))+' Z',fill:accent,'fill-opacity':0.17,'data-ma-whole-change-band':''});el('path',{d:path(before),fill:'none',stroke:axis,'stroke-width':1.5,'stroke-dasharray':'4 5','data-ma-whole-previous-function':''});}
+      }
+      result.rows.forEach((row,i)=>{line(X(row.input),Y(row.actual),X(row.input),Y(row.values.y),{stroke:accent,'stroke-width':2,'data-ma-whole-gap':row.error,'data-ma-whole-record':i});el('circle',{cx:X(row.input),cy:Y(row.actual),r:4,fill:ink,'data-ma-whole-target':i});if(current()==='whole-records'&&wholeLesson.sample===i)el('circle',{cx:X(row.input),cy:Y(row.actual),r:7,fill:'none',stroke:accent,'stroke-width':2});});
+      if(current()==='whole-records'){
+        handle.hidden=true;svg.style.height='550px';svg.setAttribute('viewBox','0 0 '+width+' 550');copy.querySelectorAll('[data-ma-whole-track]').forEach(n=>n.textContent='');svg.querySelectorAll('[data-ma-mesh-readout]').forEach(n=>n.textContent='');text('各条记录的平方误差',44,501,{'font-size':12});result.rows.slice(0,wholeLesson.sample+1).forEach((row,i)=>text(waveNumber(row.loss),X(row.input),530,{'text-anchor':'middle','font-size':10,'data-ma-whole-record-loss':row.loss,'data-ma-whole-record-index':i}));svg.setAttribute('data-ma-whole-sample',wholeLesson.sample);
+      }
+      wholeStamp(position,parameters);
+    }
+    function drawWholePaths(progress){
+      if(!wholeMode())return;
+      drawMeshGraph();handle.hidden=true;const width=Math.max(240,figure.getBoundingClientRect().width||736),r=wholeTrace(wholeRecords[2],wholeLesson.history[0]),d=r.paths.a.find(p=>p.via==='d').value,e=r.paths.a.find(p=>p.via==='e').value,total=d+e,M=Math.max(Math.abs(d),Math.abs(e),Math.abs(total))*1.25,X=v=>40+(v+M)/(2*M)*(width-70),blue='var(--ma-net-second)';
+      // Replace the function below the network with two comparable influences.
+      const keep=Array.from(svg.children).filter(n=>n.getAttribute?.('data-ma-mesh-edge')||n.getAttribute?.('data-ma-mesh-node')||n.getAttribute?.('id')==='ma-stage-title'||(n.tagName?.toLowerCase()==='text'||n.tag==='text')&&Number(n.getAttribute('y'))<230||n.tagName?.toLowerCase()==='g'||n.tag==='g');svg.replaceChildren(...keep);svg.style.height='535px';svg.setAttribute('viewBox','0 0 '+width+' 535');svg.setAttribute('data-ma-chart-kind','whole-paths');
+      svg.querySelectorAll('[data-ma-mesh-edge]').forEach(n=>{const id=n.getAttribute('data-ma-mesh-edge');n.setAttribute('stroke',['a-d','d-y'].includes(id)?accent:['a-e','e-y'].includes(id)?blue:axis);n.setAttribute('opacity',['a-d','d-y','a-e','e-y'].includes(id)?1:0.15);});
+      const arrow=(a,b,y,color,id)=>{line(X(a),y,X(b),y,{stroke:color,'stroke-width':6,'data-ma-whole-path':id,'data-ma-whole-path-start':a,'data-ma-whole-path-end':b});const sign=Math.sign(b-a);el('path',{d:'M '+X(b)+' '+y+' L '+(X(b)-sign*6)+' '+(y-5)+' L '+(X(b)-sign*6)+' '+(y+5)+' Z',fill:color});};
+      text('经第二层上方：'+waveNumber(d),25,269,{'font-size':12,fill:accent});text('经第二层下方：'+waveNumber(e),25,349,{'font-size':12,fill:blue});line(X(0),283,X(0),416,{stroke:axis,'stroke-dasharray':'3 5'});arrow(0,d,300,accent,'d');arrow(d*progress,d*progress+e,380,blue,'e');line(X(d),306,X(d),374,{stroke:axis,opacity:progress});text('两条路径相加：'+waveNumber(total),width/2,448,{'text-anchor':'middle','font-size':13});text('本条记录的偏置影响：'+waveNumber(r.gradient['b:a']),width/2,491,{'text-anchor':'middle','font-size':12});
+      svg.setAttribute('data-ma-whole-path-progress',progress);svg.setAttribute('data-ma-whole-path-sum',total);svg.setAttribute('data-ma-whole-path-bias',r.gradient['b:a']);wholeStamp(0,wholeLesson.history[0]);
+    }
+    function drawWholeAverage(){
+      drawWholePaths(1);const width=Math.max(240,figure.getBoundingClientRect().width||736),result=wholeEvaluate(wholeLesson.history[0]),values=result.rows.map(r=>r.gradient['b:a']),mean=result.gradient['b:a'],M=Math.max(...values.map(Math.abs),Math.abs(mean),0.001),zero=(width+60)/2,scale=(width-120)/2/M;
+      const keep=Array.from(svg.children).filter(n=>n.getAttribute?.('data-ma-mesh-edge')||n.getAttribute?.('id')==='ma-stage-title'||n.tagName?.toLowerCase()==='g'||n.tag==='g'||(n.tagName?.toLowerCase()==='text'||n.tag==='text')&&Number(n.getAttribute('y'))<230);svg.replaceChildren(...keep);svg.setAttribute('data-ma-chart-kind','whole-average');line(zero,251,zero,454,{stroke:axis});
+      values.forEach((value,i)=>{const y=278+i*36;text('输入'+waveNumber(wholeRecords[i].input),18,y+4,{'font-size':11});line(zero,y,zero+value*scale,y,{stroke:accent,'stroke-width':4,'data-ma-whole-sample-gradient':value});text(waveNumber(value),zero,y-10,{'text-anchor':'middle','font-size':11});});text('同一个偏置，五份影响取平均',width/2,479,{'text-anchor':'middle','font-size':12});line(zero,498,zero+mean*scale,498,{stroke:ink,'stroke-width':5,'data-ma-whole-mean-bar':mean});text('平均影响 '+waveNumber(mean),width/2,528,{'text-anchor':'middle','font-size':13,'data-ma-whole-mean-gradient':mean});wholeStamp(0,wholeLesson.history[0]);
+    }
+    function renderWholeGraph(){
+      if(wholeLesson.detail){wholeLesson.display=wholeLesson.cursor;renderMeshGraph();wholeStamp(wholeLesson.cursor,wholeLesson.history[wholeLesson.cursor]);return;}
+      const width=Math.max(240,figure.getBoundingClientRect().width||736);
+      if(current()==='whole-paths'){if(!wholeLesson.pathShown){lastPlot={scene:'whole-paths',width,distance:0};wholeLesson.pathShown=true;}animatePlot('whole-paths',width,1,drawWholePaths,1600);return;}
+      if(current()==='whole-average'){drawWholeAverage();return;}
+      if(current()==='whole-records'){drawWholePrediction(0);return;}
+      const scene=current();animatePlot(scene,width,wholeLesson.cursor,position=>{if(current()!==scene)return;wholeLesson.display=position;drawWholePrediction(position);},autoRunning?80:1200);
+    }
+    function scheduleWholeTraining(){autoTimer=setTimeout(()=>{autoTimer=null;if(!autoRunning||current()!=='whole-train'||wholeLesson.detail)return;cancelPlotAnimation(true);for(let i=0;i<6&&wholeStatus()==='ready';i++)wholeAdvance();if(wholeStatus()!=='ready')autoRunning=false;refreshMesh();if(autoRunning)scheduleWholeTraining();},90);}
+    function scheduleWholeRecords(){autoTimer=setTimeout(()=>{autoTimer=null;if(!autoRunning||current()!=='whole-records')return;wholeLesson.sample=Math.min(4,wholeLesson.sample+1);wholeLesson.input=wholeRecords[wholeLesson.sample].input;if(wholeLesson.sample===4)autoRunning=false;refreshMesh();if(autoRunning)scheduleWholeRecords();},900);}
+    function forwardWhole(){
+      if(wholeLesson.detail){forwardMesh();return;}const running=autoRunning;stopAutomation();
+      if(current()==='whole-goal'&&wholeLesson.cursor===0){wholeAdvance();refreshMesh();return;}
+      if(current()==='whole-records'&&wholeLesson.sample<4){if(!running){autoRunning=true;scheduleWholeRecords();}refreshMesh();return;}
+      if(current()==='whole-train'&&wholeStatus()==='ready'){if(!running){if(wholeLesson.cursor===0)wholeAdvance();else{autoRunning=true;scheduleWholeTraining();}}refreshMesh();return;}
+      if(current()==='whole-goal'){wholeLesson.sample=0;wholeLesson.input=wholeRecords[0].input;wholeLesson.display=null;state.scene++;renderScene();autoRunning=true;scheduleWholeRecords();updateNav();return;}
+      if(current()==='whole-records'){wholeLesson.input=wholeRecords[2].input;wholeLesson.selected='a';wholeLesson.focus='b:a';wholeLesson.pathShown=false;}
+      if(current()==='whole-average')wholeLesson.input=2.4;wholeLesson.display=null;state.scene++;renderScene();
+    }
+    function backwardWhole(){
+      if(wholeLesson.detail){backwardMesh();return;}stopAutomation();if(current()==='whole-records'&&wholeLesson.sample>0){wholeLesson.sample--;wholeLesson.input=wholeRecords[wholeLesson.sample].input;refreshMesh();return;}if(current()==='whole-train'&&wholeLesson.cursor>0){wholeLesson.cursor--;wholeLesson.display=null;refreshMesh();return;}wholeLesson.display=null;state.scene--;renderScene();
+    }
     function renderScene() {
       stopAutomation();lastPlot=null;drag=null;feedback=null;
+      if(wholeMode()){ensureWholeLesson();wholeLesson.detail=null;}
       if(current().startsWith('mesh-')){ensureMeshLesson();meshLesson.detail=null;}
       if(current().startsWith('deep-'))ensureDeepLesson();
       if(current().startsWith('net-'))ensureNetLesson();
@@ -3227,7 +3341,7 @@
       if(feedback) feedback.textContent=adjustmentFeedback();renderStage();
     }
     handle.addEventListener('pointerdown',event=>{
-      if((current()==='mesh-input'||current()==='mesh-ablate')&&meshGeometry&&event.button<=0){drag={kind:'mesh',id:event.pointerId,clientX:event.clientX,input:meshLesson.input,scale:meshGeometry.scale};handle.setPointerCapture(event.pointerId);event.preventDefault();return;}
+      if(['mesh-input','mesh-ablate','whole-goal','whole-train'].includes(current())&&meshGeometry&&event.button<=0 ){if(wholeMode()){stopAutomation();wholeLesson.display=null;refreshMesh();}drag={kind:'mesh',id:event.pointerId,clientX:event.clientX,input:meshView().input,scale:meshGeometry.scale};handle.setPointerCapture(event.pointerId);event.preventDefault();return;}
       if(current()==='bias-shift'){beginBiasDrag(event);return;}
       if(current()!=='adjust'||!geometry||event.button>0) return;
       drag={id:event.pointerId,clientX:event.clientX,distance:state.distance,scale:geometry.scale};
@@ -3250,7 +3364,7 @@
     document.addEventListener('pointerup',event=>{if(drag?.kind==='mesh')endDrag(event);});
     document.addEventListener('pointercancel',event=>{if(drag?.kind==='mesh')endDrag(event);});
     handle.addEventListener('keydown',event=>{
-      if(current()==='mesh-input'||current()==='mesh-ablate'){const x=meshLesson.input,values={ArrowLeft:x-0.1,ArrowRight:x+0.1,PageDown:x-1,PageUp:x+1,Home:0,End:5};if(event.key in values){event.preventDefault();meshSetInput(values[event.key]);}return;}
+      if(['mesh-input','mesh-ablate','whole-goal','whole-train'].includes(current())){const x=meshView().input,values={ArrowLeft:x-0.1,ArrowRight:x+0.1,PageDown:x-1,PageUp:x+1,Home:0,End:5};if(event.key in values){event.preventDefault();meshSetInput(values[event.key]);}return;}
       if(current()==='bias-shift') {
         const b=biasLesson.offset,values={ArrowUp:b+1,ArrowDown:b-1,PageUp:b+5,PageDown:b-5,Home:0,End:80};
         if(event.key in values){event.preventDefault();changeBiasOffset(values[event.key]);}return;
@@ -3260,6 +3374,7 @@
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(wholeMode()) {backwardWhole();return;}
       if(current().startsWith('mesh-')) {backwardMesh();return;}
       if(current().startsWith('deep-')||current()==='text-purpose') {backwardDeep();return;}
       if(current().startsWith('net-')) {backwardNet();return;}
@@ -3278,6 +3393,7 @@
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(wholeMode()) {forwardWhole();return;}
       if(current().startsWith('mesh-')) {forwardMesh();return;}
       if(current().startsWith('deep-')||current()==='text-purpose') {forwardDeep();return;}
       if(current().startsWith('net-')) {forwardNet();return;}
@@ -3299,6 +3415,8 @@
       state.scene++;state.highlight=null;renderScene();
     });
     automatic.addEventListener('click',()=>{
+      if(current()==='whole-records'){stopAutomation();if(wholeLesson.sample<4){wholeLesson.sample++;wholeLesson.input=wholeRecords[wholeLesson.sample].input;refreshMesh();}return;}
+      if(current()==='whole-train'){if(wholeStatus()!=='ready'||wholeLesson.detail)return;stopAutomation();wholeAdvance();wholeLesson.display=null;refreshMesh();return;}
       if(current()==='net-batch'){stopAutomation();netLesson.probe.active=false;lastPlot=null;if(netLesson.batch<4){netLesson.batch++;refreshNet();}return;}
       if(current()==='net-train'){if(netStatus()!=='ready')return;stopAutomation();advanceNetTraining();refreshNet();return;}
       if(current()==='onset-train'){if(onsetStatus()!=='ready')return;stopAutomation();advanceOnsetTraining();refreshOnset();return;}
@@ -3333,23 +3451,23 @@
       updateNav();
     });
     globalThis.addEventListener?.('pagehide',stopAutomation);
-    globalThis.addEventListener?.('pageshow',()=>{stopAutomation();updateNav();});
+    globalThis.addEventListener?.('pageshow',()=>{stopAutomation();if(wholeMode())refreshMesh();else updateNav();});
     globalThis.addEventListener?.('hashchange',()=>{
       if(globalThis.location?.hash==='#act-2') {state.scene=7;renderScene();}
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
-      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'text-purpose'}[globalThis.location?.hash];
+      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose'}[globalThis.location?.hash];
       if(chapter){state.scene=scenes.indexOf(chapter);renderScene();if(globalThis.location?.hash==='#act-21-node')meshOpenDetail('d');}
     });
     document.addEventListener('visibilitychange',()=>{
-      if(document.hidden) {stopAutomation();updateNav();}
+      if(document.hidden) {stopAutomation();if(wholeMode())refreshMesh();else updateNav();}
     });
     if(globalThis.location?.hash==='#act-2') state.scene=7;
     if(globalThis.location?.hash==='#act-3') state.scene=14;
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
     if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
-    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'text-purpose'}[globalThis.location?.hash];
+    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose'}[globalThis.location?.hash];
     if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     if(globalThis.location?.hash==='#act-21-node'){
@@ -3358,7 +3476,7 @@
     }
     new ResizeObserver(entries=>{
       // Expanding the detail changes height, not its horizontal numeric scale.
-      if(entries?.length&&meshLesson?.detail&&plotMotion&&lastPlot?.width===Math.max(240,figure.getBoundingClientRect().width||736))return;
+      if(entries?.length&&meshView()?.detail&&plotMotion&&lastPlot?.width===Math.max(240,figure.getBoundingClientRect().width||736))return;
       cancelPlotAnimation(true);lastPlot=null;
       if(!textOnly())renderStage();
     }).observe(figure);
