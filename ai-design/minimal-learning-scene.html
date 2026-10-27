@@ -13,6 +13,7 @@
     #minimal-ai-scene .ma-handle::after { content:""; position:absolute; left:11px; top:11px; width:8px; height:8px; border-radius:50%; background:var(--ma-accent); pointer-events:none; }
     #minimal-ai-scene .ma-handle[aria-orientation="vertical"] { cursor:ns-resize; }
     #minimal-ai-scene button:focus-visible { outline:2px solid var(--ma-ink); outline-offset:5px; }
+    #minimal-ai-scene [data-ma-mesh-node]:focus-visible { outline:2px solid var(--ma-ink); outline-offset:4px; }
     #minimal-ai-scene .ma-formula { font-variant-numeric:tabular-nums; }
     #minimal-ai-scene .ma-fraction { display:inline-grid; text-align:center; vertical-align:middle; font-size:0.9em; line-height:1.6; margin:0 3px; }
     #minimal-ai-scene .ma-fraction > :first-child { border-bottom:1px solid var(--ma-axis); }
@@ -59,7 +60,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','text-purpose'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','mesh-purpose','mesh-input','mesh-ablate','mesh-ending','text-purpose'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -71,7 +72,7 @@
     let plotFrame=null,plotMotion=null,lastPlot=null;
     let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null,outputLesson=null,relayLesson=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','text-purpose'].includes(current());
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','mesh-purpose','mesh-ending','text-purpose'].includes(current());
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -101,6 +102,7 @@
     }
     function renderCopy() {
       copy.replaceChildren();feedback=null;
+      if(current().startsWith('mesh-')) {renderMeshCopy();return;}
       if(current().startsWith('deep-')||current()==='text-purpose') {renderDeepCopy();return;}
       if(current().startsWith('net-')) {renderNetCopy();return;}
       if(current().startsWith('onset-')) {renderOnsetCopy();return;}
@@ -189,6 +191,7 @@
       back.disabled=state.scene===0;
       next.disabled=false;
       back.textContent='← 上一页';automatic.hidden=true;
+      if(current().startsWith('mesh-')) {updateMeshNav();return;}
       if(current().startsWith('deep-')||current()==='text-purpose') {updateDeepNav();return;}
       if(current().startsWith('net-')) {updateNetNav();return;}
       if(current().startsWith('onset-')) {updateOnsetNav();return;}
@@ -208,6 +211,7 @@
     }
     function renderStage() {
       if(textOnly()) return;
+      if(current().startsWith('mesh-')) {drawMeshGraph();return;}
       if(current().startsWith('deep-')) {renderDeepGraph();return;}
       if(current().startsWith('net-')) {renderNetGraph();return;}
       if(current().startsWith('onset-')) {renderOnsetGraph();return;}
@@ -3036,7 +3040,7 @@
       paragraph('目标依然是预测。新的问题是：文字怎样成为能参与计算的输入？下一幕从这里开始；当前还没有训练文字模型。');
     }
     function updateDeepNav(){
-      next.textContent=({'deep-summary':'看看预测的边界 →','deep-limits':'把计算继续接下去 →','deep-purpose':'看第一层怎样计算 →','deep-ending':'把目标换成文字 →','text-purpose':'回看层间组合 ↻'})[current()]||['把输出送到下一层 →','经过第二层的ReLU →','这怎样成为多层网络？ →'][deepLesson.step];
+      next.textContent=({'deep-summary':'看看预测的边界 →','deep-limits':'把计算继续接下去 →','deep-purpose':'看第一层怎样计算 →','deep-ending':'把更多节点连成网络 →','text-purpose':'回看整个网络 ↻'})[current()]||['把输出送到下一层 →','经过第二层的ReLU →','这怎样成为多层网络？ →'][deepLesson.step];
       if(current()==='deep-compose'&&deepLesson.step>0)back.textContent='← 上一步';
     }
     function deepFrame(width,height,kind,title){svg.replaceChildren();handle.hidden=true;svg.style.height=height+'px';svg.setAttribute('viewBox','0 0 '+width+' '+height);svg.setAttribute('data-ma-chart-kind',kind);el('title',{id:'ma-stage-title'}).textContent=title;}
@@ -3072,11 +3076,76 @@
         else animatePlot('deep-compose',width,deepLesson.step,progress=>drawDeepCompose(width,progress,deepLesson.history[deepLesson.cursor]),deepLesson.step===1?2000:1000);
       }
     }
-    function forwardDeep(){stopAutomation();if(current()==='deep-compose'&&deepLesson.step<2){deepLesson.step++;refreshDeep();return;}if(current()==='text-purpose'){state.scene=scenes.indexOf('deep-purpose');renderScene();return;}state.scene++;renderScene();}
+    function forwardDeep(){stopAutomation();if(current()==='deep-compose'&&deepLesson.step<2){deepLesson.step++;refreshDeep();return;}if(current()==='text-purpose'){state.scene=scenes.indexOf('mesh-purpose');renderScene();return;}state.scene++;renderScene();}
     function backwardDeep(){stopAutomation();if(current()==='deep-compose'&&deepLesson.step>0){deepLesson.step--;deepLesson.history=[{b1:-2,b2:2}];deepLesson.cursor=0;refreshDeep();return;}state.scene--;renderScene();}
+    // Chapter 21: a real 1 -> 3 -> 2 -> 1 network, with fixed teaching parameters.
+    const meshOrder=['a','b','c','d','e','y'];
+    const meshNames={a:'第一层上方节点',b:'第一层中间节点',c:'第一层下方节点',d:'第二层上方节点',e:'第二层下方节点'};
+    const meshBias={a:0,b:-1.5,c:-3,d:-0.2,e:1,y:0.2};
+    const meshEdges=[['x','a',1],['x','b',1],['x','c',1],['a','d',0.8],['b','d',-1.2],['c','d',0.4],['a','e',-0.3],['b','e',1.3],['c','e',-1.1],['d','y',0.6],['e','y',0.9]];
+    let meshLesson=null,meshGeometry=null;
+    function ensureMeshLesson(){if(!meshLesson)meshLesson={input:2.5,selected:null,muted:false};if(current()==='mesh-ablate'&&!meshLesson.selected)meshLesson.selected='b';}
+    function meshRun(input,muted=null){
+      const values={x:input},raw={};
+      meshOrder.forEach(key=>{raw[key]=meshBias[key]+meshEdges.filter(edge=>edge[1]===key).reduce((sum,[from,,weight])=>sum+values[from]*weight,0);values[key]=key==='y'?raw[key]:Math.max(0,raw[key]);if(key===muted)values[key]=0;});
+      return {values,raw};
+    }
+    function meshVertices(muted=null){
+      const initial=[0,1.5,3,5],xs=[...initial];
+      for(let i=1;i<initial.length;i++)for(const key of ['d','e']){const lo=initial[i-1],hi=initial[i],a=meshRun(lo,muted).raw[key],b=meshRun(hi,muted).raw[key];if(a*b<0)xs.push(lo-a*(hi-lo)/(b-a));}
+      return [...new Set(xs)].sort((a,b)=>a-b);
+    }
+    function meshMuted(){return current()==='mesh-ablate'&&meshLesson.muted?meshLesson.selected:null;}
+    function refreshMesh(){renderCopy();updateNav();renderStage();}
+    function meshSelect(key){
+      if(!meshNames[key])return;stopAutomation();if(meshLesson.selected!==key)meshLesson.muted=false;meshLesson.selected=key;refreshMesh();Array.from(svg.querySelectorAll('[data-ma-mesh-node]')).find(node=>node.getAttribute('data-ma-mesh-node')===key)?.focus?.();
+    }
+    function meshSetInput(value){if(current()!=='mesh-input'&&current()!=='mesh-ablate')return;meshLesson.input=Math.round(clamp(value,0,5)*100)/100;refreshMesh();}
+    function renderMeshCopy(){
+      if(current()==='mesh-purpose'){
+        paragraph('刚才，一个结果交给下一个神经元。现在，让几个神经元分别加工，再把它们的结果交给下一层。这样的计算就组成了一张网络。');
+        paragraph('下面用手工设定的参数搭一个小网络，不训练它。先移动输入，看所有节点怎样计算出同一个输出；再暂时让一个节点输出0，看看整条函数怎样改变。');return;
+      }
+      if(current()==='mesh-ending'){
+        paragraph('网络变大了，每个节点仍在做熟悉的计算。前一层的结果交给后一层，整张网络合起来，仍然是一条从输入到输出的规则。');
+        paragraph('刚才暂时让一个节点输出0，是为了观察它怎样参与计算。训练则要根据数据和误差，调整这些连接的权重与节点的偏置。接下来，把预测的对象换成文字。');return;
+      }
+      const ablate=current()==='mesh-ablate',key=meshLesson.selected,muted=meshMuted(),now=meshRun(meshLesson.input,muted);
+      paragraph(ablate?'让选中的节点暂时输出0，观察下游和整条函数。淡色曲线是原网络；换节点会先恢复上一处。':'拖动下方圆点，改变输入，看各节点与最终输出一起变化。短条表示节点输出，统一按0到5绘制。点选节点可查看连接。');
+      const p=paragraph('');p.setAttribute('data-ma-mesh-inspect','');
+      if(!key){p.textContent='上方节点的计算，合起来就是下方这条函数。圆点是当前输入对应的输出。';return;}
+      p.appendChild(document.createTextNode(meshNames[key]+'：当前输出 '+waveNumber(now.values[key])+'。'));
+      if(ablate){
+        const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=muted?'恢复这个节点':'让这个节点输出0';button.setAttribute('data-ma-mesh-toggle','');button.setAttribute('aria-pressed',String(Boolean(muted)));button.addEventListener('click',()=>{if(current()!=='mesh-ablate')return;meshLesson.muted=!meshLesson.muted;refreshMesh();copy.querySelectorAll('[data-ma-mesh-toggle]')[0]?.focus?.();});p.appendChild(button);
+        // A zero local effect is explained beside the graph, without moving the stage.
+      }
+    }
+    function updateMeshNav(){next.textContent=({'mesh-purpose':'把网络放到眼前 →','mesh-input':'试着让一个节点输出0 →','mesh-ablate':'这些节点合起来是什么？ →','mesh-ending':'把目标换成文字 →'})[current()];}
+    function drawMeshGraph(){
+      const width=Math.max(240,figure.getBoundingClientRect().width||736),height=515,key=meshLesson.selected,muted=meshMuted(),input=meshLesson.input,now=meshRun(input,muted),original=meshRun(input),C=i=>25+i*(width-50)/3,positions={x:[C(0),125],a:[C(1),65],b:[C(1),125],c:[C(1),185],d:[C(2),95],e:[C(2),155],y:[C(3),125]},X=x=>44+x/5*(width-64),Y=y=>435-y/4.5*170,curve=which=>meshVertices(which).map((x,i)=>(i?'L ':'M ')+X(x)+' '+Y(meshRun(x,which).values.y)).join(' ');
+      svg.replaceChildren();svg.style.height=height+'px';svg.setAttribute('viewBox','0 0 '+width+' '+height);svg.setAttribute('role','group');svg.setAttribute('data-ma-chart-kind','mesh-network');el('title',{id:'ma-stage-title'}).textContent='真实的小网络与同一函数的曲线。可点选五个神经元，键盘Enter或空格操作；曲线圆点可左右拖动或用方向键改变输入。';
+      ['输入','第一层','第二层','输出'].forEach((name,i)=>text(name,C(i),22,{'text-anchor':'middle','font-size':12,fill:ink}));
+      meshEdges.forEach(([from,to,weight])=>{const [x1,y1]=positions[from],[x2,y2]=positions[to],focused=key&&(from===key||to===key);line(x1,y1,x2,y2,{stroke:focused?accent:axis,'stroke-width':1.5,opacity:key&&!focused?0.3:1,'data-ma-mesh-edge':from+'-'+to,'data-ma-mesh-weight':weight,'data-ma-mesh-contribution':now.values[from]*weight});});
+      for(const id of ['x',...meshOrder]){
+        const [x,y]=positions[id],interactive=Boolean(meshNames[id]),g=el('g',interactive?{'data-ma-mesh-node':id,role:'button',tabindex:0,'aria-label':meshNames[id]+'，输出'+waveNumber(now.values[id]),'aria-pressed':String(key===id)}:{});
+        if(interactive){g.style.cursor='pointer';g.addEventListener('click',()=>meshSelect(id));g.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();meshSelect(id);}});}
+        el('circle',{cx:x,cy:y,r:21,fill:'var(--ma-paper)',stroke:key===id?accent:axis,'stroke-width':key===id?2.5:1.5},g);
+        if(interactive){el('rect',{x:x-13,y:y-3,width:26,height:6,rx:2,fill:axis,'fill-opacity':0.25},g);if(muted)el('rect',{x:x-13,y:y-3,width:26*original.values[id]/5,height:6,rx:2,fill:axis,'fill-opacity':0.65,'data-ma-mesh-reference-bar':id},g);el('rect',{x:x-13,y:y-3,width:26*now.values[id]/5,height:6,rx:2,fill:accent,'data-ma-mesh-bar':id,'data-ma-mesh-value':now.values[id]},g);if(muted===id)line(x-10,y+10,x+10,y+10,{stroke:accent,'stroke-width':2},g);}
+        else text(Number(now.values[id].toFixed(2)).toString(),x,y+4,{'text-anchor':'middle','font-size':12,'data-ma-mesh-endpoint':id},g);
+      }
+      if(muted&&(original.values[key]===0||Math.abs(now.values.y-original.values.y)<1e-9))text(original.values[key]===0?'它原本输出0，向右拖动再看':'当前点未变，请同时看整条曲线',width/2,225,{'text-anchor':'middle','font-size':12,fill:'var(--ma-muted)','data-ma-mesh-zero-note':''});
+      text('整张网络的函数',44,244,{'font-size':12});line(44,265,44,435,{});line(44,435,width-20,435,{});[0,1,2,3,4].forEach(value=>text(String(value),36,Y(value)+4,{'text-anchor':'end','font-size':11,fill:'var(--ma-muted)'}));[0,1,2,3,4,5].forEach(value=>text(String(value),X(value),457,{'text-anchor':'middle','font-size':11,fill:'var(--ma-muted)'}));text('输入',width-20,478,{'text-anchor':'end','font-size':11,fill:'var(--ma-muted)'});
+      if(muted)el('path',{d:curve(null),fill:'none',stroke:axis,'stroke-width':2,'stroke-dasharray':'5 5','data-ma-mesh-reference-function':''});el('path',{d:curve(muted),fill:'none',stroke:ink,'stroke-width':2.5,'data-ma-mesh-function':''});line(X(input),265,X(input),435,{stroke:axis,'stroke-dasharray':'3 5'});
+      el('circle',{cx:X(input),cy:Y(now.values.y),r:5,fill:accent,'data-ma-mesh-point':now.values.y});if(muted)el('circle',{cx:X(input),cy:Y(original.values.y),r:4,fill:'var(--ma-paper)',stroke:axis,'stroke-width':1.5,'data-ma-mesh-reference-point':original.values.y});text('输入 '+waveNumber(input)+' → 输出 '+waveNumber(now.values.y),width/2,506,{'text-anchor':'middle','font-size':13,'data-ma-mesh-readout':''});
+      handle.hidden=false;handle.style.left=X(input)+'px';handle.style.top=Y(now.values.y)+'px';handle.setAttribute('aria-label','改变网络的输入，观察节点与最终输出');handle.setAttribute('aria-orientation','horizontal');handle.setAttribute('aria-valuemin','0');handle.setAttribute('aria-valuemax','5');handle.setAttribute('aria-valuenow',String(input));handle.setAttribute('aria-valuetext','输入'+waveNumber(input)+'，输出'+waveNumber(now.values.y));meshGeometry={scale:(width-64)/5};
+      svg.setAttribute('data-ma-mesh-input',input);svg.setAttribute('data-ma-mesh-output',now.values.y);svg.setAttribute('data-ma-mesh-muted',muted||'');svg.setAttribute('data-ma-mesh-selected',key||'');
+    }
+    function forwardMesh(){stopAutomation();if(current()==='mesh-input'){meshLesson.muted=false;if(!meshLesson.selected)meshLesson.selected='b';}state.scene++;renderScene();}
+    function backwardMesh(){stopAutomation();meshLesson.muted=false;state.scene--;renderScene();}
     function renderScene() {
       stopAutomation();lastPlot=null;drag=null;feedback=null;
-      if(current().startsWith('deep-')||current()==='text-purpose')ensureDeepLesson();
+      if(current().startsWith('mesh-'))ensureMeshLesson();
+      if(current().startsWith('deep-'))ensureDeepLesson();
       if(current().startsWith('net-'))ensureNetLesson();
       if(current().startsWith('onset-'))ensureOnsetLesson();
       if(current().startsWith('duo-'))ensureDuoLesson();
@@ -3091,6 +3160,7 @@
       if(current().startsWith('learn-')) ensureLearning();
       if(current().startsWith('direction-')) ensureDirection();
       if(current()==='predict'||current()==='calculation') ensureSnapshot();
+      svg.setAttribute('role','img');
       root.className=textOnly()?'ma-text-page':'ma-interactive-page';
       figure.hidden=textOnly();handle.hidden=true;renderCopy();updateNav();renderStage();
     }
@@ -3103,6 +3173,7 @@
       if(feedback) feedback.textContent=adjustmentFeedback();renderStage();
     }
     handle.addEventListener('pointerdown',event=>{
+      if((current()==='mesh-input'||current()==='mesh-ablate')&&meshGeometry&&event.button<=0){drag={kind:'mesh',id:event.pointerId,clientX:event.clientX,input:meshLesson.input,scale:meshGeometry.scale};handle.setPointerCapture(event.pointerId);event.preventDefault();return;}
       if(current()==='bias-shift'){beginBiasDrag(event);return;}
       if(current()!=='adjust'||!geometry||event.button>0) return;
       drag={id:event.pointerId,clientX:event.clientX,distance:state.distance,scale:geometry.scale};
@@ -3110,6 +3181,7 @@
     });
     handle.addEventListener('pointermove',event=>{
       if(!drag||drag.id!==event.pointerId) return;
+      if(drag.kind==='mesh'){meshSetInput(drag.input+(event.clientX-drag.clientX)/drag.scale);return;}
       if(drag.kind==='bias'){changeBiasOffset(drag.offset-(event.clientY-drag.clientY)/drag.scale);return;}
       changeRule(drag.distance+(event.clientX-drag.clientX)/(3*drag.scale));
     });
@@ -3118,7 +3190,13 @@
       if(handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId);drag=null;
     }
     handle.addEventListener('pointerup',endDrag);handle.addEventListener('pointercancel',endDrag);
+    document.addEventListener('pointermove',event=>{
+      if(drag?.kind==='mesh'&&drag.id===event.pointerId&&event.target!==handle)meshSetInput(drag.input+(event.clientX-drag.clientX)/drag.scale);
+    });
+    document.addEventListener('pointerup',event=>{if(drag?.kind==='mesh')endDrag(event);});
+    document.addEventListener('pointercancel',event=>{if(drag?.kind==='mesh')endDrag(event);});
     handle.addEventListener('keydown',event=>{
+      if(current()==='mesh-input'||current()==='mesh-ablate'){const x=meshLesson.input,values={ArrowLeft:x-0.1,ArrowRight:x+0.1,PageDown:x-1,PageUp:x+1,Home:0,End:5};if(event.key in values){event.preventDefault();meshSetInput(values[event.key]);}return;}
       if(current()==='bias-shift') {
         const b=biasLesson.offset,values={ArrowUp:b+1,ArrowDown:b-1,PageUp:b+5,PageDown:b-5,Home:0,End:80};
         if(event.key in values){event.preventDefault();changeBiasOffset(values[event.key]);}return;
@@ -3128,6 +3206,7 @@
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(current().startsWith('mesh-')) {backwardMesh();return;}
       if(current().startsWith('deep-')||current()==='text-purpose') {backwardDeep();return;}
       if(current().startsWith('net-')) {backwardNet();return;}
       if(current().startsWith('onset-')) {backwardOnset();return;}
@@ -3145,6 +3224,7 @@
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(current().startsWith('mesh-')) {forwardMesh();return;}
       if(current().startsWith('deep-')||current()==='text-purpose') {forwardDeep();return;}
       if(current().startsWith('net-')) {forwardNet();return;}
       if(current().startsWith('onset-')) {forwardOnset();return;}
@@ -3205,7 +3285,7 @@
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
-      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'text-purpose'}[globalThis.location?.hash];
+      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-22':'text-purpose'}[globalThis.location?.hash];
       if(chapter){state.scene=scenes.indexOf(chapter);renderScene();}
     });
     document.addEventListener('visibilitychange',()=>{
@@ -3215,7 +3295,7 @@
     if(globalThis.location?.hash==='#act-3') state.scene=14;
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
     if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
-    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'text-purpose'}[globalThis.location?.hash];
+    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-22':'text-purpose'}[globalThis.location?.hash];
     if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     new ResizeObserver(()=>{
