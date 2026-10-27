@@ -14,6 +14,9 @@
     #minimal-ai-scene .ma-handle[aria-orientation="vertical"] { cursor:ns-resize; }
     #minimal-ai-scene button:focus-visible { outline:2px solid var(--ma-ink); outline-offset:5px; }
     #minimal-ai-scene [data-ma-mesh-node]:focus-visible { outline:2px solid var(--ma-ink); outline-offset:4px; }
+    #minimal-ai-scene [data-ma-text-token]:focus-visible { outline:2px solid var(--ma-ink); outline-offset:3px; }
+    #minimal-ai-scene .ma-text-controls button { min-height:42px; padding:4px 6px; }
+    #minimal-ai-scene .ma-text-controls button:disabled { opacity:0.35; cursor:default; }
     #minimal-ai-scene .ma-formula { font-variant-numeric:tabular-nums; }
     #minimal-ai-scene .ma-fraction { display:inline-grid; text-align:center; vertical-align:middle; font-size:0.9em; line-height:1.6; margin:0 3px; }
     #minimal-ai-scene .ma-fraction > :first-child { border-bottom:1px solid var(--ma-axis); }
@@ -60,7 +63,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','mesh-purpose','mesh-input','mesh-ablate','mesh-ending','whole-purpose','whole-goal','whole-records','whole-paths','whole-average','whole-train','whole-ending','text-purpose'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','mesh-purpose','mesh-input','mesh-ablate','mesh-ending','whole-purpose','whole-goal','whole-records','whole-paths','whole-average','whole-train','whole-ending','text-purpose','text-pairs','text-ids','text-renumber','text-ending'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -72,7 +75,7 @@
     let plotFrame=null,plotMotion=null,lastPlot=null;
     let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null,outputLesson=null,relayLesson=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','mesh-purpose','mesh-ending','whole-purpose','whole-ending','text-purpose'].includes(current());
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','mesh-purpose','mesh-ending','whole-purpose','whole-ending','text-purpose','text-ending'].includes(current());
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -102,6 +105,7 @@
     }
     function renderCopy() {
       copy.replaceChildren();feedback=null;
+      if(current().startsWith('text-')) {renderTextCopy();return;}
       if(wholeMode()) {renderWholeCopy();return;}
       if(current().startsWith('mesh-')) {renderMeshCopy();return;}
       if(current().startsWith('deep-')||current()==='text-purpose') {renderDeepCopy();return;}
@@ -192,6 +196,7 @@
       back.disabled=state.scene===0;
       next.disabled=false;
       back.textContent='← 上一页';automatic.hidden=true;
+      if(current().startsWith('text-')) {updateTextNav();return;}
       if(wholeMode()) {updateWholeNav();return;}
       if(current().startsWith('mesh-')) {updateMeshNav();return;}
       if(current().startsWith('deep-')||current()==='text-purpose') {updateDeepNav();return;}
@@ -213,6 +218,7 @@
     }
     function renderStage() {
       if(textOnly()) return;
+      if(current().startsWith('text-')) {drawTextGraph();return;}
       if(wholeMode()) {renderWholeGraph();return;}
       if(current().startsWith('mesh-')) {renderMeshGraph();return;}
       if(current().startsWith('deep-')) {renderDeepGraph();return;}
@@ -3309,8 +3315,56 @@
     function backwardWhole(){
       if(wholeLesson.detail){backwardMesh();return;}stopAutomation();if(current()==='whole-records'&&wholeLesson.sample>0){wholeLesson.sample--;wholeLesson.input=wholeRecords[wholeLesson.sample].input;refreshMesh();return;}if(current()==='whole-train'&&wholeLesson.cursor>0){wholeLesson.cursor--;wholeLesson.display=null;refreshMesh();return;}wholeLesson.display=null;state.scene--;renderScene();
     }
+    // Chapter 23: real next-character training pairs and reversible token IDs.
+    const textSentence='小猫看小鸟，小鸟看小猫。';
+    const textUnits=Array.from(textSentence),textVocabulary=[...new Set(textUnits)],textPermutation=[4,0,5,1,3,2];
+    let textLesson=null;
+    function ensureTextLesson(){if(!textLesson)textLesson={cut:3,scheme:0,selected:null};}
+    function textCodec(scheme=0){
+      const ids=scheme?textPermutation:textVocabulary.map((_,i)=>i),encode=new Map(textVocabulary.map((glyph,i)=>[glyph,ids[i]])),decode=new Map(ids.map((id,i)=>[id,textVocabulary[i]]));
+      return {encode:input=>Array.from(input,glyph=>{if(!encode.has(glyph))throw Error('这个字不在当前小词表中');return encode.get(glyph);}),decode:input=>input.map(id=>{if(!decode.has(id))throw Error('这个编号不在当前小词表中');return decode.get(id);}).join('')};
+    }
+    function textRecord(cut=textLesson.cut,scheme=textLesson.scheme){
+      const codec=textCodec(scheme),input=textUnits.slice(0,cut).join(''),target=textUnits[cut],inputIds=codec.encode(input),targetId=codec.encode(target)[0];return {input,target,inputIds,targetId,decodedInput:codec.decode(inputIds),decodedTarget:codec.decode([targetId])};
+    }
+    function refreshText(){renderCopy();updateNav();renderStage();}
+    function textMove(direction){if(!['text-pairs','text-ids'].includes(current()))return;textLesson.cut=clamp(textLesson.cut+direction,1,textUnits.length-1);refreshText();copy.querySelectorAll(direction<0?'[data-ma-text-left]':'[data-ma-text-right]')[0]?.focus?.();}
+    function textSelect(index){if(!['text-ids','text-renumber'].includes(current()))return;const glyph=textUnits[index];textLesson.selected=textLesson.selected===glyph?null:glyph;refreshText();Array.from(svg.querySelectorAll('[data-ma-text-token]')).find(n=>Number(n.getAttribute('data-ma-text-token'))===index)?.focus?.();}
+    function textControls(){
+      const p=paragraph('');p.className='ma-controls ma-text-controls';
+      if(current()==='text-renumber'){
+        const button=document.createElement('button');button.type='button';button.textContent=textLesson.scheme?'换回原编号':'换一套编号';button.setAttribute('data-ma-text-renumber','');button.setAttribute('aria-pressed',String(Boolean(textLesson.scheme)));button.addEventListener('click',()=>{textLesson.scheme=1-textLesson.scheme;refreshText();copy.querySelectorAll('[data-ma-text-renumber]')[0]?.focus?.();});p.appendChild(button);return;
+      }
+      for(const [direction,label,attr] of [[-1,'向左一步','data-ma-text-left'],[1,'向右一步','data-ma-text-right']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.setAttribute(attr,'');button.setAttribute('aria-label',direction<0?'把输入与答案的分界向前移动一个字符':'把输入与答案的分界向后移动一个字符');button.disabled=direction<0?textLesson.cut===1:textLesson.cut===textUnits.length-1;button.addEventListener('click',()=>textMove(direction));p.appendChild(button);}
+    }
+    function renderTextCopy(){
+      if(current()==='text-purpose'){paragraph('目标依然是预测。这次，希望电脑根据已经出现的文字，预测紧接着可能出现的内容。');paragraph('训练它，需要把“前面的文字”和“下一个字”配成记录。一段已有文字，就能自动提供许多这样的配对。');return;}
+      if(current()==='text-ending'){paragraph('同一句话已经能提供输入与答案，字也都有编号。但编号只是标签：编号从0改成4，并没有让这个字的意思变大。');paragraph('下一步，为每个编号取出一组可以参与网络计算、也能通过训练调整的数值。当前只完成了配对与编号，还没有运行文字模型预测。');return;}
+      paragraph(current()==='text-pairs'?'移动橙色分界，看看同一句话怎样提供不同的预测练习。分界前的文字是输入，紧接着的一个字是答案；后文暂不使用。答案来自原文，这里还没有运行模型预测。':current()==='text-ids'?'先给每种字和标点一个编号，方便接下来找到它对应的数值。同一个字在不同位置共用同一个编号。点选字块，蓝色短线会标出同字同编号的位置；分界仍决定输入与答案。':'这些处理单位叫Token。这一幕选择一个字或标点作为一个Token，其他模型可以采用不同切分。换一套编号：数字改变，原句和预测配对仍然相同。编号接近，不代表意思接近。');
+      textControls();
+    }
+    function updateTextNav(){next.textContent=({'text-purpose':'从一句话取出输入与答案 →','text-pairs':'给每种字一个编号 →','text-ids':'编号代表什么意思？ →','text-renumber':'这些编号怎样参与计算？ →','text-ending':'回看文字训练任务 ↻'})[current()];}
+    function drawTextGraph(){
+      const width=Math.max(240,figure.getBoundingClientRect().width||736),ids=current()!=='text-pairs',columns=width>=660?12:6,gap=columns===12?8:6,cell=Math.min(44,(width-20-(columns-1)*gap)/columns),total=columns*cell+(columns-1)*gap,left=(width-total)/2,rows=Math.ceil(textUnits.length/columns),height=rows===1?285:400,caption=rows===1?212:336,record=textRecord(),codec=textCodec(textLesson.scheme),encoded=codec.encode(textSentence),decoded=Array.from(codec.decode(encoded));
+      svg.replaceChildren();handle.hidden=true;svg.style.height=height+'px';svg.setAttribute('viewBox','0 0 '+width+' '+height);svg.setAttribute('role',ids?'group':'img');svg.setAttribute('data-ma-chart-kind',current());el('title',{id:'ma-stage-title'}).textContent='原句：'+textSentence+'；当前输入：'+record.input+'；下一字训练答案：'+record.target+(ids?'；答案编号：'+record.targetId+'。可点选字块，查看同字同编号的位置。':'。移动分界生成训练配对，尚未运行模型预测。');
+      textUnits.forEach((glyph,i)=>{
+        const x=left+(i%columns)*(cell+gap),y=72+Math.floor(i/columns)*124,input=i<textLesson.cut,target=i===textLesson.cut,future=i>textLesson.cut,selected=ids&&textLesson.selected===glyph,display=decoded[i],g=el('g',ids?{'data-ma-text-token':i,role:'button',tabindex:0,'aria-label':'第'+(i+1)+'位，'+display+'，编号'+encoded[i]+'，'+(input?'输入':target?'当前答案':'后续文字，暂不作为输入'),'aria-pressed':String(selected)}:{'data-ma-text-position':i});
+        if(ids){g.style.cursor='pointer';g.addEventListener('click',()=>textSelect(i));g.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();textSelect(i);}});}
+        el('rect',{x,y,width:cell,height:ids?78:46,rx:4,fill:input?accent:'var(--ma-paper)','fill-opacity':input?0.07:1,stroke:target?accent:axis,'stroke-width':target?2.5:1,opacity:future?0.45:1,'data-ma-text-cell':i,'data-ma-text-role':input?'input':target?'target':'future'},g);
+        text(display,x+cell/2,y+30,{'text-anchor':'middle','font-size':22,fill:target?accent:ink,opacity:future&&!selected?0.3:1,'data-ma-text-glyph':i},g);
+        if(ids){text(String(encoded[i]),x+cell/2,y+61,{'text-anchor':'middle','font-size':14,fill:target?accent:muted,opacity:future&&!selected?0.4:1,'data-ma-text-id':i,'data-ma-text-id-value':encoded[i]},g);if(selected)line(x+6,y+70,x+cell-6,y+70,{stroke:'var(--ma-net-second)','stroke-width':3,'data-ma-text-match':i},g);}
+        if(target)line(x-gap/2,y-12,x-gap/2,y+(ids?78:46)+12,{stroke:accent,'stroke-width':2.5,'data-ma-text-boundary':textLesson.cut});
+      });
+      text(ids?'答案「'+record.target+'」的编号：'+record.targetId:'下一字训练答案：「'+record.target+'」',width/2,caption,{'text-anchor':'middle','font-size':15,'data-ma-text-answer':''});
+      if(ids&&textLesson.selected){const glyph=textLesson.selected,count=textUnits.filter(c=>c===glyph).length,id=codec.encode(glyph)[0];text('「'+glyph+'」共'+count+'处，编号都是'+id,width/2,caption+36,{'text-anchor':'middle','font-size':13,fill:'var(--ma-net-second)','data-ma-text-feedback':''});}
+      else if(current()==='text-renumber')text(codec.decode(encoded)===textSentence?'读回的原句与原来相同':'',width/2,caption+36,{'text-anchor':'middle','font-size':13,fill:muted,'data-ma-text-feedback':''});
+      svg.setAttribute('data-ma-text-cut',textLesson.cut);svg.setAttribute('data-ma-text-scheme',textLesson.scheme);svg.setAttribute('data-ma-text-input',record.input);svg.setAttribute('data-ma-text-target',record.target);svg.setAttribute('data-ma-text-input-ids',JSON.stringify(record.inputIds));svg.setAttribute('data-ma-text-target-id',record.targetId);svg.setAttribute('data-ma-text-decoded',codec.decode(encoded));
+    }
+    function forwardText(){stopAutomation();if(current()==='text-ending'){textLesson=null;state.scene=scenes.indexOf('text-purpose');renderScene();return;}state.scene++;renderScene();}
+    function backwardText(){stopAutomation();state.scene--;renderScene();}
     function renderScene() {
       stopAutomation();lastPlot=null;drag=null;feedback=null;
+      if(current().startsWith('text-'))ensureTextLesson();
       if(wholeMode()){ensureWholeLesson();wholeLesson.detail=null;}
       if(current().startsWith('mesh-')){ensureMeshLesson();meshLesson.detail=null;}
       if(current().startsWith('deep-'))ensureDeepLesson();
@@ -3374,6 +3428,7 @@
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(current().startsWith('text-')) {backwardText();return;}
       if(wholeMode()) {backwardWhole();return;}
       if(current().startsWith('mesh-')) {backwardMesh();return;}
       if(current().startsWith('deep-')||current()==='text-purpose') {backwardDeep();return;}
@@ -3393,6 +3448,7 @@
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(current().startsWith('text-')) {forwardText();return;}
       if(wholeMode()) {forwardWhole();return;}
       if(current().startsWith('mesh-')) {forwardMesh();return;}
       if(current().startsWith('deep-')||current()==='text-purpose') {forwardDeep();return;}
@@ -3457,7 +3513,7 @@
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
-      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose'}[globalThis.location?.hash];
+      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber'}[globalThis.location?.hash];
       if(chapter){state.scene=scenes.indexOf(chapter);renderScene();if(globalThis.location?.hash==='#act-21-node')meshOpenDetail('d');}
     });
     document.addEventListener('visibilitychange',()=>{
@@ -3467,7 +3523,7 @@
     if(globalThis.location?.hash==='#act-3') state.scene=14;
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
     if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
-    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose'}[globalThis.location?.hash];
+    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber'}[globalThis.location?.hash];
     if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     if(globalThis.location?.hash==='#act-21-node'){

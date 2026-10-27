@@ -4,7 +4,7 @@
 
 在线体验：<https://pingjiang2013.github.io/tui/ai-design/>
 
-目前包含二十二幕，以及文字预测的目标预告：
+目前包含二十三幕，文字部分已实现训练配对与编号：
 
 1. 根据已有记录做出预测。
 2. 衡量预测差距，让电脑自己调整。
@@ -28,6 +28,7 @@
 20. 区分已有记录与尚无答案可核对的预测，再把第一层的整条输出函数送入第二层，观察翻转、平移和ReLU的组合；改前层影响两层，改后层只影响后层。
 21. 用真实的1→3→2→1网络联动节点与整条函数：拖动输入观察计算，临时让单个节点输出0；还可展开每个神经元，让输入经权重变成贡献、首尾相接、加偏置并得到输出，再对比局部参数怎样改变整个函数。
 22. 让同一结构的17个参数共同学习五条固定记录：先实际更新，再回看旧参数的五次预测、两条路径的影响相加和记录平均；连续真实训练，支持暂停、单步、逐轮回退，并展开当前轮的节点计算。
+23. 在同一句话上移动分界，真实生成前文与下一字答案；在原字块中展开编号，标出同字同编号的位置，再更换一套可逆编号，观察原句与预测任务保持不变。
 
 可直接访问 [第二幕](https://pingjiang2013.github.io/tui/ai-design/#act-2)、[第三幕](https://pingjiang2013.github.io/tui/ai-design/#act-3)、[第四幕](https://pingjiang2013.github.io/tui/ai-design/#act-4)、[第五幕](https://pingjiang2013.github.io/tui/ai-design/#act-5)。
 
@@ -57,7 +58,9 @@
 
 查看权重与偏置：[展开第二层上方节点](https://pingjiang2013.github.io/tui/ai-design/#act-21-node)。详情替换下方函数图，保留上方网络；可切换查看所有六个神经元，输出节点按真实结构不加ReLU。
 
-整张网络一起学习：[第二十二幕](https://pingjiang2013.github.io/tui/ai-design/#act-22)，或[直接进入训练](https://pingjiang2013.github.io/tui/ai-design/#act-22-train)、[查看两条路径如何合并影响](https://pingjiang2013.github.io/tui/ai-design/#act-22-paths)。五条记录固定，全部17个参数实际更新，记录每轮历史；文字预测目前仅在末页引出目标。
+整张网络一起学习：[第二十二幕](https://pingjiang2013.github.io/tui/ai-design/#act-22)，或[直接进入训练](https://pingjiang2013.github.io/tui/ai-design/#act-22-train)、[查看两条路径如何合并影响](https://pingjiang2013.github.io/tui/ai-design/#act-22-paths)。五条记录固定，全部17个参数实际更新，记录每轮历史。
+
+从文字得到预测任务：[第二十三幕](https://pingjiang2013.github.io/tui/ai-design/#act-23)，或[移动输入与答案的分界](https://pingjiang2013.github.io/tui/ai-design/#act-23-pairs)、[查看编号](https://pingjiang2013.github.io/tui/ai-design/#act-23-ids)、[换一套编号](https://pingjiang2013.github.io/tui/ai-design/#act-23-renumber)。这里真实生成训练配对并编码、解码，尚未运行文字模型预测或训练。
 
 ## 本地开发
 
