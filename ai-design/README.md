@@ -4,7 +4,7 @@
 
 在线体验：<https://pingjiang2013.github.io/tui/ai-design/>
 
-目前包含二十四幕，文字部分已实现配对、编号、原文用法统计与多维表示动机：
+目前包含二十四幕，文字部分已实现配对、编号、用法线索与可操作的多维预测表示：
 
 1. 根据已有记录做出预测。
 2. 衡量预测差距，让电脑自己调整。
@@ -29,7 +29,7 @@
 21. 用真实的1→3→2→1网络联动节点与整条函数：拖动输入观察计算，临时让单个节点输出0；还可展开每个神经元，让输入经权重变成贡献、首尾相接、加偏置并得到输出，再对比局部参数怎样改变整个函数。
 22. 让同一结构的17个参数共同学习五条固定记录：先实际更新，再回看旧参数的五次预测、两条路径的影响相加和记录平均；连续真实训练，支持暂停、单步、逐轮回退，并展开当前轮的节点计算。
 23. 在同一句话上移动分界，真实生成前文与下一字答案；在原字块中展开编号，标出同字同编号的位置，再更换一套可逆编号，观察原句与预测任务保持不变。
-24. 从原句提取用法片段并归组计数，比较四项统计与总次数的信息差异；加入一句话实时改变比例，再用2/4/8维空位置说明学习型表示的容量。原二维手工初值实验改为可选，尚未训练文字表示。
+24. 同时观察三种字的用法线索，再移动共享表示影响两个上下文的真实分数；数轴连续展开为平面，增加独立调整方向；一起旋转表示与读取方向，展示坐标改变而分数不变。数值手工设置，尚未训练文字表示。
 
 可直接访问 [第二幕](https://pingjiang2013.github.io/tui/ai-design/#act-2)、[第三幕](https://pingjiang2013.github.io/tui/ai-design/#act-3)、[第四幕](https://pingjiang2013.github.io/tui/ai-design/#act-4)、[第五幕](https://pingjiang2013.github.io/tui/ai-design/#act-5)。
 
@@ -63,7 +63,7 @@
 
 从文字得到预测任务：[第二十三幕](https://pingjiang2013.github.io/tui/ai-design/#act-23)，或[移动输入与答案的分界](https://pingjiang2013.github.io/tui/ai-design/#act-23-pairs)、[查看编号](https://pingjiang2013.github.io/tui/ai-design/#act-23-ids)、[换一套编号](https://pingjiang2013.github.io/tui/ai-design/#act-23-renumber)。这里真实生成训练配对并编码、解码，尚未运行文字模型预测或训练。
 
-从用法理解表示：[第二十四幕](https://pingjiang2013.github.io/tui/ai-design/#act-24)，或[原文归组](https://pingjiang2013.github.io/tui/ai-design/#act-24-usage)、[多维与总数](https://pingjiang2013.github.io/tui/ai-design/#act-24-dimensions)、[文字改变统计](https://pingjiang2013.github.io/tui/ai-design/#act-24-data)、[维度容量](https://pingjiang2013.github.io/tui/ai-design/#act-24-capacity)。统计实时来自原文，不是完整语义。另有[手工存储与计算实验](https://pingjiang2013.github.io/tui/ai-design/#act-24-lab)，其二维初值不是统计压缩或训练结果。
+从用法理解表示：[第二十四幕](https://pingjiang2013.github.io/tui/ai-design/#act-24)，或[用法线索](https://pingjiang2013.github.io/tui/ai-design/#act-24-usage)、[一维表示](https://pingjiang2013.github.io/tui/ai-design/#act-24-dimensions)、[展开二维](https://pingjiang2013.github.io/tui/ai-design/#act-24-data)、[转动表示与读取方向](https://pingjiang2013.github.io/tui/ai-design/#act-24-capacity)。六个分数来自真实点积，不是概率；初值与读取方向手工指定，尚未训练。另有[存储与计算实验](https://pingjiang2013.github.io/tui/ai-design/#act-24-lab)。
 
 ## 本地开发
 

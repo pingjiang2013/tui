@@ -7,6 +7,8 @@
     #minimal-ai-scene .ma-copy p { margin:0 0 17px; font-size:18px; line-height:1.95; font-weight:400; }
     #minimal-ai-scene.ma-text-page .ma-copy { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; margin-bottom:24px; }
     #minimal-ai-scene.ma-text-page .ma-copy p { font-size:21px; line-height:2.05; margin-bottom:22px; }
+    #minimal-ai-scene.ma-usage-page .ma-copy { min-height:0; }
+    #minimal-ai-scene [data-ma-usage-point]:focus-visible, #minimal-ai-scene [data-ma-usage-score-choice]:focus-visible { outline:2px solid var(--ma-ink); outline-offset:3px; }
     #minimal-ai-scene .ma-figure { position:relative; width:100%; flex:1; }
     #minimal-ai-scene svg { display:block; width:100%; height:265px; overflow:hidden; }
     #minimal-ai-scene .ma-handle { position:absolute; width:34px; height:34px; padding:0; transform:translate(-50%,-50%); border:2px solid var(--ma-accent); border-radius:50%; background:var(--ma-paper); cursor:ew-resize; touch-action:none; }
@@ -3371,63 +3373,66 @@
     }
     function forwardText(){stopAutomation();state.scene++;renderScene();}
     function backwardText(){stopAutomation();state.scene--;renderScene();}
-    // Chapter 24: empirical usage first; the hand-set mechanism lab follows optionally.
+    // Chapter 24: shared representations serve two real, deliberately simple scoring tasks.
     const usageWords=['猫','狗','鸟'];
-    const usageBase=['猫在睡觉。','猫在睡觉。','猫在跑步。','猫在跑步。','狗在睡觉。','狗在跑步。','狗在跑步。','狗在跑步。','鸟在飞翔。','鸟在飞翔。','鸟在飞翔。','鸟在鸣叫。'];
-    let usageLesson=null;
-    function ensureUsageLesson(){if(!usageLesson)usageLesson={selected:'猫',grouped:false,collapsed:false,extra:false,dimensions:4};}
-    function usageCorpus(extra=usageLesson?.extra){return extra?[...usageBase,'猫在跑步。']:[...usageBase];}
-    function usageExtract(corpus){const found=[];corpus.forEach((sentence,sentenceIndex)=>{const chars=Array.from(sentence);chars.forEach((word,index)=>{if(usageWords.includes(word)&&chars.length>=index+3)found.push({word,context:chars.slice(index+1,index+3).join(''),sentence,sentenceIndex,index,before:chars.slice(0,index).join(''),after:chars.slice(index+3).join('')});});});return found;}
-    function usageStats(corpus=usageCorpus()){const observations=usageExtract(corpus),contexts=[...new Set(observations.map(o=>o.context))],rows=usageWords.map(word=>{const selected=observations.filter(o=>o.word===word),counts=contexts.map(context=>selected.filter(o=>o.context===context).length),total=selected.length;return {word,counts,total,proportions:counts.map(n=>total?n/total:0)};});return {observations,contexts,rows};}
+    const usageBase=['小猫在睡觉。','小狗在睡觉。','小猫在跑步。','小狗在跑步。','小鸟在飞翔。'];
+    const usageInitial=[[0.65,0],[0.25,0],[-0.6,0]];
+    let usageLesson=null,usageGeometry=null;
+    function ensureUsageLesson(){if(!usageLesson)usageLesson={selected:2,rows:usageInitial.map(v=>[...v]),rotated:false,opened:false};}
+    function usageNumber(v){return Number((Math.abs(v)<1e-10?0:v).toFixed(2)).toString();}
+    function usageRotate(v,angle){const c=Math.cos(angle),s=Math.sin(angle);return [c*v[0]-s*v[1],s*v[0]+c*v[1]];}
+    function usagePairs(corpus=usageBase){return corpus.flatMap(sentence=>usageWords.flatMap(word=>{const index=sentence.indexOf(word);return index<0?[]:[{word,context:sentence.slice(index+1).replace('。',''),sentence}];}));}
+    function usageModel(plane=current()!=='usage-dimensions',angle=0,open=1){const directions=[[1,0],[0,plane?open:0]].map(v=>usageRotate(v,angle));const vectors=usageLesson.rows.map(v=>usageRotate([v[0],plane?v[1]*open:0],angle));return {vectors,directions,scores:vectors.map(v=>directions.map(d=>v[0]*d[0]+v[1]*d[1]))};}
     function refreshUsage(){renderCopy();updateNav();renderStage();}
-    function usageSelect(word){if(!usageWords.includes(word)||current()!=='usage-observe')return;stopAutomation();usageLesson.selected=word;usageLesson.grouped=false;lastPlot=null;refreshUsage();Array.from(copy.querySelectorAll('[data-ma-usage-word]')).find(n=>n.getAttribute('data-ma-usage-word')===word)?.focus?.();}
     function usageButton(parent,label,attr,value,callback,pressed){const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=label;button.setAttribute(attr,value);if(pressed!==undefined)button.setAttribute('aria-pressed',String(pressed));button.addEventListener('click',callback);parent.appendChild(button);return button;}
+    function usageCanMove(){return ['usage-dimensions','usage-data','usage-capacity'].includes(current());}
+    function usageSelect(index){if(!usageCanMove()||!Number.isInteger(index)||index<0||index>2)return;stopAutomation();usageLesson.selected=index;refreshUsage();handle.focus?.();}
+    function usageSet(values){if(!usageCanMove())return;const row=usageLesson.rows[usageLesson.selected];row[0]=Math.round(clamp(values[0],-1,1)*100)/100;if(current()!=='usage-dimensions')row[1]=Math.round(clamp(values[1],-1,1)*100)/100;refreshUsage();}
+    function usageBegin(event,index=usageLesson.selected){if(!usageCanMove()||event.button>0)return;usageSelect(index);const g=usageGeometry;drag={kind:'usage',id:event.pointerId,clientX:event.clientX,clientY:event.clientY,values:[...usageLesson.rows[index]],scale:g.scale,angle:g.angle};handle.setPointerCapture(event.pointerId);event.preventDefault();handle.focus?.();}
+    function usageDrag(event){if(drag?.kind!=='usage'||drag.id!==event.pointerId)return;const delta=usageRotate([(event.clientX-drag.clientX)/drag.scale,-(event.clientY-drag.clientY)/drag.scale],-drag.angle);usageSet([drag.values[0]+delta[0],drag.values[1]+delta[1]]);}
+    function usageKey(event){if(!usageCanMove())return;const moves={ArrowLeft:[-0.1,0],ArrowRight:[0.1,0],ArrowUp:[0,0.1],ArrowDown:[0,-0.1]};if(!(event.key in moves))return;event.preventDefault();stopAutomation();const delta=usageRotate(moves[event.key],-(usageGeometry?.angle||0)),row=usageLesson.rows[usageLesson.selected];usageSet([row[0]+delta[0],row[1]+delta[1]]);}
     function renderUsageCopy(){
-      if(current()==='usage-purpose'){paragraph('编号能区分字，却没有告诉网络它们通常怎样被使用。先看文字里，同一个字反复出现在什么环境中，再决定哪些信息值得保存。');paragraph('相似用法能提供意义相关的线索。这里换一份小教学语料，观察“猫、狗、鸟”的用法；它只反映这份语料，不是这些字的完整含义。');return;}
-      if(current()==='usage-ending'){paragraph('这些统计数直接来自原文，保存了不同用法。学习型Embedding则先确定维度，再让预测误差调整每个分量，使表示逐渐保留对任务有用的规律。实际训练将在下一步展开。');const p=paragraph('已有的手工初值实验只检查存储与运算，不是刚才统计的压缩结果，也不是训练学得的语义。');usageButton(p,'可选：存储与计算实验','data-ma-usage-lab','',()=>{stopAutomation();state.scene=scenes.indexOf('emb-purpose');renderScene();});return;}
-      if(current()==='usage-observe')paragraph(usageLesson.grouped?'把刚才突出显示的片段归到一起：每一次出现对应一格。数字来自原句中实际找到的片段，换一个字，也按同样的方法统计。':'点选字，查看它出现的原句，重复出现各计一次。三者紧接的字都是“在”，再看后面两个字符才有用法差别。观察窗口变长，预测目标仍是下一个Token。');
-      if(current()==='usage-dimensions'){const stats=usageStats(),equal=stats.rows.every(r=>r.total===stats.rows[0].total);paragraph(usageLesson.collapsed?(equal?'只留下总次数，三个字看起来一样了；它们分别怎样使用的信息已经丢失。重新从原文统计各项，才能看到差别。':'只留下总次数，只能比较出现频率，仍不知道分别怎样使用。重新从原文统计各项，才能看到用法。'):'每个数保留一种观察片段的次数。这里有四项，就是四维表示。试着只留下总次数，看看哪些用法区别会丢失。');}
-      if(current()==='usage-data'){const old=usageStats(usageCorpus(false)).rows[0],now=usageStats().rows[0];paragraph(usageLesson.extra?'加入原句后，猫从'+old.total+'次变成'+now.total+'次：睡的次数仍为'+now.counts[0]+'，比例从'+old.counts[0]+'/'+old.total+'变成'+now.counts[0]+'/'+now.total+'；跑的次数变为'+now.counts[1]+'。其他两行没有新记录。':'比较用法时，把每个字的总次数对齐，观察各片段所占的比例。加入一句“猫在跑步。”，看看文字怎样真实改变统计表示。');}
-      if(current()==='usage-capacity')paragraph('刚才每维都有片段名，因为我们直接统计了它。以这三种字示意，学习型表示为每个字留出若干可独立调整的数值位置：维度数先由我们选，训练再改这些数。更多位置允许保留更丰富的可调组合，也增加参数和计算；是否有用要看数据与任务。');
-      const controls=paragraph('');controls.className='ma-controls ma-text-controls';
-      if(current()==='usage-observe')for(const word of usageWords)usageButton(controls,word,'data-ma-usage-word',word,()=>usageSelect(word),usageLesson.selected===word);
-      if(current()==='usage-dimensions')usageButton(controls,usageLesson.collapsed?'从原文恢复四项':'只保留总次数','data-ma-usage-collapse','',()=>{stopAutomation();usageLesson.collapsed=!usageLesson.collapsed;refreshUsage();copy.querySelectorAll('[data-ma-usage-collapse]')[0]?.focus?.();},usageLesson.collapsed);
-      if(current()==='usage-data')usageButton(controls,usageLesson.extra?'撤回这句':'加入：猫在跑步。','data-ma-usage-add','',()=>{stopAutomation();usageLesson.extra=!usageLesson.extra;refreshUsage();copy.querySelectorAll('[data-ma-usage-add]')[0]?.focus?.();},usageLesson.extra);
-      if(current()==='usage-capacity')for(const dimension of [2,4,8])usageButton(controls,dimension+'维','data-ma-usage-dimension',dimension,()=>{usageLesson.dimensions=dimension;refreshUsage();Array.from(copy.querySelectorAll('[data-ma-usage-dimension]')).find(n=>Number(n.getAttribute('data-ma-usage-dimension'))===dimension)?.focus?.();},usageLesson.dimensions===dimension);
+      if(current()==='usage-purpose'){paragraph('我们要让文字的数字表示帮助预测，而不只是区分编号。线索来自用法：常出现在相似环境中的字，可能有值得模型利用的共同规律。');paragraph('先用几句短句观察这种线索，再亲手改一份表示，看它怎样影响两个预测。这里只用小教学语料，不把相似用法当作完整含义。');return;}
+      if(current()==='usage-observe'){paragraph('猫和狗都出现在“在睡觉”“在跑步”前，鸟出现在“在飞翔”前。连线直接来自这些原句：用法能给预测提供线索，但不能保证唯一答案。');return;}
+      if(current()==='usage-dimensions')paragraph('先暂用填空任务看表示的作用，之后再回到预测下一个Token。每个字先存一个手工数，横向位置就是“睡觉”分数。拖动鸟：它的分数改变，“飞翔”因为尚无第二个数而保持0。分数越高越倾向填入该字，不是概率。');
+      if(current()==='usage-data')paragraph('给同一份表示增加第二个数，数轴展开成平面。把鸟向上拖：第二个数直接改变蓝色“飞翔”分数，橙色“睡觉”分数保持。虚线把同一个点的位置对应到两个读取方向。在这个简化模型里，多一维就多了一种独立调整的余地。');
+      if(current()==='usage-capacity')paragraph('刚才两个方向恰好沿坐标轴，便于看清。把所有表示和读取方向一起转动：坐标数值会改变，两处预测分数却保持。这说明分量没有天生固定的词义；起作用的是表示与读取方向的关系。');
+      if(current()==='usage-ending'){paragraph('用法提供学习线索；每个字的一组数，同时参与不同上下文的预测。维度给这种表示提供可调整的空间，并不自动赋予它含义。刚才的限制来自指定的简化读取方式，不代表所有一维模型都如此。');const p=paragraph('这次的初值与读取方向由我们设置，操作也由你完成，尚未从文字训练。下一步，让预测误差来调整表示。');usageButton(p,'可选：存储与计算实验','data-ma-usage-lab','',()=>{stopAutomation();state.scene=scenes.indexOf('emb-purpose');renderScene();});return;}
+      if(current()==='usage-capacity'){const p=paragraph('');p.className='ma-controls ma-text-controls';usageButton(p,usageLesson.rotated?'转回原坐标':'一起转动，保留预测','data-ma-usage-rotate','',()=>{stopAutomation();usageLesson.rotated=!usageLesson.rotated;refreshUsage();copy.querySelectorAll('[data-ma-usage-rotate]')[0]?.focus?.();},usageLesson.rotated);}
     }
-    function updateUsageNav(){next.textContent=({'usage-purpose':'从原文中观察用法 →','usage-observe':usageLesson.grouped?'用这些数比较用法 →':'把相同片段放在一起 →','usage-dimensions':'让文字改变这些数 →','usage-data':'维度数决定什么？ →','usage-capacity':'这些数怎样通过预测来学习？ →','usage-ending':'回看用法怎样变成数字 ↻'})[current()];if(current()==='usage-observe'&&usageLesson.grouped)back.textContent='← 回到原句';}
-    function usageFrame(width,height,kind,title){svg.replaceChildren();handle.hidden=true;svg.style.height=height+'px';svg.setAttribute('viewBox','0 0 '+width+' '+height);svg.setAttribute('role','img');svg.setAttribute('data-ma-chart-kind',kind);el('title',{id:'ma-stage-title'}).textContent=title;}
-    function usageStamp(stats){svg.setAttribute('data-ma-usage-corpus',JSON.stringify(usageCorpus()));svg.setAttribute('data-ma-usage-contexts',JSON.stringify(stats.contexts));svg.setAttribute('data-ma-usage-counts',JSON.stringify(stats.rows.map(r=>r.counts)));svg.setAttribute('data-ma-usage-totals',JSON.stringify(stats.rows.map(r=>r.total)));svg.setAttribute('data-ma-usage-proportions',JSON.stringify(stats.rows.map(r=>r.proportions)));}
-    function drawUsageObserve(width,progress,word){
-      if(current()!=='usage-observe'||usageLesson.selected!==word)return;
-      const stats=usageStats(),records=stats.observations.filter(r=>r.word===word),row=stats.rows.find(r=>r.word===word),columns=stats.contexts.length,col=(width-40)/columns,X=i=>20+(i+0.5)*col,seen=Array(columns).fill(0),arrived=Array(columns).fill(0),bottom=records.length*44+144;
-      usageFrame(width,bottom+86,'usage-observe','从'+word+'的原句中提取后面两个字符，按相同片段分组，每次出现计一格。');
-      stats.contexts.forEach((context,j)=>{text(context,X(j),bottom+33,{'text-anchor':'middle','font-size':15,opacity:progress});});
-      records.forEach((record,i)=>{const group=stats.contexts.indexOf(record.context),rank=seen[group]++,q=clamp(progress*records.length-i,0,1),sourceY=49+i*44,targetY=bottom-rank*26,sourceX=70,targetX=X(group);if(q>=1)arrived[group]++;
-        text(record.before+record.word,26,sourceY,{'font-size':18,opacity:1-q,'data-ma-usage-source-word':record.word});text(record.after,92,sourceY,{'font-size':18,opacity:1-q});if(q>0)el('rect',{x:targetX-20,y:targetY-19,width:40,height:24,rx:3,fill:accent,'fill-opacity':0.1,stroke:axis,opacity:q,'data-ma-usage-bin-unit':i});text(record.context,sourceX+(targetX-sourceX)*q,sourceY+(targetY-sourceY)*q,{'text-anchor':'middle','font-size':17,fill:accent,'data-ma-usage-excerpt':i,'data-ma-usage-excerpt-context':record.context,'data-ma-usage-excerpt-progress':q});
+    function updateUsageNav(){next.textContent=({'usage-purpose':'先看看这些字怎样使用 →','usage-observe':'让表示参与预测 →','usage-dimensions':'再给一个调整方向 →','usage-data':'一个方向有固定含义吗？ →','usage-capacity':'这些数怎样学出来？ →','usage-ending':'重新探索表示与预测 ↻'})[current()];}
+    function usageFrame(width,height,kind,title){svg.replaceChildren();handle.hidden=!usageCanMove();svg.style.height=height+'px';svg.setAttribute('viewBox','0 0 '+width+' '+height);svg.setAttribute('role','group');svg.setAttribute('data-ma-chart-kind',kind);el('title',{id:'ma-stage-title'}).textContent=title;}
+    function drawUsageObserve(width){
+      usageFrame(width,370,'usage-observe','五句原文及其实际出现的字与上下文关系，没有预测或训练。');const pairs=usagePairs(),contexts=[...new Set(pairs.map(p=>p.context))],X=i=>30+(width-60)*(i+0.5)/3;
+      usageBase.forEach((sentence,i)=>text(sentence,width/2,27+i*30,{'text-anchor':'middle','font-size':16,'data-ma-usage-sentence':i}));
+      pairs.forEach((p,i)=>line(X(usageWords.indexOf(p.word)),221,X(contexts.indexOf(p.context)),306,{stroke:p.word==='鸟'?'var(--ma-net-second)':accent,'stroke-width':1.5,opacity:0.6,'data-ma-usage-link':i,'data-ma-usage-word':p.word,'data-ma-usage-context':p.context}));
+      usageWords.forEach((word,i)=>text(word,X(i),210,{'text-anchor':'middle','font-size':19}));
+      contexts.forEach((context,i)=>text(context,X(i),334,{'text-anchor':'middle','font-size':13}));
+      svg.setAttribute('data-ma-usage-corpus',JSON.stringify(usageBase));
+    }
+    function drawUsageModel(width,open=1,angle=0){
+      if(!usageCanMove())return;const scene=current(),plane=scene!=='usage-dimensions',wide=width>=600,cx=wide?width*0.23:width/2,cy=wide?174:142,scale=wide?Math.min(112,width*0.23-40):Math.min(90,(width-64)/(2*Math.SQRT2)),scoreX=wide?width*0.52:16,scoreWidth=wide?width*0.48-16:width-32,scoreTop=wide?37:294,height=wide?407:616,model=usageModel(plane,angle,open),colors=[accent,'var(--ma-net-second)'],selected=usageLesson.selected,X=v=>cx+v*scale,Y=v=>cy-v*scale;
+      usageFrame(width,height,scene,'手动简化模型；拖动字的共享表示，观察两个上下文的真实读取分数。分数不是概率，尚未训练。');usageGeometry={scale,angle};
+      line(X(-1.45),cy,X(1.45),cy,{stroke:axis,opacity:0.55});
+      if(plane&&open>0)line(cx,Y(-1.45*open),cx,Y(1.45*open),{stroke:axis,opacity:0.55});
+      model.directions.forEach((d,j)=>{const ex=X(d[0]),ey=Y(d[1]);if(j===1&&(!plane||open===0))return;line(cx,cy,ex,ey,{stroke:colors[j],'stroke-width':2.5,'data-ma-usage-direction':j});const a=Math.atan2(-d[1],d[0]);line(ex,ey,ex-8*Math.cos(a-0.5),ey-8*Math.sin(a-0.5),{stroke:colors[j],'stroke-width':2});line(ex,ey,ex-8*Math.cos(a+0.5),ey-8*Math.sin(a+0.5),{stroke:colors[j],'stroke-width':2});text(j===0?'睡觉':'飞翔',ex+(j===1?12:0),ey+(j===1?-8:24),{'font-size':12,fill:colors[j],'text-anchor':j===0?'middle':'start'});});
+      const active=model.vectors[selected];model.directions.forEach((d,j)=>{if(j===1&&(!plane||open<1))return;const s=model.scores[selected][j];line(X(active[0]),Y(active[1]),X(d[0]*s),Y(d[1]*s),{stroke:colors[j],'stroke-dasharray':'3 4',opacity:0.65,'data-ma-usage-projection':j});el('circle',{cx:X(d[0]*s),cy:Y(d[1]*s),r:3,fill:colors[j]});});
+      const labels=model.directions.flatMap((d,j)=>j===1&&(!plane||open===0)?[]:[{x:X(d[0])+(j===1?24:0),y:Y(d[1])+(j===1?-8:24)}]);
+      model.vectors.forEach((v,i)=>{const px=X(v[0]),py=Y(v[1]),g=el('g',{'data-ma-usage-point':i,role:'button',tabindex:0,'aria-label':usageWords[i]+'的共享表示，按回车选择，再用方向键移动','aria-pressed':String(i===selected)});g.style.cursor='move';g.style.touchAction='none';g.addEventListener('pointerdown',e=>usageBegin(e,i));g.addEventListener('click',()=>usageSelect(i));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();usageSelect(i);}else if(e.key.startsWith('Arrow')){usageSelect(i);usageKey(e);}});
+        el('circle',{cx:px,cy:py,r:20,fill:'transparent'},g);el('circle',{cx:px,cy:py,r:i===selected?7:4.5,fill:i===selected?accent:ink,stroke:'var(--ma-paper)','stroke-width':2,'data-ma-usage-point-dot':i},g);
+        const candidates=[[0,-18],[-24,-18],[24,-18],[0,-42],[-24,-42],[24,-42],[0,28],[-24,28],[24,28]];const offset=candidates.find(([dx,dy])=>px+dx>=12&&px+dx<=(wide?scoreX-18:width-12)&&py+dy>=20&&py+dy<(wide?345:244)&&!labels.some(p=>Math.abs(p.x-px-dx)<22&&Math.abs(p.y-py-dy)<20))||[0,-18];const lx=clamp(px+offset[0],12,wide?scoreX-18:width-12),ly=clamp(py+offset[1],20,wide?340:240);labels.push({x:lx,y:ly});if(offset[0])line(px,py-7,lx,ly+5,{stroke:axis,opacity:0.65},g);text(usageWords[i],lx,ly,{'text-anchor':'middle','font-size':16,fill:i===selected?accent:ink,'data-ma-usage-point-label':i},g);
       });
-      if(progress>0){stats.contexts.forEach((_,j)=>text(arrived[j]+'次',X(j),bottom+60,{'text-anchor':'middle','font-size':12,fill:muted,'data-ma-usage-bin-count':arrived[j]}));}
-      svg.setAttribute('data-ma-usage-selected',word);svg.setAttribute('data-ma-usage-progress',progress);svg.setAttribute('data-ma-usage-arrived',JSON.stringify(arrived));usageStamp(stats);
+      const readY=wide?371:267,display=model.vectors[selected];text(usageWords[selected]+'的表示  ['+(plane?display:[display[0]]).map(v=>usageNumber(Math.abs(v)<1e-10?0:v,2)).join(', ')+']',cx,readY,{'text-anchor':'middle','font-size':13,'data-ma-usage-values':selected});
+      model.directions.forEach((_,j)=>{const top=scoreTop+j*158,barLeft=scoreX+31,barRight=scoreX+scoreWidth-39,zero=(barLeft+barRight)/2,unit=(barRight-barLeft)/2;text(j===0?'___ 在睡觉':'___ 在飞翔',scoreX+scoreWidth/2,top,{'text-anchor':'middle','font-size':15,fill:colors[j]});
+        usageWords.forEach((word,i)=>{const y=top+34+i*34,s=model.scores[i][j],g=el('g',{'data-ma-usage-score-choice':j+':'+i,role:'button',tabindex:0,'aria-label':word+'在'+(j===0?'睡觉':'飞翔')+'上下文中的分数'+usageNumber(s,2)+'；选择其表示','aria-pressed':String(selected===i)});g.style.cursor='pointer';g.addEventListener('click',()=>usageSelect(i));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();usageSelect(i);}});el('rect',{x:scoreX,y:y-20,width:scoreWidth,height:32,fill:'transparent'},g);text(word,scoreX+3,y+4,{'font-size':16,fill:selected===i?accent:ink},g);line(barLeft,y,barRight,y,{stroke:axis,'stroke-width':1},g);line(zero,y-8,zero,y+8,{stroke:axis},g);el('rect',{x:zero+Math.min(0,s)*unit,y:y-5,width:Math.abs(s)*unit,height:10,rx:2,fill:colors[j],opacity:selected===i?1:0.45,'data-ma-usage-score-bar':j+':'+i,'data-ma-usage-score':s},g);text(usageNumber(Math.abs(s)<1e-10?0:s,2),barRight+10,y+4,{'font-size':12,fill:selected===i?colors[j]:muted,'data-ma-usage-score-label':j+':'+i},g);
+        });
+      });
+      svg.setAttribute('data-ma-usage-vectors',JSON.stringify(model.vectors));svg.setAttribute('data-ma-usage-directions',JSON.stringify(model.directions));svg.setAttribute('data-ma-usage-scores',JSON.stringify(model.scores));svg.setAttribute('data-ma-usage-selected',selected);svg.setAttribute('data-ma-usage-open',open);svg.setAttribute('data-ma-usage-angle',angle);
+      const v=model.vectors[selected];handle.hidden=false;handle.style.left=X(v[0])+'px';handle.style.top=Y(v[1])+'px';handle.style.cursor=plane?'move':'ew-resize';handle.setAttribute('role','group');handle.setAttribute('aria-label','移动'+usageWords[selected]+'的共享表示，左右'+(plane?'上下':'')+'方向键调整；两个上下文始终共用此表示');handle.removeAttribute('aria-valuenow');handle.removeAttribute('aria-orientation');
     }
-    function drawUsageDimensions(width,progress){
-      if(current()!=='usage-dimensions')return;const stats=usageStats(),columns=stats.contexts.length,left=54,col=(width-left-20)/columns,max=Math.max(1,...stats.rows.flatMap(r=>r.counts)),unit=(width-90)/(columns*max);
-      usageFrame(width,375,'usage-dimensions','各项保留不同片段的次数；合并后只留下总次数，不能恢复具体分布。');
-      if(progress<0.8)stats.contexts.forEach((context,j)=>text(context,left+(j+0.5)*col,45,{'text-anchor':'middle','font-size':12,opacity:1-progress}));else text('只留下总次数',width/2,45,{'text-anchor':'middle','font-size':13});
-      stats.rows.forEach((row,i)=>{const y=95+i*86,target=(width+left)/2-row.total*unit/2;let start=0;text(row.word,20,y+4,{'font-size':18});row.counts.forEach((n,j)=>{const sx=left+j*col+4,tx=target+start*unit,x=sx+(tx-sx)*progress;el('rect',{x:sx,y:y-10,width:max*unit,height:14,rx:2,fill:axis,'fill-opacity':0.13,opacity:1-progress});el('rect',{x,y:y-10,width:n*unit,height:14,rx:2,fill:accent,'data-ma-usage-count-bar':i+':'+j,'data-ma-usage-count':n,'data-ma-usage-bar-start':start});if(progress<0.5)text(String(n),left+(j+0.5)*col,y+27,{'text-anchor':'middle','font-size':13,opacity:1-progress*2});start+=n;});if(progress>=0.5)text('共'+row.total+'次',target+row.total*unit/2,y+27,{'text-anchor':'middle','font-size':13});});
-      text(progress===0?'四项数值，分别保留不同用法':progress===1?(stats.rows.every(r=>r.total===stats.rows[0].total)?'总次数相同，用法仍可以不同':'总次数没有保留具体用法'):'正在收拢为一个总数',width/2,354,{'text-anchor':'middle','font-size':13});svg.setAttribute('data-ma-usage-collapse-progress',progress);svg.setAttribute('data-ma-usage-unit',unit);svg.setAttribute('data-ma-usage-representation',JSON.stringify(stats.rows.map(r=>progress===1?[r.total]:r.counts)));usageStamp(stats);
-    }
-    function drawUsageData(width){
-      const stats=usageStats(),columns=stats.contexts.length,left=54,col=(width-left-20)/columns;
-      usageFrame(width,390,'usage-data','每个片段的比例由实际出现次数除以该字总次数得到。加入或撤回原句，重新提取并计算。');text(usageLesson.extra?'新增原句：猫在跑步。':'按各字总次数比较使用比例',width/2,25,{'text-anchor':'middle','font-size':13,fill:usageLesson.extra?accent:ink});stats.contexts.forEach((context,j)=>text(context,left+(j+0.5)*col,68,{'text-anchor':'middle','font-size':12}));
-      stats.rows.forEach((row,i)=>{const y=113+i*86;text(row.word,20,y+4,{'font-size':18,fill:usageLesson.extra&&i===0?accent:ink});row.counts.forEach((n,j)=>{const x=left+j*col+4,w=col-8;el('rect',{x,y:y-10,width:w,height:14,rx:2,fill:axis,'fill-opacity':0.18});el('rect',{x,y:y-10,width:w*row.proportions[j],height:14,rx:2,fill:accent,'data-ma-usage-proportion-bar':i+':'+j,'data-ma-usage-proportion':row.proportions[j]});text(n+'/'+row.total,left+(j+0.5)*col,y+28,{'text-anchor':'middle','font-size':12,'data-ma-usage-fraction':i+':'+j});});});text('次数与比例都从当前原文重新计算',width/2,369,{'text-anchor':'middle','font-size':12});usageStamp(stats);
-    }
-    function drawUsageCapacity(width){
-      const dimensions=usageLesson.dimensions,left=50,gap=6,w=Math.min(64,(width-left-20-(dimensions-1)*gap)/dimensions),total=dimensions*w+(dimensions-1)*gap,start=left+(width-left-20-total)/2;
-      usageFrame(width,345,'usage-capacity','每种字预留相同数量的独立数值位置；这里只展示容量，没有执行训练。');text('待学习的数值位置',width/2,37,{'text-anchor':'middle','font-size':13});usageWords.forEach((word,i)=>{const y=77+i*74;text(word,20,y+24,{'font-size':18});for(let j=0;j<dimensions;j++)el('rect',{x:start+j*(w+gap),y,width:w,height:36,rx:3,fill:accent,'fill-opacity':0.07,stroke:axis,'data-ma-usage-parameter-slot':i+':'+j});});text('3种字，每种'+dimensions+'个数，共'+(3*dimensions)+'个',width/2,320,{'text-anchor':'middle','font-size':13});svg.setAttribute('data-ma-usage-dimensions',dimensions);svg.setAttribute('data-ma-usage-parameter-count',3*dimensions);
-    }
-    function renderUsageGraph(){const width=Math.max(240,figure.getBoundingClientRect().width||736);if(current()==='usage-observe'){const selected=usageLesson.selected;animatePlot('usage-observe-'+selected,width,usageLesson.grouped?1:0,p=>drawUsageObserve(width,p,selected),1800);}if(current()==='usage-dimensions')animatePlot('usage-dimensions',width,usageLesson.collapsed?1:0,p=>drawUsageDimensions(width,p),1000);if(current()==='usage-data')drawUsageData(width);if(current()==='usage-capacity')drawUsageCapacity(width);}
-    function forwardUsage(){stopAutomation();if(current()==='usage-observe'&&!usageLesson.grouped){usageLesson.grouped=true;refreshUsage();return;}if(current()==='usage-ending'){usageLesson=null;state.scene=scenes.indexOf('usage-purpose');renderScene();return;}state.scene++;renderScene();}
-    function backwardUsage(){stopAutomation();if(current()==='usage-observe'&&usageLesson.grouped){usageLesson.grouped=false;refreshUsage();return;}state.scene--;renderScene();}
+    function renderUsageGraph(){const width=Math.max(240,figure.getBoundingClientRect().width||736);if(current()==='usage-observe'){drawUsageObserve(width);return;}if(!usageCanMove())return;const angle=current()==='usage-capacity'&&usageLesson.rotated?Math.PI/4:0;if(current()==='usage-data'){if(!lastPlot)lastPlot={scene:'usage-open',width,distance:usageLesson.opened?1:0};usageLesson.opened=true;animatePlot('usage-open',width,1,p=>{if(current()==='usage-data')drawUsageModel(width,p,0);},800);}else if(current()==='usage-capacity'){if(!lastPlot)lastPlot={scene:'usage-rotate',width,distance:angle};animatePlot('usage-rotate',width,angle,a=>{if(current()==='usage-capacity')drawUsageModel(width,1,a);},1000);}else drawUsageModel(width,0,0);}
+    function forwardUsage(){stopAutomation();if(current()==='usage-ending'){usageLesson=null;state.scene=scenes.indexOf('usage-purpose');renderScene();return;}state.scene++;renderScene();}
+    function backwardUsage(){stopAutomation();state.scene--;renderScene();}
     // Optional mechanism lab: hand-set numbers, not empirical statistics or learned vectors.
     const embInitial=[[0.4,0.8],[-0.6,0.5],[1,-0.5],[0.6,-0.3],[-0.2,-0.7],[0.1,-0.4]];
     const embWeights=[0.8,-1.2],embBias=-0.2;
@@ -3446,7 +3451,7 @@
     function embReset(){stopAutomation();const entry=embEntry(),i=textVocabulary.indexOf(entry.glyph);entry.values=[...embInitial[i]];refreshEmb();copy.querySelectorAll('[data-ma-emb-reset]')[0]?.focus?.();}
     function embDrag(event){if(drag?.kind!=='emb'||drag.id!==event.pointerId)return;embSet([drag.values[0]+(event.clientX-drag.clientX)/drag.scale,drag.values[1]-(event.clientY-drag.clientY)/drag.scale]);}
     function renderEmbCopy(){
-      if(current()==='emb-purpose'){paragraph('这是一个可选的机制实验：用编号取出一组手工初值，观察它怎样参与计算。这些数不是刚才统计的压缩结果，也没有学到词义。');paragraph('沿用“小猫看”的编号和配对，先追踪其中一个字。这里只检查存储与前向运算，真正的表示学习需要后面用预测误差来训练。');return;}
+      if(current()==='emb-purpose'){paragraph('这是一个可选的机制实验：用编号取出一组手工初值，观察它怎样参与计算。这些数是另一个手工实验的初值，也没有学到词义。');paragraph('沿用“小猫看”的编号和配对，先追踪其中一个字。这里只检查存储与前向运算，真正的表示学习需要后面用预测误差来训练。');return;}
       if(current()==='emb-ending'){paragraph('用Token编号，找到为它保存的一组数值，这就是这里使用的Embedding。它是一份数值表示，训练时也可以像权重、偏置那样根据误差调整。');paragraph('这次只是手工设置和修改，没有学到字义，也还没有预测下一字。下一步，让这些表示产生各个候选字的分数，再利用原文答案训练它。');return;}
       paragraph(current()==='emb-lookup'?'点选输入中的字，用编号找到它存的两个数。只有当前一组展开；同字的其他出现位置共用这一组，答案和后文不会进入这次计算。初值都是手工设定。':current()==='emb-vector'?'手工初值实验。把取出的两个数展开：第一个决定横向位置，第二个决定纵向位置。这一组数称为向量。拖动点或用方向键，真正修改这个字保存的数；切换字再回来，修改仍在。':'手工初值实验。把同一组数送进节点。两条连接权重固定为0.8、−1.2，偏置固定为−0.2。拖动时改变的是字的表示，节点真实重算；它只是内部计算，还不是下一字预测。');
       if(current()!=='emb-lookup'){
@@ -3513,7 +3518,7 @@
       if(current().startsWith('direction-')) ensureDirection();
       if(current()==='predict'||current()==='calculation') ensureSnapshot();
       svg.setAttribute('role','img');handle.setAttribute('role','slider');handle.style.cursor='';
-      root.className=textOnly()?'ma-text-page':'ma-interactive-page';
+      root.className=(textOnly()?'ma-text-page':'ma-interactive-page')+(current().startsWith('usage-')?' ma-usage-page':'');
       figure.hidden=textOnly();handle.hidden=true;renderCopy();updateNav();renderStage();
     }
     function changeRule(value) {
@@ -3525,6 +3530,7 @@
       if(feedback) feedback.textContent=adjustmentFeedback();renderStage();
     }
     handle.addEventListener('pointerdown',event=>{
+      if(current().startsWith('usage-')&&usageCanMove()){usageBegin(event);return;}
       if(current().startsWith('emb-')&&embCanMove()&&embGeometry&&event.button<=0){drag={kind:'emb',id:event.pointerId,clientX:event.clientX,clientY:event.clientY,values:[...embEntry().values],scale:embGeometry.scale};handle.setPointerCapture(event.pointerId);event.preventDefault();return;}
       if(['mesh-input','mesh-ablate','whole-goal','whole-train'].includes(current())&&meshGeometry&&event.button<=0 ){if(wholeMode()){stopAutomation();wholeLesson.display=null;refreshMesh();}drag={kind:'mesh',id:event.pointerId,clientX:event.clientX,input:meshView().input,scale:meshGeometry.scale};handle.setPointerCapture(event.pointerId);event.preventDefault();return;}
       if(current()==='bias-shift'){beginBiasDrag(event);return;}
@@ -3534,6 +3540,7 @@
     });
     handle.addEventListener('pointermove',event=>{
       if(!drag||drag.id!==event.pointerId) return;
+      if(drag.kind==='usage'){usageDrag(event);return;}
       if(drag.kind==='emb'){embDrag(event);return;}
       if(drag.kind==='mesh'){meshSetInput(drag.input+(event.clientX-drag.clientX)/drag.scale);return;}
       if(drag.kind==='bias'){changeBiasOffset(drag.offset-(event.clientY-drag.clientY)/drag.scale);return;}
@@ -3545,12 +3552,14 @@
     }
     handle.addEventListener('pointerup',endDrag);handle.addEventListener('pointercancel',endDrag);
     document.addEventListener('pointermove',event=>{
+      if(drag?.kind==='usage'&&event.target!==handle)usageDrag(event);
       if(drag?.kind==='emb'&&event.target!==handle)embDrag(event);
       if(drag?.kind==='mesh'&&drag.id===event.pointerId&&event.target!==handle)meshSetInput(drag.input+(event.clientX-drag.clientX)/drag.scale);
     });
-    document.addEventListener('pointerup',event=>{if(['mesh','emb'].includes(drag?.kind))endDrag(event);});
-    document.addEventListener('pointercancel',event=>{if(['mesh','emb'].includes(drag?.kind))endDrag(event);});
+    document.addEventListener('pointerup',event=>{if(['mesh','emb','usage'].includes(drag?.kind))endDrag(event);});
+    document.addEventListener('pointercancel',event=>{if(['mesh','emb','usage'].includes(drag?.kind))endDrag(event);});
     handle.addEventListener('keydown',event=>{
+      if(current().startsWith('usage-')){usageKey(event);return;}
       if(current().startsWith('emb-')&&embCanMove()){const [a,b]=embEntry().values,values={ArrowLeft:[a-0.1,b],ArrowRight:[a+0.1,b],ArrowUp:[a,b+0.1],ArrowDown:[a,b-0.1]};if(event.key in values){event.preventDefault();embSet(values[event.key]);}return;}
       if(['mesh-input','mesh-ablate','whole-goal','whole-train'].includes(current())){const x=meshView().input,values={ArrowLeft:x-0.1,ArrowRight:x+0.1,PageDown:x-1,PageUp:x+1,Home:0,End:5};if(event.key in values){event.preventDefault();meshSetInput(values[event.key]);}return;}
       if(current()==='bias-shift') {
