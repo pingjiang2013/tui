@@ -80,7 +80,7 @@
     let plotFrame=null,plotMotion=null,lastPlot=null;
     let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null,outputLesson=null,relayLesson=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','mesh-purpose','mesh-ending','whole-purpose','whole-ending','text-purpose','text-ending','usage-purpose','usage-ending','prob-ending','loss-ending','adapt-ending','emb-purpose','emb-ending'].includes(current());
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','mesh-purpose','mesh-ending','whole-purpose','whole-ending','text-purpose','text-ending','usage-purpose','usage-ending','prob-ending','loss-ending','adapt-purpose','adapt-ending','emb-purpose','emb-ending'].includes(current());
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -3578,65 +3578,77 @@
     function ensureAdaptLesson(){
       ensureUsageLesson();const signature=adaptSignature(usageLesson.rows);
       if(adaptLesson){const expected=adaptLesson.applied?adaptLesson.record.after.rows:adaptLesson.baseRows;if(signature===adaptSignature(expected))return;}
-      adaptLesson={baseRows:adaptRows(usageLesson.rows),applied:false,record:null,probePlayed:false};usageLesson.selected=1;
+      adaptLesson={baseRows:adaptRows(usageLesson.rows),applied:false,record:null,curvePlayed:false,rateNear:false,trialScore:usageLesson.rows[1][0],curveScore:usageLesson.rows[1][0]};usageLesson.selected=1;
     }
     function adaptFreeze(value){if(value&&typeof value==='object'){Object.values(value).forEach(adaptFreeze);Object.freeze(value);}return value;}
     function adaptCommit(){
       stopAutomation();ensureAdaptLesson();const plan=adaptPlan();if(adaptLesson.applied||!plan.eligible)return;
-      if(!adaptLesson.record){const record={before:plan.base,low:plan.low,high:plan.high,epsilon:adaptEpsilon,learningRate:adaptLearningRate,gradient:plan.gradient,after:plan.after};adaptLesson.record=adaptFreeze(record);adaptHistory.push(adaptLesson.record);}
+      if(!adaptLesson.record){adaptLesson.record=adaptFreeze({before:plan.base,low:plan.low,high:plan.high,epsilon:adaptEpsilon,learningRate:adaptLearningRate,gradient:plan.gradient,after:plan.after});adaptHistory.push(adaptLesson.record);}
       usageLesson.rows[1][0]=adaptLesson.record.after.score;adaptLesson.applied=true;refreshAdapt();
     }
     function adaptUndo(){stopAutomation();ensureAdaptLesson();if(!adaptLesson.applied)return;usageLesson.rows[1][0]=adaptLesson.record.before.score;adaptLesson.applied=false;refreshAdapt();next.focus?.();}
     function refreshAdapt(){renderCopy();updateNav();renderStage();}
-    function adaptSigned(value,places=4){return (value>0?'+':'')+value.toFixed(places);}
-    function adaptViewLabel(){return adaptLesson.applied?'回看更新前快照；已保存的更新保持不变':'这一轮尚未修改共享表示';}
+    function adaptSigned(value,places=3){return (value>0?'+':'')+value.toFixed(places);}
     function renderAdaptCopy(){const p=adaptPlan();
-      if(current()==='adapt-purpose'){paragraph('现在让电脑根据原文调整一次表示。先只允许狗的表示沿“睡觉”读取方向移动，其他方向和其他字固定，这样能看清两句反馈怎样汇到同一处。猫、狗两句仍然共同决定总损失。');paragraph(adaptViewLabel()+'。接下来分别试算狗的分数减少、增加'+adaptEpsilon+'，比较哪边的总损失更低。');return;}
-      if(current()==='adapt-probe'){paragraph('系统用参数副本试算两侧：狗的分数改变，共同预测就会重算。灰框保持试算前的损失，彩段伸缩显示猫、狗各自的变化；两段合起来，才是这次试算的总结果。试算不会写入共享表示。');return;}
-      if(current()==='adapt-rate'){paragraph((adaptLesson.applied?'回看更新前的两侧试算，已保存结果保持不变。':'')+'现在从左侧试算走到右侧：狗的分数跨过'+(2*adaptEpsilon)+'。猫这句的损失增加，狗这句的损失减少；把两个变化首尾相接，得到总损失变化。再除以刚才跨过的分数范围，就是当前位置的近似梯度。');paragraph('这里用两侧试算估计变化率。每个数都来自刚才的实际计算，计算使用未舍入值；下一步再用它决定正式更新的方向和步幅。');return;}
+      if(current()==='adapt-purpose'){paragraph('前面是你移动字的表示，改变模型的预测。现在我们想让电脑根据原文，自己决定该怎样移动。');paragraph('先只让狗沿“睡觉”方向移动，固定其他字和其他方向。仍然要同时照顾“小猫在睡觉”和“小狗在睡觉”两句。我们先看移动怎样改变预测，再让电脑找到降低总损失的方向。');return;}
+      if(current()==='adapt-probe'){paragraph('拖动狗，让蓝色格子变大。它还是上一幕的原文格子：第一句填猫、第二句填狗，两次都符合原文的概率。狗的位置改变，同一份预测会重新分配，格子的边界也跟着移动。');paragraph('往一个方向移动，并不总会更好：多给狗一些概率，也会挤掉猫的份额。这里先用副本探索，不保存调整。'+(adaptLesson.applied?'你正在回看更新前的模型，已保存结果保持不变。':''));return;}
+      if(current()==='adapt-rate'&&!adaptLesson.rateNear){paragraph('怎样让电脑知道往哪边移动？先回到原来的表示，让电脑试过一串位置：狗沿睡觉方向的分量作横坐标，每到一处，就重新计算两句总损失，画出一个点。');const p2=paragraph('蓝格越大，总损失越低。把这些点连起来，就看见移动到哪里会更好。曲线画完后，你也可以左右拖动狗，观察它的位置怎样对应到损失。');usageButton(p2,'重看曲线怎样画出','data-ma-adapt-replay','',()=>{stopAutomation();adaptLesson.curvePlayed=false;lastPlot=null;refreshAdapt();});return;}
+      if(current()==='adapt-rate'){paragraph('现在放大原来位置附近。两侧各试0.2，得到曲线上两个真实结果；先横着走0.4，再竖着走到右侧结果。横段是参数变化，竖段是总损失变化。');paragraph('竖着的变化除以横着的变化，就是这段斜线的坡度：'+adaptSigned(p.high.total-p.low.total)+' ÷ 0.4 ≈ '+adaptSigned(p.gradient)+'。它估计的是“两句总损失对狗这一个分量”的梯度；不是对其中一句单独求方向。'+(adaptLesson.applied?'这里回看更新前的曲线，不再训练。':''));return;}
       if(current()==='adapt-update'){
-        const action=Math.abs(p.gradient)<=1e-8?'这一项已经接近平衡':p.gradient<0?'增大狗的睡觉分数':'减小狗的睡觉分数';
-        paragraph(adaptLesson.applied?'这一次更新已经保存。共享表示中的狗确实改变了，两条原文也用新表示重新计算。可以撤回这一轮；回看前面的试算不会再次训练。':p.eligible?'近似梯度为'+adaptSigned(p.gradient,6)+'，因此减去它会'+action+'。沿用学过的梯度下降，这次学习率固定为1，只执行一轮，观察总损失是否下降。':'这次试算没有给出值得保存的下降步：'+action+'。保留真实结果，参数没有写入；其他参数仍可在后续共同训练。');
-        const line=paragraph(p.base.score.toFixed(6)+' − 1 × ('+p.gradient.toFixed(6)+') ≈ '+p.after.score.toFixed(6)+'。图中箭头对应这次参数变化。'+(adaptLesson.applied?'已保存一轮。':'目前是计划结果，尚未保存。'));
-        if(adaptLesson.applied)usageButton(line,'撤回这一次更新','data-ma-adapt-undo','',adaptUndo);
-        return;
+        paragraph(adaptLesson.applied?'看同一个狗标记沿曲线移到新位置：这一轮已经保存，亮色轨迹展开的是这次实际改动。两句仍共同决定曲线的高度。':p.eligible?'坡度告诉我们当前位置附近哪边更低。沿用前面学过的梯度下降，减去这个近似梯度；学习率固定为1。点击下面的按钮，让电脑真正移动一次。':'附近两侧已经接近平衡，或这一步不能降低损失。电脑保留当前表示，不制造一次无效更新。');
+        const p2=paragraph(p.base.score.toFixed(3)+' − 1 × ('+p.gradient.toFixed(3)+') ≈ '+p.after.score.toFixed(3)+'。这次只改狗沿睡觉方向的分量。');if(adaptLesson.applied)usageButton(p2,'撤回这一次更新','data-ma-adapt-undo','',adaptUndo);return;
       }
-      if(current()==='adapt-ending'){paragraph(adaptLesson.applied?'原文第一次真正改变了共享表示：电脑比较两侧试算，估计总损失的变化率，再保存一次更新。狗这句的改善和猫这句的代价，都参与了方向判断。':adaptLesson.record?'这一次更新已撤回，原来的表示恢复了；试算与更新记录仍保留，可以回看并重新执行同一轮。':'这次尚未保存更新，当前展示的是试算及其调整依据。可以回到更新页执行下降步。');paragraph('这一小实验只训练狗沿一个读取方向的分量，用真实数值差分估计梯度。接下来把前面学过的反向传播接入，更高效地计算整张表示表的梯度。');}
+      if(current()==='adapt-ending'){paragraph(adaptLesson.applied?'原文终于真正改变了表示：同一个狗标记移到了损失更低的位置。电脑没有只替狗争取概率，而是用两句的总损失决定了这一步。':adaptLesson.record?'这轮更新已撤回，原来的表示恢复了。可以回到上一页，重新执行同一轮。':'当前表示保持不变，没有保存新的更新。');paragraph('这里仅调整一个分量，用两侧试算估计梯度。曲线帮助我们看清过程，不是训练时必须逐点扫描的地图。接下来再接入反向传播，更高效地计算更多参数的影响。');}
     }
-    function updateAdaptNav(){const p=adaptPlan();next.textContent=({'adapt-purpose':'比较两个方向 →','adapt-probe':'从两侧变化读出梯度 →','adapt-rate':'让电脑调整一次 →','adapt-update':adaptLesson.applied?'看看这轮更新带来了什么 →':p.eligible?(adaptLesson.record?'重新执行同一轮更新 →':'执行这一次更新 →'):'保留当前参数，继续 →','adapt-ending':'回看这一次更新 ↻'})[current()];}
+    function updateAdaptNav(){const p=adaptPlan();next.textContent=({'adapt-purpose':'先看移动怎样改变预测 →','adapt-probe':'让电脑逐个位置画出来 →','adapt-rate':adaptLesson.rateNear?'沿更低的方向移动 →':'只看原来位置附近 →','adapt-update':adaptLesson.applied?'这轮更新说明了什么 →':p.eligible?(adaptLesson.record?'重新执行这一轮 →':'让电脑移动一次 →'):'保留当前表示，继续 →','adapt-ending':'回看这一次学习 ↻'})[current()];}
     function adaptFrame(width,height,title){svg.replaceChildren();handle.hidden=true;svg.style.height=height+'px';svg.setAttribute('viewBox','0 0 '+width+' '+height);svg.setAttribute('role','img');svg.setAttribute('data-ma-chart-kind',current());el('title',{id:'ma-stage-title'}).textContent=title;}
     function adaptStamp(shown,phase=null){svg.setAttribute('data-ma-adapt-shown-rows',JSON.stringify(shown.rows));svg.setAttribute('data-ma-adapt-committed-rows',adaptSignature(usageLesson.rows));svg.setAttribute('data-ma-adapt-score',shown.score);svg.setAttribute('data-ma-adapt-probabilities',JSON.stringify(shown.probabilities));svg.setAttribute('data-ma-adapt-losses',JSON.stringify(shown.losses));svg.setAttribute('data-ma-adapt-total',shown.total);svg.setAttribute('data-ma-adapt-gradient',adaptPlan().gradient);svg.setAttribute('data-ma-adapt-applied',String(adaptLesson.applied));svg.setAttribute('data-ma-adapt-history-count',adaptHistory.length);svg.setAttribute('data-ma-adapt-phase',phase===null?'':phase);svg.setAttribute('data-ma-adapt-baseline',JSON.stringify(adaptPlan().base));svg.setAttribute('data-ma-adapt-low',JSON.stringify(adaptPlan().low));svg.setAttribute('data-ma-adapt-high',JSON.stringify(adaptPlan().high));svg.setAttribute('data-ma-adapt-after',JSON.stringify(adaptPlan().after));}
-    function adaptParameter(width,p,shown,mode='plain'){
-      const minimum=Math.min(p.low.score,p.after.score)-.12,maximum=Math.max(p.high.score,p.after.score)+.12,X=s=>40+(s-minimum)/(maximum-minimum)*(width-80),y=84;
-      text('狗的表示：仅沿睡觉方向调整',width/2,23,{'text-anchor':'middle','font-size':13});text(shown.score.toFixed(6),width/2,56,{'text-anchor':'middle','font-size':22,fill:'var(--ma-net-second)','data-ma-adapt-parameter-value':''});line(40,y,width-40,y,{stroke:axis});el('circle',{cx:X(p.base.score),cy:y,r:5,fill:'var(--ma-paper)',stroke:axis,'data-ma-adapt-base-point':''});
-      if(mode==='interval'){line(X(p.low.score),y+20,X(p.high.score),y+20,{stroke:ink,'stroke-width':2,'data-ma-adapt-input-span':2*adaptEpsilon});line(X(p.low.score),y+15,X(p.low.score),y+25,{stroke:ink});line(X(p.high.score),y+15,X(p.high.score),y+25,{stroke:ink});text(p.low.score.toFixed(3),X(p.low.score),y+44,{'text-anchor':'middle','font-size':12});text(p.high.score.toFixed(3),X(p.high.score),y+44,{'text-anchor':'middle','font-size':12});}
-      if(mode==='step'){line(X(p.base.score),y,X(p.after.score),y,{stroke:'var(--ma-net-second)','stroke-width':3,'data-ma-adapt-update-start':p.base.score,'data-ma-adapt-update-end':p.after.score});const sign=Math.sign(p.after.score-p.base.score);if(sign){line(X(p.after.score),y,X(p.after.score)-sign*6,y-4,{stroke:'var(--ma-net-second)'});line(X(p.after.score),y,X(p.after.score)-sign*6,y+4,{stroke:'var(--ma-net-second)'});}}
-      el('circle',{cx:X(shown.score),cy:y,r:6,fill:'var(--ma-net-second)','data-ma-adapt-parameter-point':''});return {X};
+    let adaptGeometry=null;
+    function adaptBounds(near=false){const p=adaptPlan(),optimum=Math.log(Math.exp(p.base.rows[0][0])+Math.exp(p.base.rows[2][0]));return near?[Math.min(p.low.score,p.after.score)-.12,Math.max(p.high.score,p.after.score)+.12]:[Math.min(p.base.score-1.5,optimum-1.5),Math.max(p.base.score+1.5,optimum+1.5)];}
+    function adaptSet(score){if(!['adapt-probe','adapt-rate'].includes(current()))return;cancelPlotAnimation(true);const [lo,hi]=adaptBounds();if(current()==='adapt-probe')adaptLesson.trialScore=clamp(score,lo,hi);else{const [a,b]=adaptGeometry.bounds;adaptLesson.curveScore=clamp(score,a,b);}renderStage();}
+    function adaptBegin(event){if(event.button>0||!adaptGeometry)return;stopAutomation();drag={kind:'adapt',id:event.pointerId,clientX:event.clientX,clientY:event.clientY,score:current()==='adapt-probe'?adaptLesson.trialScore:adaptLesson.curveScore,geometry:adaptGeometry};handle.setPointerCapture(event.pointerId);event.preventDefault();handle.focus?.();}
+    function adaptDrag(event){if(drag?.kind!=='adapt'||drag.id!==event.pointerId)return;const g=drag.geometry,dx=event.clientX-drag.clientX,dy=event.clientY-drag.clientY,delta=g.mode==='plane'?(dx*g.direction[0]-dy*g.direction[1])/g.scale:dx/g.scale;const held=drag;adaptSet(held.score+delta);drag=held;}
+    function adaptKey(event){const score=current()==='adapt-probe'?adaptLesson.trialScore:adaptLesson.curveScore,range=adaptGeometry?.bounds;if(!range)return;const values={ArrowLeft:score-.1,ArrowRight:score+.1,Home:range[0],End:range[1]};if(event.key in values){event.preventDefault();adaptSet(values[event.key]);}}
+    function adaptHandle(x,y,label){handle.hidden=false;handle.style.left=x+'px';handle.style.top=y+'px';handle.style.cursor='ew-resize';handle.setAttribute('role','group');handle.removeAttribute('aria-valuenow');handle.removeAttribute('aria-orientation');handle.setAttribute('aria-label',label);}
+    function drawAdaptPrediction(width){
+      const shown=adaptEvaluate(adaptLesson.baseRows,adaptLesson.trialScore),bounds=adaptBounds(),angle=usageLesson.rotated?Math.PI/4:0,dir=shown.direction,cx=width/2,cy=125,extent=Math.max(1.2,...adaptLesson.baseRows.map(v=>Math.hypot(...v)),...bounds.map(s=>Math.hypot(s,shown.rows[1][1]))),scale=Math.min(92,(width-100)/2)/extent,X=v=>cx+v[0]*scale,Y=v=>cy-v[1]*scale;
+      adaptFrame(width,584,'拖动狗的表示，只沿睡觉方向移动。下方九格使用同一组真实概率重新划分，蓝格表示两次都符合原文的概率。');text('只移动狗，其他表示不动',width/2,24,{'text-anchor':'middle','font-size':13});
+      const end=dir.map(v=>v*extent),start=end.map(v=>-v);line(X(start),Y(start),X(end),Y(end),{stroke:axis});const ex=X(end),ey=Y(end),a=Math.atan2(-dir[1],dir[0]);line(ex,ey,ex-8*Math.cos(a-.5),ey-8*Math.sin(a-.5),{stroke:muted});line(ex,ey,ex-8*Math.cos(a+.5),ey-8*Math.sin(a+.5),{stroke:muted});text('睡觉方向',ex,ey-16,{'font-size':12,'text-anchor':'end',fill:muted});
+      const colors=[accent,'var(--ma-net-second)',muted],placed=[];shown.vectors.forEach((v,i)=>{const x=X(v),y=Y(v);if(i===1)line(cx,cy,x,y,{stroke:colors[i],'stroke-width':2});el('circle',{cx:x,cy:y,r:i===1?7:4,fill:colors[i],'data-ma-adapt-word':i,'data-ma-adapt-vector':JSON.stringify(v)});let ly=y+24;while(placed.some(p=>Math.abs(p.x-x)<35&&Math.abs(p.y-ly)<17))ly+=19;placed.push({x,y:ly});text(usageWords[i],x,ly,{'text-anchor':'middle','font-size':14,fill:colors[i]});});
+      text('狗沿这个方向的分量 '+shown.score.toFixed(2),width/2,234,{'text-anchor':'middle','font-size':13,fill:colors[1]});text('蓝格：第一句填猫，第二句填狗',width/2,278,{'text-anchor':'middle','font-size':13});
+      const size=Math.min(210,width-104),left=(width-size)/2+8,top=328,ps=shown.probabilities;let usedY=0;
+      ps.forEach((pi,i)=>{let usedX=0;text(usageWords[i],left-14,top+(usedY+pi/2)*size+4,{'text-anchor':'end','font-size':12,fill:i===0?accent:muted});ps.forEach((pj,j)=>{el('rect',{x:left+usedX*size,y:top+usedY*size,width:pj*size,height:pi*size,fill:i===0&&j===1?colors[1]:axis,'fill-opacity':i===0&&j===1?1:.18,stroke:'var(--ma-paper)','stroke-width':1.5,'data-ma-adapt-outcome':i+':'+j,'data-ma-adapt-mass':pi*pj});usedX+=pj;});usedY+=pi;});let usedX=0;ps.forEach((p,i)=>{text(usageWords[i],left+(usedX+p/2)*size,top-14,{'text-anchor':'middle','font-size':12,fill:i===1?colors[1]:muted});usedX+=p;});text('两句都符合原文：'+probPercent(shown.product),width/2,top+size+30,{'text-anchor':'middle','font-size':14,fill:colors[1]});
+      adaptGeometry={mode:'plane',direction:dir,scale,bounds};adaptHandle(X(shown.vectors[1]),Y(shown.vectors[1]),'拖动狗的表示；左右方向键改变睡觉分量，观察蓝色原文格子的面积');adaptStamp(shown);svg.setAttribute('data-ma-adapt-plane-scale',scale);
     }
-    function drawAdaptCommon(width,shown,status,phase=null){
-      const p=adaptPlan(),isProbe=current()==='adapt-probe',isUpdate=current()==='adapt-update',height=isProbe?580:462,unit=(width-48)/Math.max(3.5,p.base.total,p.low.total,p.high.total,p.after.total);
-      adaptFrame(width,height,'当前图中的概率与损失由所显示的狗表示实际重算。灰框为更新前结果；试算或回看使用参数副本，只有执行更新才改写共享表示。');adaptParameter(width,p,shown,isUpdate?'step':'plain');text(adaptLesson.applied&&!isUpdate?'回看更新前快照，已保存结果保持不变':status,width/2,114,{'text-anchor':'middle','font-size':12});text('共同预测：___在睡觉',width/2,146,{'text-anchor':'middle','font-size':13});lossBand({probabilities:shown.probabilities},24,163,width-48);
-      ['小猫在睡觉。','小狗在睡觉。'].forEach((sentence,i)=>{const y=252+i*63,delta=shown.losses[i]-p.base.losses[i],color=lossPalette()[i];text(sentence+' 损失 '+shown.losses[i].toFixed(4),width/2,y,{'text-anchor':'middle','font-size':12,fill:color});el('rect',{x:24,y:y+14,width:p.base.losses[i]*unit,height:14,fill:'none',stroke:axis,'data-ma-adapt-reference':i});el('rect',{x:24,y:y+14,width:shown.losses[i]*unit,height:14,fill:color,'fill-opacity':.7,'data-ma-adapt-loss-bar':i,'data-ma-adapt-loss-value':shown.losses[i]});if(Math.abs(delta)>1e-9)line(24+p.base.losses[i]*unit,y+37,24+shown.losses[i]*unit,y+37,{stroke:color,'stroke-width':3,'data-ma-adapt-loss-change':delta});});
-      text('两句总损失 '+shown.total.toFixed(6),width/2,378,{'text-anchor':'middle','font-size':13});el('rect',{x:24,y:393,width:p.base.total*unit,height:18,fill:'none',stroke:axis});let used=0;shown.losses.forEach((loss,i)=>{el('rect',{x:24+used*unit,y:393,width:loss*unit,height:18,fill:lossPalette()[i],'fill-opacity':.7,'data-ma-adapt-total-part':i});used+=loss;});if(current()!=='adapt-purpose')text('相对更新前：总损失变化 '+adaptSigned(shown.total-p.base.total,6),width/2,440,{'text-anchor':'middle','font-size':12});
-      if(isProbe&&phase===4){text('减小'+adaptEpsilon+' → 总损失 '+p.low.total.toFixed(6),width/2,488,{'text-anchor':'middle','font-size':13,'data-ma-adapt-trial-low':''});text('增大'+adaptEpsilon+' → 总损失 '+p.high.total.toFixed(6),width/2,524,{'text-anchor':'middle','font-size':13,'data-ma-adapt-trial-high':''});text(adaptLesson.applied?'回看试算结束，已保存结果保持不变':'两侧试算已完成，共享表示未写入',width/2,561,{'text-anchor':'middle','font-size':12});}
-      adaptStamp(shown,phase);
+    function drawAdaptLandscape(width,{progress=2,zoom=0,score,update=null}={}){
+      if(!['adapt-rate','adapt-update'].includes(current()))return;const p=adaptPlan(),broad=adaptBounds(),near=adaptBounds(true),bounds=broad.map((v,i)=>v+(near[i]-v)*zoom),[lo,hi]=bounds,samples=Array.from({length:161},(_,i)=>adaptEvaluate(adaptLesson.baseRows,lo+(hi-lo)*i/160)),costs=samples.map(v=>v.total),min=Math.min(...costs),max=Math.max(...costs),pad=Math.max(.025,(max-min)*.12),bottom=365,top=132,left=48,right=width-24,X=s=>left+(s-lo)/(hi-lo)*(right-left),Y=l=>bottom-(l-(min-pad))/(max-min+2*pad)*(bottom-top),reveal=Math.min(1,progress),scan=lo+(hi-lo)*reveal,currentScore=score??(progress<1?scan:hi+(adaptLesson.curveScore-hi)*(progress-1)),shown=adaptEvaluate(adaptLesson.baseRows,currentScore),color='var(--ma-net-second)';
+      adaptFrame(width,510,'狗沿睡觉方向的分量是横坐标，两句总损失是纵坐标。每个曲线点都用该分量重新计算共同预测和两句损失。狗标记、对应位置与总损失同步。');
+      const stage=current()==='adapt-update'?(update>0&&update<1?'本轮已保存，正在展开这一步':adaptLesson.applied?'更新后的位置':'原来的位置，尚未更新'):zoom>0?'同一条曲线，放大原来位置附近':progress<2?'每试一个位置，画出对应的损失':'拖动狗，看同一位置对应的总损失';text(adaptLesson.applied&&current()==='adapt-rate'?'回看更新前曲线，已保存结果不变':stage,width/2,24,{'text-anchor':'middle','font-size':13});
+      line(left,76,right,76,{stroke:axis});text('狗 '+shown.score.toFixed(3),X(currentScore),56,{'text-anchor':X(currentScore)>width-65?'end':X(currentScore)<65?'start':'middle','font-size':14,fill:color});el('circle',{cx:X(currentScore),cy:76,r:6,fill:color,'data-ma-adapt-track-point':''});line(X(currentScore),84,X(currentScore),Y(shown.total),{stroke:color,'stroke-dasharray':'3 5',opacity:.65});
+      line(left,top,left,bottom,{stroke:axis});line(left,bottom,right,bottom,{stroke:axis});text('两句总损失',left,114,{'font-size':12,fill:muted});text('狗沿睡觉方向的分量',width/2,421,{'text-anchor':'middle','font-size':12,fill:muted});
+      [min,max].forEach(l=>text(l.toFixed(2),left-8,Y(l)+4,{'text-anchor':'end','font-size':11,fill:muted}));[lo,(lo+hi)/2,hi].forEach(s=>{line(X(s),bottom,X(s),bottom+5,{stroke:axis});text(s.toFixed(2),X(s),bottom+23,{'text-anchor':'middle','font-size':11,fill:muted});});
+      const drawn=samples.filter(v=>v.score<=scan+1e-10);if(progress<1)drawn.push(adaptEvaluate(adaptLesson.baseRows,scan));el('path',{d:drawn.map((v,i)=>(i?'L ':'M ')+X(v.score)+' '+Y(v.total)).join(' '),fill:'none',stroke:muted,'stroke-width':2,'data-ma-adapt-landscape':'','data-ma-adapt-curve-samples':JSON.stringify(drawn.map(v=>[v.score,v.total]))});
+      if(zoom>0&&current()==='adapt-rate'){
+        const lx=X(p.low.score),rx=X(p.high.score),ly=Y(p.low.total),ry=Y(p.high.total),opacity=zoom;line(lx,ly,rx,ry,{stroke:accent,'stroke-width':2,opacity,'data-ma-adapt-secant':''});line(lx,ly,rx,ly,{stroke:accent,'stroke-dasharray':'4 3',opacity,'data-ma-adapt-run':2*adaptEpsilon});line(rx,ly,rx,ry,{stroke:accent,'stroke-dasharray':'4 3',opacity,'data-ma-adapt-rise':p.high.total-p.low.total});
+        [p.low,p.high].forEach((v,i)=>el('circle',{cx:X(v.score),cy:Y(v.total),r:5,fill:accent,opacity,'data-ma-adapt-neighbor':i,'data-ma-adapt-neighbor-score':v.score,'data-ma-adapt-neighbor-loss':v.total}));text('横着 '+(2*adaptEpsilon)+'；竖着 '+adaptSigned(p.high.total-p.low.total),width/2,461,{'text-anchor':'middle','font-size':13,fill:accent,opacity});text('近似坡度 '+adaptSigned(p.gradient),width/2,490,{'text-anchor':'middle','font-size':13,opacity});
+      }else{
+        if(update!==null){const old=p.base,end=shown;el('circle',{cx:X(old.score),cy:Y(old.total),r:5,fill:'var(--ma-paper)',stroke:muted,'data-ma-adapt-update-origin':''});const move=Array.from({length:41},(_,i)=>adaptEvaluate(adaptLesson.baseRows,old.score+(end.score-old.score)*i/40));el('path',{d:move.map((v,i)=>(i?'L ':'M ')+X(v.score)+' '+Y(v.total)).join(' '),fill:'none',stroke:color,'stroke-width':4,'data-ma-adapt-move-path':''});}
+        text('两句总损失 '+shown.total.toFixed(3),width/2,466,{'text-anchor':'middle','font-size':15,fill:color});
+      }
+      el('circle',{cx:X(shown.score),cy:Y(shown.total),r:6,fill:color,'data-ma-adapt-curve-point':'','data-ma-adapt-point-score':shown.score,'data-ma-adapt-point-loss':shown.total});
+      adaptGeometry={mode:'curve',scale:(right-left)/(hi-lo),bounds,X,Y};if(current()==='adapt-rate'&&progress>=2&&zoom===0)adaptHandle(X(shown.score),76,'左右拖动狗，观察它对应的两句总损失；左右方向键调整');adaptStamp(shown);svg.setAttribute('data-ma-adapt-curve-progress',progress);svg.setAttribute('data-ma-adapt-zoom',zoom);svg.setAttribute('data-ma-adapt-update-progress',update===null?'':update);svg.setAttribute('data-ma-adapt-curve-bounds',JSON.stringify(bounds));svg.setAttribute('data-ma-adapt-curve-y-range',JSON.stringify([min-pad,max+pad]));
     }
-    function drawAdaptProbe(width,phase){if(current()!=='adapt-probe')return;const p=adaptPlan();let score,status;if(phase<1){score=p.base.score-adaptEpsilon*phase;status='试算：向减小方向移动（未保存）';}else if(phase<2){score=p.low.score+adaptEpsilon*(phase-1);status='回到更新前数值（未保存）';}else if(phase<3){score=p.base.score+adaptEpsilon*(phase-2);status='试算：向增大方向移动（未保存）';}else{score=phase>=4?p.base.score:p.high.score-adaptEpsilon*(phase-3);status='两侧试算结束，仍用原来的表示';}drawAdaptCommon(width,adaptEvaluate(adaptLesson.baseRows,score),status,phase);}
-    function drawAdaptRate(width){
-      const p=adaptPlan(),changes=p.high.losses.map((loss,i)=>loss-p.low.losses[i]),net=p.high.total-p.low.total,maximum=Math.max(.01,...changes.map(Math.abs),Math.abs(net)),unit=(width-64)/(2*maximum),zero=width/2,X=v=>zero+v*unit;
-      adaptFrame(width,525,'两侧试算的分数范围与各句损失变化。猫的变化和狗的变化首尾相接成总损失变化，再除以真实参数跨度得到近似梯度。');adaptParameter(width,p,p.base,'interval');text('左侧总损失 '+p.low.total.toFixed(6),width/2,169,{'text-anchor':'middle','font-size':13});text('右侧总损失 '+p.high.total.toFixed(6),width/2,200,{'text-anchor':'middle','font-size':13});line(zero,225,zero,364,{stroke:axis,'stroke-dasharray':'3 4'});let sum=0;
-      changes.forEach((v,i)=>{const y=258+i*58,start=sum,end=sum+v;text((i===0?'猫':'狗')+'这句变化 '+adaptSigned(v,6),width/2,y-19,{'text-anchor':'middle','font-size':12,fill:lossPalette()[i]});line(X(start),y,X(end),y,{stroke:lossPalette()[i],'stroke-width':4,'data-ma-adapt-change-record':i,'data-ma-adapt-change-start':start,'data-ma-adapt-change-end':end});const sign=Math.sign(v);if(sign){line(X(end),y,X(end)-sign*6,y-4,{stroke:lossPalette()[i]});line(X(end),y,X(end)-sign*6,y+4,{stroke:lossPalette()[i]});}sum=end;});
-      line(X(0),369,X(net),369,{stroke:ink,'stroke-width':4,'data-ma-adapt-change-total':net});text('总损失变化 '+adaptSigned(net,6),width/2,410,{'text-anchor':'middle','font-size':13});text('狗的分数变化 '+(2*adaptEpsilon),width/2,445,{'text-anchor':'middle','font-size':13});text(adaptSigned(net,6)+' ÷ '+(2*adaptEpsilon)+' ≈ '+adaptSigned(p.gradient,6),width/2,490,{'text-anchor':'middle','font-size':13,'data-ma-adapt-rate-equation':''});svg.setAttribute('data-ma-adapt-change-unit',unit);adaptStamp(p.base);
+    function renderAdaptGraph(){const width=Math.max(240,figure.getBoundingClientRect().width||736),p=adaptPlan();
+      if(current()==='adapt-probe'){drawAdaptPrediction(width);return;}
+      if(current()==='adapt-rate'){
+        if(adaptLesson.rateNear){if(!lastPlot)lastPlot={scene:current(),width,distance:3};animatePlot(current(),width,3,v=>drawAdaptLandscape(width,{zoom:clamp(v-2,0,1),score:p.base.score}),1400);return;}
+        if(lastPlot?.distance>2){animatePlot(current(),width,2,v=>drawAdaptLandscape(width,{zoom:clamp(v-2,0,1),score:adaptLesson.curveScore}),1400);return;}
+        if(!lastPlot)lastPlot={scene:current(),width,distance:adaptLesson.curvePlayed?2:0};adaptLesson.curvePlayed=true;animatePlot(current(),width,2,v=>drawAdaptLandscape(width,{progress:v}),4200);return;
+      }
+      if(current()==='adapt-update'){if(!lastPlot)lastPlot={scene:current(),width,distance:adaptLesson.applied?1:0};animatePlot(current(),width,adaptLesson.applied?1:0,v=>drawAdaptLandscape(width,{zoom:1,score:p.base.score+(p.after.score-p.base.score)*v,update:v}),1900);}
     }
-    function renderAdaptGraph(){
-      const width=Math.max(240,figure.getBoundingClientRect().width||736),p=adaptPlan();
-      if(current()==='adapt-purpose'){drawAdaptCommon(width,p.base,adaptLesson.applied?'回看更新前快照，已保存结果保持不变':'当前参数：等待两侧试算');return;}
-      if(current()==='adapt-probe'){if(!lastPlot)lastPlot={scene:current(),width,distance:adaptLesson.probePlayed?4:0};adaptLesson.probePlayed=true;animatePlot('adapt-probe',width,4,v=>drawAdaptProbe(width,v),4800);return;}
-      if(current()==='adapt-rate'){drawAdaptRate(width);return;}
-      if(current()==='adapt-update')drawAdaptCommon(width,p.after,adaptLesson.applied?'已保存一轮真实更新':p.eligible?'计划更新的结果（尚未保存）':'本步没有写入参数');
-    }
-    function forwardAdapt(){stopAutomation();if(current()==='adapt-update'&&!adaptLesson.applied&&adaptPlan().eligible){adaptCommit();return;}if(current()==='adapt-ending'){adaptLesson.probePlayed=false;state.scene=scenes.indexOf('adapt-purpose');renderScene();return;}state.scene++;renderScene();}
-    function backwardAdapt(){stopAutomation();state.scene--;renderScene();}
+    function forwardAdapt(){stopAutomation();if(current()==='adapt-probe'){adaptLesson.curveScore=adaptPlan().base.score;adaptLesson.rateNear=false;}if(current()==='adapt-rate'&&!adaptLesson.rateNear){adaptLesson.rateNear=true;refreshAdapt();return;}if(current()==='adapt-update'&&!adaptLesson.applied&&adaptPlan().eligible){adaptCommit();return;}if(current()==='adapt-ending'){adaptLesson.curvePlayed=false;adaptLesson.rateNear=false;adaptLesson.trialScore=adaptPlan().base.score;state.scene=scenes.indexOf('adapt-purpose');renderScene();return;}state.scene++;renderScene();}
+    function backwardAdapt(){stopAutomation();if(current()==='adapt-rate'&&adaptLesson.rateNear){adaptLesson.rateNear=false;adaptLesson.curveScore=adaptPlan().base.score;refreshAdapt();return;}state.scene--;renderScene();}
     // Optional mechanism lab: hand-set numbers, not empirical statistics or learned vectors.
     const embInitial=[[0.4,0.8],[-0.6,0.5],[1,-0.5],[0.6,-0.3],[-0.2,-0.7],[0.1,-0.4]];
     const embWeights=[0.8,-1.2],embBias=-0.2;
@@ -3737,6 +3749,7 @@
       if(feedback) feedback.textContent=adjustmentFeedback();renderStage();
     }
     handle.addEventListener('pointerdown',event=>{
+      if(current()==='adapt-probe'||current()==='adapt-rate'){adaptBegin(event);return;}
       if(current()==='loss-curve'){lossBegin(event);return;}
       if((current().startsWith('usage-')||current().startsWith('prob-')||current().startsWith('loss-'))&&usageCanMove()){usageBegin(event);return;}
       if(current().startsWith('emb-')&&embCanMove()&&embGeometry&&event.button<=0){drag={kind:'emb',id:event.pointerId,clientX:event.clientX,clientY:event.clientY,values:[...embEntry().values],scale:embGeometry.scale};handle.setPointerCapture(event.pointerId);event.preventDefault();return;}
@@ -3748,6 +3761,7 @@
     });
     handle.addEventListener('pointermove',event=>{
       if(!drag||drag.id!==event.pointerId) return;
+      if(drag.kind==='adapt'){adaptDrag(event);return;}
       if(drag.kind==='loss'){lossDrag(event);return;}
       if(drag.kind==='usage'){usageDrag(event);return;}
       if(drag.kind==='emb'){embDrag(event);return;}
@@ -3761,14 +3775,16 @@
     }
     handle.addEventListener('pointerup',endDrag);handle.addEventListener('pointercancel',endDrag);
     document.addEventListener('pointermove',event=>{
+      if(drag?.kind==='adapt'&&event.target!==handle)adaptDrag(event);
       if(drag?.kind==='loss'&&event.target!==handle)lossDrag(event);
       if(drag?.kind==='usage'&&event.target!==handle)usageDrag(event);
       if(drag?.kind==='emb'&&event.target!==handle)embDrag(event);
       if(drag?.kind==='mesh'&&drag.id===event.pointerId&&event.target!==handle)meshSetInput(drag.input+(event.clientX-drag.clientX)/drag.scale);
     });
-    document.addEventListener('pointerup',event=>{if(['mesh','emb','usage','loss'].includes(drag?.kind))endDrag(event);});
-    document.addEventListener('pointercancel',event=>{if(['mesh','emb','usage','loss'].includes(drag?.kind))endDrag(event);});
+    document.addEventListener('pointerup',event=>{if(['mesh','emb','usage','loss','adapt'].includes(drag?.kind))endDrag(event);});
+    document.addEventListener('pointercancel',event=>{if(['mesh','emb','usage','loss','adapt'].includes(drag?.kind))endDrag(event);});
     handle.addEventListener('keydown',event=>{
+      if(current()==='adapt-probe'||current()==='adapt-rate'){adaptKey(event);return;}
       if(current()==='loss-curve'){lossKey(event);return;}
       if(current().startsWith('usage-')||current().startsWith('prob-')||current().startsWith('loss-')){usageKey(event);return;}
       if(current().startsWith('emb-')&&embCanMove()){const [a,b]=embEntry().values,values={ArrowLeft:[a-0.1,b],ArrowRight:[a+0.1,b],ArrowUp:[a,b+0.1],ArrowDown:[a,b-0.1]};if(event.key in values){event.preventDefault();embSet(values[event.key]);}return;}
@@ -3871,7 +3887,7 @@
       updateNav();
     });
     globalThis.addEventListener?.('pagehide',stopAutomation);
-    globalThis.addEventListener?.('pageshow',()=>{stopAutomation();if(wholeMode())refreshMesh();else updateNav();});
+    globalThis.addEventListener?.('pageshow',()=>{if(current().startsWith('adapt-')&&plotMotion){updateNav();return;}stopAutomation();if(wholeMode())refreshMesh();else updateNav();});
     globalThis.addEventListener?.('hashchange',()=>{
       if(globalThis.location?.hash==='#act-2') {state.scene=7;renderScene();}
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
@@ -3895,8 +3911,8 @@
       else meshOpenDetail('d');
     }
     new ResizeObserver(entries=>{
-      // Expanding the detail changes height, not its horizontal numeric scale.
-      if(entries?.length&&meshView()?.detail&&plotMotion&&lastPlot?.width===Math.max(240,figure.getBoundingClientRect().width||736))return;
+      // Height-only layout changes must not finish the current teaching animation.
+      if(entries?.length&&(meshView()?.detail||current().startsWith('adapt-'))&&plotMotion&&lastPlot?.width===Math.max(240,figure.getBoundingClientRect().width||736))return;
       cancelPlotAnimation(true);lastPlot=null;
       if(!textOnly())renderStage();
     }).observe(figure);

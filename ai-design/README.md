@@ -73,9 +73,9 @@
 
 从原文构造评分：[第二十六幕](https://pingjiang2013.github.io/tui/ai-design/#act-26)，或[方块逐层生成](https://pingjiang2013.github.io/tui/ai-design/#act-26-records)、[评分设计要求](https://pingjiang2013.github.io/tui/ai-design/#act-26-design)、[逐句累计](https://pingjiang2013.github.io/tui/ai-design/#act-26-ruler)、[指数验证](https://pingjiang2013.github.io/tui/ai-design/#act-26-inverse)、[当前损失联动](https://pingjiang2013.github.io/tui/ai-design/#act-26-curve)。先说明目标与评分选择，再引入函数及其验证。
 
-27. 固定其他参数，试算狗的睡觉分数向两侧变化；观察两句损失变化的合计，用数值差分估计梯度，再实际保存一轮更新。支持撤回、重做与明确标注的历史回看。
+27. 拖动狗的表示，直接观察九格预测里的原文概率面积变化；再逐个位置描出真实总损失曲线，放大局部观察两侧试算的坡度，最后让同一个点沿曲线完成一次真实更新。支持撤回、重做与历史回看。
 
-让原文改变表示：[第二十七幕](https://pingjiang2013.github.io/tui/ai-design/#act-27)，或[两侧试算](https://pingjiang2013.github.io/tui/ai-design/#act-27-probe)、[合并变化](https://pingjiang2013.github.io/tui/ai-design/#act-27-rate)、[正式更新](https://pingjiang2013.github.io/tui/ai-design/#act-27-update)。只训练一个读取方向的分量；梯度为数值近似，学习率固定为1。试算与计划不保存参数，正式执行后才写入共享表示；没有声称已经训练完整语言模型。
+让原文改变表示：[第二十七幕](https://pingjiang2013.github.io/tui/ai-design/#act-27)，或[移动表示](https://pingjiang2013.github.io/tui/ai-design/#act-27-probe)、[描出损失曲线](https://pingjiang2013.github.io/tui/ai-design/#act-27-rate)、[正式移动一次](https://pingjiang2013.github.io/tui/ai-design/#act-27-update)。仅训练一个分量，梯度为两侧数值近似，学习率1。曲线采样用于观察，不是训练的搜索过程；点击正式执行才写入共享表示，随后展开这一步的实际变化。
 
 ## 本地开发
 
