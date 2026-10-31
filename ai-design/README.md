@@ -4,7 +4,7 @@
 
 在线体验：<https://pingjiang2013.github.io/tui/ai-design/>
 
-目前包含二十六幕，文字部分已实现配对、编号、用法线索与可操作的多维预测表示、Softmax概率分配与负对数损失：
+目前包含二十七幕，文字部分已实现配对、编号、多维预测表示、Softmax概率分配、负对数损失，以及一次真实的表示更新：
 
 1. 根据已有记录做出预测。
 2. 衡量预测差距，让电脑自己调整。
@@ -72,6 +72,10 @@
 从分数得到概率：[第二十五幕](https://pingjiang2013.github.io/tui/ai-design/#act-25)，或[共同分配](https://pingjiang2013.github.io/tui/ai-design/#act-25-distribution)、[指数转换](https://pingjiang2013.github.io/tui/ai-design/#act-25-convert)、[拼接与归一化](https://pingjiang2013.github.io/tui/ai-design/#act-25-normalize)。表示、分数和概率实时联动，保留上一幕编辑与旋转状态；当前分配并非真实世界频率。
 
 从原文构造评分：[第二十六幕](https://pingjiang2013.github.io/tui/ai-design/#act-26)，或[方块逐层生成](https://pingjiang2013.github.io/tui/ai-design/#act-26-records)、[评分设计要求](https://pingjiang2013.github.io/tui/ai-design/#act-26-design)、[逐句累计](https://pingjiang2013.github.io/tui/ai-design/#act-26-ruler)、[指数验证](https://pingjiang2013.github.io/tui/ai-design/#act-26-inverse)、[当前损失联动](https://pingjiang2013.github.io/tui/ai-design/#act-26-curve)。先说明目标与评分选择，再引入函数及其验证。
+
+27. 固定其他参数，试算狗的睡觉分数向两侧变化；观察两句损失变化的合计，用数值差分估计梯度，再实际保存一轮更新。支持撤回、重做与明确标注的历史回看。
+
+让原文改变表示：[第二十七幕](https://pingjiang2013.github.io/tui/ai-design/#act-27)，或[两侧试算](https://pingjiang2013.github.io/tui/ai-design/#act-27-probe)、[合并变化](https://pingjiang2013.github.io/tui/ai-design/#act-27-rate)、[正式更新](https://pingjiang2013.github.io/tui/ai-design/#act-27-update)。只训练一个读取方向的分量；梯度为数值近似，学习率固定为1。试算与计划不保存参数，正式执行后才写入共享表示；没有声称已经训练完整语言模型。
 
 ## 本地开发
 

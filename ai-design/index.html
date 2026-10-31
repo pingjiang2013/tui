@@ -79,7 +79,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','mesh-purpose','mesh-input','mesh-ablate','mesh-ending','whole-purpose','whole-goal','whole-records','whole-paths','whole-average','whole-train','whole-ending','text-purpose','text-pairs','text-ids','text-renumber','text-ending','usage-purpose','usage-observe','usage-dimensions','usage-data','usage-capacity','usage-lookup','usage-ending','prob-observe','prob-distribution','prob-convert','prob-normalize','prob-ending','loss-observe','loss-records','loss-design','loss-ruler','loss-inverse','loss-curve','loss-ending','emb-purpose','emb-lookup','emb-vector','emb-compute','emb-ending'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','mesh-purpose','mesh-input','mesh-ablate','mesh-ending','whole-purpose','whole-goal','whole-records','whole-paths','whole-average','whole-train','whole-ending','text-purpose','text-pairs','text-ids','text-renumber','text-ending','usage-purpose','usage-observe','usage-dimensions','usage-data','usage-capacity','usage-lookup','usage-ending','prob-observe','prob-distribution','prob-convert','prob-normalize','prob-ending','loss-observe','loss-records','loss-design','loss-ruler','loss-inverse','loss-curve','loss-ending','adapt-purpose','adapt-probe','adapt-rate','adapt-update','adapt-ending','emb-purpose','emb-lookup','emb-vector','emb-compute','emb-ending'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -91,7 +91,7 @@
     let plotFrame=null,plotMotion=null,lastPlot=null;
     let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null,outputLesson=null,relayLesson=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','mesh-purpose','mesh-ending','whole-purpose','whole-ending','text-purpose','text-ending','usage-purpose','usage-ending','prob-ending','loss-ending','emb-purpose','emb-ending'].includes(current());
+    const textOnly=()=>['purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','mesh-purpose','mesh-ending','whole-purpose','whole-ending','text-purpose','text-ending','usage-purpose','usage-ending','prob-ending','loss-ending','adapt-ending','emb-purpose','emb-ending'].includes(current());
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -121,6 +121,7 @@
     }
     function renderCopy() {
       copy.replaceChildren();feedback=null;
+      if(current().startsWith('adapt-')) {renderAdaptCopy();return;}
       if(current().startsWith('loss-')) {renderLossCopy();return;}
       if(current().startsWith('prob-')) {renderProbCopy();return;}
       if(current().startsWith('usage-')) {renderUsageCopy();return;}
@@ -216,6 +217,7 @@
       back.disabled=state.scene===0;
       next.disabled=false;
       back.textContent='← 上一页';automatic.hidden=true;
+      if(current().startsWith('adapt-')) {updateAdaptNav();return;}
       if(current().startsWith('loss-')) {updateLossNav();return;}
       if(current().startsWith('prob-')) {updateProbNav();return;}
       if(current().startsWith('usage-')) {updateUsageNav();return;}
@@ -242,6 +244,7 @@
     }
     function renderStage() {
       if(textOnly()) return;
+      if(current().startsWith('adapt-')) {renderAdaptGraph();return;}
       if(current().startsWith('loss-')) {renderLossGraph();return;}
       if(current().startsWith('prob-')) {renderProbGraph();return;}
       if(current().startsWith('usage-')) {renderUsageGraph();return;}
@@ -3404,7 +3407,7 @@
     function usageButton(parent,label,attr,value,callback,pressed){const button=document.createElement('button');button.type='button';button.className='ma-term';button.textContent=label;button.setAttribute(attr,value);if(pressed!==undefined)button.setAttribute('aria-pressed',String(pressed));button.addEventListener('click',callback);parent.appendChild(button);return button;}
     function usageCanMove(){return ['usage-dimensions','usage-data','usage-capacity','usage-lookup','prob-observe','prob-distribution','loss-observe'].includes(current());}
     function usageSelect(index){if(!usageCanMove()||!Number.isInteger(index)||index<0||index>2)return;stopAutomation();usageLesson.selected=index;refreshUsage();handle.focus?.();}
-    function usageSet(values){if(!usageCanMove())return;const row=usageLesson.rows[usageLesson.selected];row[0]=Math.round(clamp(values[0],-1,1)*100)/100;if(current()!=='usage-dimensions')row[1]=Math.round(clamp(values[1],-1,1)*100)/100;refreshUsage();}
+    function usageSet(values){if(!usageCanMove())return;const row=usageLesson.rows[usageLesson.selected];values.forEach((value,i)=>{if(i===1&&current()==='usage-dimensions')return;const previous=row[i],bound=Math.max(1,Math.abs(previous)),limited=clamp(value,-bound,bound);if(limited!==previous)row[i]=Math.round(limited*100)/100;});refreshUsage();}
     function usageBegin(event,index=usageLesson.selected){if(!usageCanMove()||event.button>0)return;usageSelect(index);const g=usageGeometry;drag={kind:'usage',id:event.pointerId,clientX:event.clientX,clientY:event.clientY,values:[...usageLesson.rows[index]],scale:g.scale,angle:g.angle};handle.setPointerCapture(event.pointerId);event.preventDefault();handle.focus?.();}
     function usageDrag(event){if(drag?.kind!=='usage'||drag.id!==event.pointerId)return;const delta=usageRotate([(event.clientX-drag.clientX)/drag.scale,-(event.clientY-drag.clientY)/drag.scale],-drag.angle);usageSet([drag.values[0]+delta[0],drag.values[1]+delta[1]]);}
     function usageKey(event){if(!usageCanMove())return;const moves={ArrowLeft:[-0.1,0],ArrowRight:[0.1,0],ArrowUp:[0,0.1],ArrowDown:[0,-0.1]};if(!(event.key in moves))return;event.preventDefault();stopAutomation();const delta=usageRotate(moves[event.key],-(usageGeometry?.angle||0)),row=usageLesson.rows[usageLesson.selected];usageSet([row[0]+delta[0],row[1]+delta[1]]);}
@@ -3429,10 +3432,10 @@
       svg.setAttribute('data-ma-usage-corpus',JSON.stringify(usageBase));
     }
     function drawUsageModel(width,open=1,angle=0){
-      if(!usageCanMove())return;const scene=current(),plane=scene!=='usage-dimensions',wide=width>=600,cx=wide?width*0.23:width/2,cy=wide?174:142,scale=wide?Math.min(112,width*0.23-40):Math.min(90,(width-64)/(2*Math.SQRT2)),scoreX=wide?width*0.52:16,scoreWidth=wide?width*0.48-16:width-32,scoreTop=wide?37:294,height=wide?407:616,lookup=scene==='usage-lookup',model=usageModel(plane,angle,open),colors=[accent,'var(--ma-net-second)'],selected=usageLesson.selected,X=v=>cx+v*scale,Y=v=>cy-v*scale;
+      if(!usageCanMove())return;const scene=current(),plane=scene!=='usage-dimensions',wide=width>=600,cx=wide?width*0.23:width/2,cy=wide?174:142,extent=Math.max(1,...usageLesson.rows.flatMap(v=>v.map(Math.abs))),scale=(wide?Math.min(112,width*0.23-40):Math.min(90,(width-64)/(2*Math.SQRT2)))/extent,scoreX=wide?width*0.52:16,scoreWidth=wide?width*0.48-16:width-32,scoreTop=wide?37:294,height=wide?407:616,lookup=scene==='usage-lookup',model=usageModel(plane,angle,open),colors=[accent,'var(--ma-net-second)'],selected=usageLesson.selected,X=v=>cx+v*scale,Y=v=>cy-v*scale;
       usageFrame(width,height,scene,current()==='loss-observe'?'两条原文使用同一个睡觉上下文和同一份预测分布。拖动表示，会同时改变猫和狗的答案概率。':'手动简化模型；拖动字的共享表示，观察两个上下文的真实读取分数。分数不是概率，尚未训练。');usageGeometry={scale,angle};
-      line(X(-1.45),cy,X(1.45),cy,{stroke:axis,opacity:0.55});
-      if(plane&&open>0)line(cx,Y(-1.45*open),cx,Y(1.45*open),{stroke:axis,opacity:0.55});
+      line(X(-1.45*extent),cy,X(1.45*extent),cy,{stroke:axis,opacity:0.55});
+      if(plane&&open>0)line(cx,Y(-1.45*extent*open),cx,Y(1.45*extent*open),{stroke:axis,opacity:0.55});
       model.directions.forEach((d,j)=>{const ex=X(d[0]),ey=Y(d[1]);if(j===1&&(!plane||open===0||current()==='loss-observe'))return;line(cx,cy,ex,ey,{stroke:colors[j],'stroke-width':2.5,'data-ma-usage-direction':j});const a=Math.atan2(-d[1],d[0]);line(ex,ey,ex-8*Math.cos(a-0.5),ey-8*Math.sin(a-0.5),{stroke:colors[j],'stroke-width':2});line(ex,ey,ex-8*Math.cos(a+0.5),ey-8*Math.sin(a+0.5),{stroke:colors[j],'stroke-width':2});text(j===0?'睡觉':'飞翔',ex+(j===1?12:0),ey+(j===1?-8:24),{'font-size':12,fill:colors[j],'text-anchor':j===0?'middle':'start'});});
       const active=model.vectors[selected];model.directions.forEach((d,j)=>{if(j===1&&(!plane||open<1||current()==='loss-observe'))return;const s=model.scores[selected][j];line(X(active[0]),Y(active[1]),X(d[0]*s),Y(d[1]*s),{stroke:colors[j],'stroke-dasharray':'3 4',opacity:0.65,'data-ma-usage-projection':j});el('circle',{cx:X(d[0]*s),cy:Y(d[1]*s),r:3,fill:colors[j]});});
       const labels=model.directions.flatMap((d,j)=>j===1&&(!plane||open===0||current()==='loss-observe')?[]:[{x:X(d[0])+(j===1?24:0),y:Y(d[1])+(j===1?-8:24)}]);
@@ -3525,7 +3528,7 @@
         paragraph('曲线把当前猫的答案概率p对应到−ln(p)，下方蓝色一段是狗这句的贡献。两项相加就是整组记录的总损失，整体概率越大，总损失越小。这种原文指定答案的负对数评分也叫交叉熵。');return;}
       if(current()==='loss-ending'){paragraph('先从原文出发，展开全部可能结果，找到模型给实际答案的概率。再选择评分要求：同倍数退步增加同样损失，每句贡献可以累计，同时保留对模型好坏的判断。负对数实现了这些要求，指数关系验证了这种换算。');paragraph('目前仍由你调整表示，没有执行训练。下一步，让整组原文的总损失反过来调整共享表示，而不只替其中一句争取更多概率。');}
     }
-    function updateLossNav(){next.textContent=({'loss-observe':'怎样评价两句的整体支持？ →','loss-records':lossLesson.gridStage===0?'先展开第一句的可能结果 →':lossLesson.gridStage===1?'每种结果下，再展开第二句 →':'我们希望评分怎样判断好坏？ →','loss-design':'按这些要求，累计每句贡献 →','loss-ruler':lossLesson.recordsJoined?'指数关系怎样验证这把评分尺？ →':'把狗这句的贡献接上去 →','loss-inverse':lossLesson.inverseTurned?'回到当前预测，检验总损失 →':'换个方向，读取同一个关系 →','loss-curve':'用总损失指导训练 →','loss-ending':'重新追踪评分如何构造 ↻'})[current()];}
+    function updateLossNav(){next.textContent=({'loss-observe':'怎样评价两句的整体支持？ →','loss-records':lossLesson.gridStage===0?'先展开第一句的可能结果 →':lossLesson.gridStage===1?'每种结果下，再展开第二句 →':'我们希望评分怎样判断好坏？ →','loss-design':'按这些要求，累计每句贡献 →','loss-ruler':lossLesson.recordsJoined?'指数关系怎样验证这把评分尺？ →':'把狗这句的贡献接上去 →','loss-inverse':lossLesson.inverseTurned?'回到当前预测，检验总损失 →':'换个方向，读取同一个关系 →','loss-curve':'用总损失指导训练 →','loss-ending':'让原文第一次改动表示 →'})[current()];}
     function lossStamp(v=lossData()){svg.setAttribute('data-ma-loss-probability',v.p);svg.setAttribute('data-ma-loss-value',v.cost);svg.setAttribute('data-ma-loss-records',JSON.stringify(v.records));svg.setAttribute('data-ma-loss-joint-probability',v.records[0].p*v.records[1].p);svg.setAttribute('data-ma-loss-total',lossCost(v.records[0].p)+lossCost(v.records[1].p));probStamp(v.d);}
     function drawLossObserve(){const width=Math.max(240,figure.getBoundingClientRect().width||736),wide=width>=600,v=lossData(),x=wide?width*.52:16,w=wide?width*.48-16:width-32,top=wide?37:294,center=x+w/2,y=wide?344:600;drawUsageModel(width,1,usageLesson.rotated?Math.PI/4:0);
       v.records.forEach((r,i)=>{const baseline=top+12+i*42;el('rect',{x:center-16,y:baseline-17,width:80,height:23,rx:2,fill:axis,'fill-opacity':.13});text('小',center-48,baseline,{'font-size':16});text(r.word,center-32,baseline,{'font-size':16,fill:lossPalette()[i],'data-ma-loss-original':i});text('在睡觉。',center-16,baseline,{'font-size':16});line(center+65,baseline-6,center+78,baseline-6,{stroke:axis});});line(center+78,top+6,center+78,top+94,{stroke:axis});line(center+78,top+94,center,top+94,{stroke:axis});line(center,top+94,center,top+140,{stroke:axis});line(center,top+140,center-4,top+133,{stroke:axis});line(center,top+140,center+4,top+133,{stroke:axis});
@@ -3568,8 +3571,83 @@
       text('猫 p≈'+v.p.toFixed(3)+' → −ln(p)≈'+v.cost.toFixed(3),width/2,377,{'text-anchor':'middle','font-size':14});lossBand(v.d,24,411,width-48);const pair=lossPair(),u=(width-48)/6; text('整组答案概率 '+probPercent(pair.product),width/2,502,{'text-anchor':'middle','font-size':13});el('rect',{x:24,y:521,width:pair.first*u,height:16,fill:accent,'data-ma-loss-contribution':0,'data-ma-loss-contribution-value':pair.first});el('rect',{x:24+pair.first*u,y:521,width:pair.second*u,height:16,fill:'var(--ma-net-second)','data-ma-loss-contribution':1,'data-ma-loss-contribution-value':pair.second});text('猫 '+pair.first.toFixed(3)+' + 狗 '+pair.second.toFixed(3)+' ≈ 总损失 '+pair.total.toFixed(3),width/2,566,{'text-anchor':'middle','font-size':12});svg.style.height='589px';svg.setAttribute('viewBox','0 0 '+width+' 589');handle.style.left=X(v.p)+'px';handle.style.top=Y(v.cost)+'px';handle.style.cursor='ew-resize';handle.setAttribute('role','group');handle.setAttribute('aria-label','拖动改变猫的答案概率；左右方向键调整它的睡觉分数，观察损失变化');handle.removeAttribute('aria-valuenow');handle.removeAttribute('aria-orientation');lossStamp(v);
     }
     function renderLossGraph(){const scene=current(),width=Math.max(240,figure.getBoundingClientRect().width||736);if(scene==='loss-observe'){drawLossObserve();return;}if(scene==='loss-curve'){drawLossCurve();return;}if(scene==='loss-records'){animatePlot(scene,width,lossLesson.gridStage,p=>drawLossProduct(width,p),1800);return;}if(scene==='loss-design'){drawLossDesign(width);return;}if(scene==='loss-inverse')animatePlot(scene,width,lossLesson.inverseTurned?1:0,p=>drawLossInverse(width,p),1500);if(scene==='loss-ruler')animatePlot(scene,width,lossLesson.recordsJoined?1:0,p=>drawLossRuler(width,p,scene),1250);}
-    function forwardLoss(){stopAutomation();if(current()==='loss-records'&&lossLesson.gridStage<2){lossLesson.gridStage++;refreshLoss();return;}const key=({'loss-inverse':'inverseTurned','loss-ruler':'recordsJoined'})[current()];if(key&&!lossLesson[key]){lossLesson[key]=true;refreshLoss();return;}if(current()==='loss-ending'){lossLesson.gridStage=0;lossLesson.inverseTurned=false;lossLesson.recordsJoined=false;state.scene=scenes.indexOf('loss-observe');renderScene();return;}state.scene++;renderScene();}
+    function forwardLoss(){stopAutomation();if(current()==='loss-records'&&lossLesson.gridStage<2){lossLesson.gridStage++;refreshLoss();return;}const key=({'loss-inverse':'inverseTurned','loss-ruler':'recordsJoined'})[current()];if(key&&!lossLesson[key]){lossLesson[key]=true;refreshLoss();return;}state.scene++;renderScene();}
     function backwardLoss(){stopAutomation();if(current()==='loss-records'&&lossLesson.gridStage>0){lossLesson.gridStage--;refreshLoss();return;}const key=({'loss-inverse':'inverseTurned','loss-ruler':'recordsJoined'})[current()];if(key&&lossLesson[key]){lossLesson[key]=false;refreshLoss();return;}state.scene--;renderScene();}
+    // Chapter 27: one genuine finite-difference update of a shared representation.
+    let adaptLesson=null;
+    const adaptHistory=[],adaptEpsilon=0.2,adaptLearningRate=1;
+    const adaptRows=rows=>rows.map(row=>[...row]);
+    const adaptSignature=rows=>JSON.stringify(rows);
+    function adaptEvaluate(rows,score=rows[1][0]){
+      const values=adaptRows(rows);values[1][0]=score;const angle=usageLesson.rotated?Math.PI/4:0,direction=usageRotate([1,0],angle),vectors=values.map(v=>usageRotate(v,angle)),scores=vectors.map(v=>v[0]*direction[0]+v[1]*direction[1]),maximum=Math.max(...scores),logTotal=maximum+Math.log(scores.reduce((sum,s)=>sum+Math.exp(s-maximum),0)),probabilities=probSoftmax(scores),losses=[logTotal-scores[0],logTotal-scores[1]];
+      return {rows:values,score,scores,vectors,direction,probabilities,losses,total:losses[0]+losses[1],product:probabilities[0]*probabilities[1]};
+    }
+    function adaptPlan(){
+      const rows=adaptLesson.baseRows,s=rows[1][0],base=adaptEvaluate(rows,s),low=adaptEvaluate(rows,s-adaptEpsilon),high=adaptEvaluate(rows,s+adaptEpsilon),gradient=(high.total-low.total)/(2*adaptEpsilon),target=s-adaptLearningRate*gradient,after=adaptEvaluate(rows,target),eligible=Number.isFinite(target)&&Math.abs(gradient)>1e-8&&after.total<base.total-1e-12;
+      return {base,low,high,gradient,target,after,eligible};
+    }
+    function ensureAdaptLesson(){
+      ensureUsageLesson();const signature=adaptSignature(usageLesson.rows);
+      if(adaptLesson){const expected=adaptLesson.applied?adaptLesson.record.after.rows:adaptLesson.baseRows;if(signature===adaptSignature(expected))return;}
+      adaptLesson={baseRows:adaptRows(usageLesson.rows),applied:false,record:null,probePlayed:false};usageLesson.selected=1;
+    }
+    function adaptFreeze(value){if(value&&typeof value==='object'){Object.values(value).forEach(adaptFreeze);Object.freeze(value);}return value;}
+    function adaptCommit(){
+      stopAutomation();ensureAdaptLesson();const plan=adaptPlan();if(adaptLesson.applied||!plan.eligible)return;
+      if(!adaptLesson.record){const record={before:plan.base,low:plan.low,high:plan.high,epsilon:adaptEpsilon,learningRate:adaptLearningRate,gradient:plan.gradient,after:plan.after};adaptLesson.record=adaptFreeze(record);adaptHistory.push(adaptLesson.record);}
+      usageLesson.rows[1][0]=adaptLesson.record.after.score;adaptLesson.applied=true;refreshAdapt();
+    }
+    function adaptUndo(){stopAutomation();ensureAdaptLesson();if(!adaptLesson.applied)return;usageLesson.rows[1][0]=adaptLesson.record.before.score;adaptLesson.applied=false;refreshAdapt();next.focus?.();}
+    function refreshAdapt(){renderCopy();updateNav();renderStage();}
+    function adaptSigned(value,places=4){return (value>0?'+':'')+value.toFixed(places);}
+    function adaptViewLabel(){return adaptLesson.applied?'回看更新前快照；已保存的更新保持不变':'这一轮尚未修改共享表示';}
+    function renderAdaptCopy(){const p=adaptPlan();
+      if(current()==='adapt-purpose'){paragraph('现在让电脑根据原文调整一次表示。先只允许狗的表示沿“睡觉”读取方向移动，其他方向和其他字固定，这样能看清两句反馈怎样汇到同一处。猫、狗两句仍然共同决定总损失。');paragraph(adaptViewLabel()+'。接下来分别试算狗的分数减少、增加'+adaptEpsilon+'，比较哪边的总损失更低。');return;}
+      if(current()==='adapt-probe'){paragraph('系统用参数副本试算两侧：狗的分数改变，共同预测就会重算。灰框保持试算前的损失，彩段伸缩显示猫、狗各自的变化；两段合起来，才是这次试算的总结果。试算不会写入共享表示。');return;}
+      if(current()==='adapt-rate'){paragraph((adaptLesson.applied?'回看更新前的两侧试算，已保存结果保持不变。':'')+'现在从左侧试算走到右侧：狗的分数跨过'+(2*adaptEpsilon)+'。猫这句的损失增加，狗这句的损失减少；把两个变化首尾相接，得到总损失变化。再除以刚才跨过的分数范围，就是当前位置的近似梯度。');paragraph('这里用两侧试算估计变化率。每个数都来自刚才的实际计算，计算使用未舍入值；下一步再用它决定正式更新的方向和步幅。');return;}
+      if(current()==='adapt-update'){
+        const action=Math.abs(p.gradient)<=1e-8?'这一项已经接近平衡':p.gradient<0?'增大狗的睡觉分数':'减小狗的睡觉分数';
+        paragraph(adaptLesson.applied?'这一次更新已经保存。共享表示中的狗确实改变了，两条原文也用新表示重新计算。可以撤回这一轮；回看前面的试算不会再次训练。':p.eligible?'近似梯度为'+adaptSigned(p.gradient,6)+'，因此减去它会'+action+'。沿用学过的梯度下降，这次学习率固定为1，只执行一轮，观察总损失是否下降。':'这次试算没有给出值得保存的下降步：'+action+'。保留真实结果，参数没有写入；其他参数仍可在后续共同训练。');
+        const line=paragraph(p.base.score.toFixed(6)+' − 1 × ('+p.gradient.toFixed(6)+') ≈ '+p.after.score.toFixed(6)+'。图中箭头对应这次参数变化。'+(adaptLesson.applied?'已保存一轮。':'目前是计划结果，尚未保存。'));
+        if(adaptLesson.applied)usageButton(line,'撤回这一次更新','data-ma-adapt-undo','',adaptUndo);
+        return;
+      }
+      if(current()==='adapt-ending'){paragraph(adaptLesson.applied?'原文第一次真正改变了共享表示：电脑比较两侧试算，估计总损失的变化率，再保存一次更新。狗这句的改善和猫这句的代价，都参与了方向判断。':adaptLesson.record?'这一次更新已撤回，原来的表示恢复了；试算与更新记录仍保留，可以回看并重新执行同一轮。':'这次尚未保存更新，当前展示的是试算及其调整依据。可以回到更新页执行下降步。');paragraph('这一小实验只训练狗沿一个读取方向的分量，用真实数值差分估计梯度。接下来把前面学过的反向传播接入，更高效地计算整张表示表的梯度。');}
+    }
+    function updateAdaptNav(){const p=adaptPlan();next.textContent=({'adapt-purpose':'比较两个方向 →','adapt-probe':'从两侧变化读出梯度 →','adapt-rate':'让电脑调整一次 →','adapt-update':adaptLesson.applied?'看看这轮更新带来了什么 →':p.eligible?(adaptLesson.record?'重新执行同一轮更新 →':'执行这一次更新 →'):'保留当前参数，继续 →','adapt-ending':'回看这一次更新 ↻'})[current()];}
+    function adaptFrame(width,height,title){svg.replaceChildren();handle.hidden=true;svg.style.height=height+'px';svg.setAttribute('viewBox','0 0 '+width+' '+height);svg.setAttribute('role','img');svg.setAttribute('data-ma-chart-kind',current());el('title',{id:'ma-stage-title'}).textContent=title;}
+    function adaptStamp(shown,phase=null){svg.setAttribute('data-ma-adapt-shown-rows',JSON.stringify(shown.rows));svg.setAttribute('data-ma-adapt-committed-rows',adaptSignature(usageLesson.rows));svg.setAttribute('data-ma-adapt-score',shown.score);svg.setAttribute('data-ma-adapt-probabilities',JSON.stringify(shown.probabilities));svg.setAttribute('data-ma-adapt-losses',JSON.stringify(shown.losses));svg.setAttribute('data-ma-adapt-total',shown.total);svg.setAttribute('data-ma-adapt-gradient',adaptPlan().gradient);svg.setAttribute('data-ma-adapt-applied',String(adaptLesson.applied));svg.setAttribute('data-ma-adapt-history-count',adaptHistory.length);svg.setAttribute('data-ma-adapt-phase',phase===null?'':phase);svg.setAttribute('data-ma-adapt-baseline',JSON.stringify(adaptPlan().base));svg.setAttribute('data-ma-adapt-low',JSON.stringify(adaptPlan().low));svg.setAttribute('data-ma-adapt-high',JSON.stringify(adaptPlan().high));svg.setAttribute('data-ma-adapt-after',JSON.stringify(adaptPlan().after));}
+    function adaptParameter(width,p,shown,mode='plain'){
+      const minimum=Math.min(p.low.score,p.after.score)-.12,maximum=Math.max(p.high.score,p.after.score)+.12,X=s=>40+(s-minimum)/(maximum-minimum)*(width-80),y=84;
+      text('狗的表示：仅沿睡觉方向调整',width/2,23,{'text-anchor':'middle','font-size':13});text(shown.score.toFixed(6),width/2,56,{'text-anchor':'middle','font-size':22,fill:'var(--ma-net-second)','data-ma-adapt-parameter-value':''});line(40,y,width-40,y,{stroke:axis});el('circle',{cx:X(p.base.score),cy:y,r:5,fill:'var(--ma-paper)',stroke:axis,'data-ma-adapt-base-point':''});
+      if(mode==='interval'){line(X(p.low.score),y+20,X(p.high.score),y+20,{stroke:ink,'stroke-width':2,'data-ma-adapt-input-span':2*adaptEpsilon});line(X(p.low.score),y+15,X(p.low.score),y+25,{stroke:ink});line(X(p.high.score),y+15,X(p.high.score),y+25,{stroke:ink});text(p.low.score.toFixed(3),X(p.low.score),y+44,{'text-anchor':'middle','font-size':12});text(p.high.score.toFixed(3),X(p.high.score),y+44,{'text-anchor':'middle','font-size':12});}
+      if(mode==='step'){line(X(p.base.score),y,X(p.after.score),y,{stroke:'var(--ma-net-second)','stroke-width':3,'data-ma-adapt-update-start':p.base.score,'data-ma-adapt-update-end':p.after.score});const sign=Math.sign(p.after.score-p.base.score);if(sign){line(X(p.after.score),y,X(p.after.score)-sign*6,y-4,{stroke:'var(--ma-net-second)'});line(X(p.after.score),y,X(p.after.score)-sign*6,y+4,{stroke:'var(--ma-net-second)'});}}
+      el('circle',{cx:X(shown.score),cy:y,r:6,fill:'var(--ma-net-second)','data-ma-adapt-parameter-point':''});return {X};
+    }
+    function drawAdaptCommon(width,shown,status,phase=null){
+      const p=adaptPlan(),isProbe=current()==='adapt-probe',isUpdate=current()==='adapt-update',height=isProbe?580:462,unit=(width-48)/Math.max(3.5,p.base.total,p.low.total,p.high.total,p.after.total);
+      adaptFrame(width,height,'当前图中的概率与损失由所显示的狗表示实际重算。灰框为更新前结果；试算或回看使用参数副本，只有执行更新才改写共享表示。');adaptParameter(width,p,shown,isUpdate?'step':'plain');text(adaptLesson.applied&&!isUpdate?'回看更新前快照，已保存结果保持不变':status,width/2,114,{'text-anchor':'middle','font-size':12});text('共同预测：___在睡觉',width/2,146,{'text-anchor':'middle','font-size':13});lossBand({probabilities:shown.probabilities},24,163,width-48);
+      ['小猫在睡觉。','小狗在睡觉。'].forEach((sentence,i)=>{const y=252+i*63,delta=shown.losses[i]-p.base.losses[i],color=lossPalette()[i];text(sentence+' 损失 '+shown.losses[i].toFixed(4),width/2,y,{'text-anchor':'middle','font-size':12,fill:color});el('rect',{x:24,y:y+14,width:p.base.losses[i]*unit,height:14,fill:'none',stroke:axis,'data-ma-adapt-reference':i});el('rect',{x:24,y:y+14,width:shown.losses[i]*unit,height:14,fill:color,'fill-opacity':.7,'data-ma-adapt-loss-bar':i,'data-ma-adapt-loss-value':shown.losses[i]});if(Math.abs(delta)>1e-9)line(24+p.base.losses[i]*unit,y+37,24+shown.losses[i]*unit,y+37,{stroke:color,'stroke-width':3,'data-ma-adapt-loss-change':delta});});
+      text('两句总损失 '+shown.total.toFixed(6),width/2,378,{'text-anchor':'middle','font-size':13});el('rect',{x:24,y:393,width:p.base.total*unit,height:18,fill:'none',stroke:axis});let used=0;shown.losses.forEach((loss,i)=>{el('rect',{x:24+used*unit,y:393,width:loss*unit,height:18,fill:lossPalette()[i],'fill-opacity':.7,'data-ma-adapt-total-part':i});used+=loss;});if(current()!=='adapt-purpose')text('相对更新前：总损失变化 '+adaptSigned(shown.total-p.base.total,6),width/2,440,{'text-anchor':'middle','font-size':12});
+      if(isProbe&&phase===4){text('减小'+adaptEpsilon+' → 总损失 '+p.low.total.toFixed(6),width/2,488,{'text-anchor':'middle','font-size':13,'data-ma-adapt-trial-low':''});text('增大'+adaptEpsilon+' → 总损失 '+p.high.total.toFixed(6),width/2,524,{'text-anchor':'middle','font-size':13,'data-ma-adapt-trial-high':''});text(adaptLesson.applied?'回看试算结束，已保存结果保持不变':'两侧试算已完成，共享表示未写入',width/2,561,{'text-anchor':'middle','font-size':12});}
+      adaptStamp(shown,phase);
+    }
+    function drawAdaptProbe(width,phase){if(current()!=='adapt-probe')return;const p=adaptPlan();let score,status;if(phase<1){score=p.base.score-adaptEpsilon*phase;status='试算：向减小方向移动（未保存）';}else if(phase<2){score=p.low.score+adaptEpsilon*(phase-1);status='回到更新前数值（未保存）';}else if(phase<3){score=p.base.score+adaptEpsilon*(phase-2);status='试算：向增大方向移动（未保存）';}else{score=phase>=4?p.base.score:p.high.score-adaptEpsilon*(phase-3);status='两侧试算结束，仍用原来的表示';}drawAdaptCommon(width,adaptEvaluate(adaptLesson.baseRows,score),status,phase);}
+    function drawAdaptRate(width){
+      const p=adaptPlan(),changes=p.high.losses.map((loss,i)=>loss-p.low.losses[i]),net=p.high.total-p.low.total,maximum=Math.max(.01,...changes.map(Math.abs),Math.abs(net)),unit=(width-64)/(2*maximum),zero=width/2,X=v=>zero+v*unit;
+      adaptFrame(width,525,'两侧试算的分数范围与各句损失变化。猫的变化和狗的变化首尾相接成总损失变化，再除以真实参数跨度得到近似梯度。');adaptParameter(width,p,p.base,'interval');text('左侧总损失 '+p.low.total.toFixed(6),width/2,169,{'text-anchor':'middle','font-size':13});text('右侧总损失 '+p.high.total.toFixed(6),width/2,200,{'text-anchor':'middle','font-size':13});line(zero,225,zero,364,{stroke:axis,'stroke-dasharray':'3 4'});let sum=0;
+      changes.forEach((v,i)=>{const y=258+i*58,start=sum,end=sum+v;text((i===0?'猫':'狗')+'这句变化 '+adaptSigned(v,6),width/2,y-19,{'text-anchor':'middle','font-size':12,fill:lossPalette()[i]});line(X(start),y,X(end),y,{stroke:lossPalette()[i],'stroke-width':4,'data-ma-adapt-change-record':i,'data-ma-adapt-change-start':start,'data-ma-adapt-change-end':end});const sign=Math.sign(v);if(sign){line(X(end),y,X(end)-sign*6,y-4,{stroke:lossPalette()[i]});line(X(end),y,X(end)-sign*6,y+4,{stroke:lossPalette()[i]});}sum=end;});
+      line(X(0),369,X(net),369,{stroke:ink,'stroke-width':4,'data-ma-adapt-change-total':net});text('总损失变化 '+adaptSigned(net,6),width/2,410,{'text-anchor':'middle','font-size':13});text('狗的分数变化 '+(2*adaptEpsilon),width/2,445,{'text-anchor':'middle','font-size':13});text(adaptSigned(net,6)+' ÷ '+(2*adaptEpsilon)+' ≈ '+adaptSigned(p.gradient,6),width/2,490,{'text-anchor':'middle','font-size':13,'data-ma-adapt-rate-equation':''});svg.setAttribute('data-ma-adapt-change-unit',unit);adaptStamp(p.base);
+    }
+    function renderAdaptGraph(){
+      const width=Math.max(240,figure.getBoundingClientRect().width||736),p=adaptPlan();
+      if(current()==='adapt-purpose'){drawAdaptCommon(width,p.base,adaptLesson.applied?'回看更新前快照，已保存结果保持不变':'当前参数：等待两侧试算');return;}
+      if(current()==='adapt-probe'){if(!lastPlot)lastPlot={scene:current(),width,distance:adaptLesson.probePlayed?4:0};adaptLesson.probePlayed=true;animatePlot('adapt-probe',width,4,v=>drawAdaptProbe(width,v),4800);return;}
+      if(current()==='adapt-rate'){drawAdaptRate(width);return;}
+      if(current()==='adapt-update')drawAdaptCommon(width,p.after,adaptLesson.applied?'已保存一轮真实更新':p.eligible?'计划更新的结果（尚未保存）':'本步没有写入参数');
+    }
+    function forwardAdapt(){stopAutomation();if(current()==='adapt-update'&&!adaptLesson.applied&&adaptPlan().eligible){adaptCommit();return;}if(current()==='adapt-ending'){adaptLesson.probePlayed=false;state.scene=scenes.indexOf('adapt-purpose');renderScene();return;}state.scene++;renderScene();}
+    function backwardAdapt(){stopAutomation();state.scene--;renderScene();}
     // Optional mechanism lab: hand-set numbers, not empirical statistics or learned vectors.
     const embInitial=[[0.4,0.8],[-0.6,0.5],[1,-0.5],[0.6,-0.3],[-0.2,-0.7],[0.1,-0.4]];
     const embWeights=[0.8,-1.2],embBias=-0.2;
@@ -3634,6 +3712,7 @@
     function backwardEmb(){stopAutomation();embLesson.inspect=false;state.scene--;renderScene();}
     function renderScene() {
       stopAutomation();lastPlot=null;drag=null;feedback=null;
+      if(current().startsWith('adapt-'))ensureAdaptLesson();
       if(current().startsWith('loss-'))ensureLossLesson();
       if(current().startsWith('prob-'))ensureProbLesson();
       if(current().startsWith('usage-'))ensureUsageLesson();
@@ -3657,7 +3736,7 @@
       if(current().startsWith('direction-')) ensureDirection();
       if(current()==='predict'||current()==='calculation') ensureSnapshot();
       svg.setAttribute('role','img');handle.setAttribute('role','slider');handle.style.cursor='';
-      root.className=(textOnly()?'ma-text-page':'ma-interactive-page')+((current().startsWith('usage-')||current().startsWith('prob-')||current().startsWith('loss-'))?' ma-usage-page':'');
+      root.className=(textOnly()?'ma-text-page':'ma-interactive-page')+((current().startsWith('usage-')||current().startsWith('prob-')||current().startsWith('loss-')||current().startsWith('adapt-'))?' ma-usage-page':'');
       figure.hidden=textOnly();handle.hidden=true;renderCopy();updateNav();renderStage();
     }
     function changeRule(value) {
@@ -3714,6 +3793,7 @@
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(current().startsWith('adapt-')) {backwardAdapt();return;}
       if(current().startsWith('loss-')) {backwardLoss();return;}
       if(current().startsWith('prob-')) {backwardProb();return;}
       if(current().startsWith('usage-')) {backwardUsage();return;}
@@ -3738,6 +3818,7 @@
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(current().startsWith('adapt-')) {forwardAdapt();return;}
       if(current().startsWith('loss-')) {forwardLoss();return;}
       if(current().startsWith('prob-')) {forwardProb();return;}
       if(current().startsWith('usage-')) {forwardUsage();return;}
@@ -3807,7 +3888,7 @@
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
-      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber','#act-24':'usage-purpose','#act-24-usage':'usage-observe','#act-24-dimensions':'usage-dimensions','#act-24-data':'usage-data','#act-24-capacity':'usage-capacity','#act-26':'loss-observe','#act-26-design':'loss-design','#act-26-inverse':'loss-inverse','#act-26-ruler':'loss-ruler','#act-26-records':'loss-records','#act-26-curve':'loss-curve','#act-25':'prob-observe','#act-25-distribution':'prob-distribution','#act-25-convert':'prob-convert','#act-25-normalize':'prob-normalize','#act-24-shared':'usage-lookup','#act-24-lab':'emb-purpose','#act-24-lookup':'emb-lookup','#act-24-vector':'emb-vector','#act-24-compute':'emb-compute'}[globalThis.location?.hash];
+      const chapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber','#act-24':'usage-purpose','#act-24-usage':'usage-observe','#act-24-dimensions':'usage-dimensions','#act-24-data':'usage-data','#act-24-capacity':'usage-capacity','#act-27':'adapt-purpose','#act-27-probe':'adapt-probe','#act-27-rate':'adapt-rate','#act-27-update':'adapt-update','#act-26':'loss-observe','#act-26-design':'loss-design','#act-26-inverse':'loss-inverse','#act-26-ruler':'loss-ruler','#act-26-records':'loss-records','#act-26-curve':'loss-curve','#act-25':'prob-observe','#act-25-distribution':'prob-distribution','#act-25-convert':'prob-convert','#act-25-normalize':'prob-normalize','#act-24-shared':'usage-lookup','#act-24-lab':'emb-purpose','#act-24-lookup':'emb-lookup','#act-24-vector':'emb-vector','#act-24-compute':'emb-compute'}[globalThis.location?.hash];
       if(chapter){state.scene=scenes.indexOf(chapter);renderScene();if(globalThis.location?.hash==='#act-21-node')meshOpenDetail('d');}
     });
     document.addEventListener('visibilitychange',()=>{
@@ -3817,7 +3898,7 @@
     if(globalThis.location?.hash==='#act-3') state.scene=14;
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
     if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
-    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber','#act-24':'usage-purpose','#act-24-usage':'usage-observe','#act-24-dimensions':'usage-dimensions','#act-24-data':'usage-data','#act-24-capacity':'usage-capacity','#act-26':'loss-observe','#act-26-design':'loss-design','#act-26-inverse':'loss-inverse','#act-26-ruler':'loss-ruler','#act-26-records':'loss-records','#act-26-curve':'loss-curve','#act-25':'prob-observe','#act-25-distribution':'prob-distribution','#act-25-convert':'prob-convert','#act-25-normalize':'prob-normalize','#act-24-shared':'usage-lookup','#act-24-lab':'emb-purpose','#act-24-lookup':'emb-lookup','#act-24-vector':'emb-vector','#act-24-compute':'emb-compute'}[globalThis.location?.hash];
+    const waveChapter={'#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber','#act-24':'usage-purpose','#act-24-usage':'usage-observe','#act-24-dimensions':'usage-dimensions','#act-24-data':'usage-data','#act-24-capacity':'usage-capacity','#act-27':'adapt-purpose','#act-27-probe':'adapt-probe','#act-27-rate':'adapt-rate','#act-27-update':'adapt-update','#act-26':'loss-observe','#act-26-design':'loss-design','#act-26-inverse':'loss-inverse','#act-26-ruler':'loss-ruler','#act-26-records':'loss-records','#act-26-curve':'loss-curve','#act-25':'prob-observe','#act-25-distribution':'prob-distribution','#act-25-convert':'prob-convert','#act-25-normalize':'prob-normalize','#act-24-shared':'usage-lookup','#act-24-lab':'emb-purpose','#act-24-lookup':'emb-lookup','#act-24-vector':'emb-vector','#act-24-compute':'emb-compute'}[globalThis.location?.hash];
     if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     if(globalThis.location?.hash==='#act-21-node'){
