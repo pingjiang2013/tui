@@ -4,7 +4,7 @@
 
 在线体验：<https://pingjiang2013.github.io/tui/ai-design/>
 
-目前包含二十五幕，文字部分已实现配对、编号、用法线索与可操作的多维预测表示与Softmax概率分配：
+目前包含二十六幕，文字部分已实现配对、编号、用法线索与可操作的多维预测表示、Softmax概率分配与负对数损失：
 
 1. 根据已有记录做出预测。
 2. 衡量预测差距，让电脑自己调整。
@@ -32,6 +32,8 @@
 24. 同时观察三种字的用法线索，再移动共享表示影响两个上下文的真实分数；数轴连续展开为平面，增加独立调整方向；一起旋转表示与读取方向，展示坐标改变而分数不变。再用编号查找同一行表示，保持已有编辑与分数。数值手工设置，尚未训练文字表示。
 
 25. 沿用当前表示与原句答案，把三个实际分数变成共同分配的概率；用指数曲线追踪正长度，再将同一批线段首尾拼接、整体对齐100%，按需展开Softmax数学。尚未训练文字模型。
+
+26. 从原文答案对应的概率观察损失，用两次减半的等距刻度解释概率相乘为何对应评分相加；接回两条实际预测和可拖动的负对数曲线，按需展开交叉熵公式。尚未执行文字训练。
 
 可直接访问 [第二幕](https://pingjiang2013.github.io/tui/ai-design/#act-2)、[第三幕](https://pingjiang2013.github.io/tui/ai-design/#act-3)、[第四幕](https://pingjiang2013.github.io/tui/ai-design/#act-4)、[第五幕](https://pingjiang2013.github.io/tui/ai-design/#act-5)。
 
@@ -68,6 +70,8 @@
 从用法理解表示：[第二十四幕](https://pingjiang2013.github.io/tui/ai-design/#act-24)，或[用法线索](https://pingjiang2013.github.io/tui/ai-design/#act-24-usage)、[一维表示](https://pingjiang2013.github.io/tui/ai-design/#act-24-dimensions)、[展开二维](https://pingjiang2013.github.io/tui/ai-design/#act-24-data)、[转动表示与读取方向](https://pingjiang2013.github.io/tui/ai-design/#act-24-capacity)、[同一个字查找同一行](https://pingjiang2013.github.io/tui/ai-design/#act-24-shared)。六个分数来自真实点积，不是概率；初值与读取方向手工指定，尚未训练。
 
 从分数得到概率：[第二十五幕](https://pingjiang2013.github.io/tui/ai-design/#act-25)，或[共同分配](https://pingjiang2013.github.io/tui/ai-design/#act-25-distribution)、[指数转换](https://pingjiang2013.github.io/tui/ai-design/#act-25-convert)、[拼接与归一化](https://pingjiang2013.github.io/tui/ai-design/#act-25-normalize)。表示、分数和概率实时联动，保留上一幕编辑与旋转状态；当前分配并非真实世界频率。
+
+从概率得到损失：[第二十六幕](https://pingjiang2013.github.io/tui/ai-design/#act-26)，或[等倍刻度](https://pingjiang2013.github.io/tui/ai-design/#act-26-ruler)、[真实记录的评分相加](https://pingjiang2013.github.io/tui/ai-design/#act-26-records)、[概率与损失曲线](https://pingjiang2013.github.io/tui/ai-design/#act-26-curve)。教学示例与模型实际值明确分开，拖动仍改写原表示。
 
 ## 本地开发
 
