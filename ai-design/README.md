@@ -33,7 +33,7 @@
 
 25. 沿用当前表示与原句答案，把三个实际分数变成共同分配的概率；用指数曲线追踪正长度，再将同一批线段首尾拼接、整体对齐100%，按需展开Softmax数学。尚未训练文字模型。
 
-26. 先让原文答案建立改进目标，再以连续分配追踪整组答案的真实概率乘积；沿用exp反查概率到距离，实际拼接两条记录的贡献，最后命名损失。公式与概率段、曲线点、距离同步显示，尚未执行文字训练。
+26. 将猫、狗两条相同上下文的原文连到共同预测，真实观察只改善一句造成的取舍；用九格结果表解释整组答案的概率，再把逐句贡献相加，联动展示个别损失与总损失。数学直接对应图形，尚未执行文字训练。
 
 可直接访问 [第二幕](https://pingjiang2013.github.io/tui/ai-design/#act-2)、[第三幕](https://pingjiang2013.github.io/tui/ai-design/#act-3)、[第四幕](https://pingjiang2013.github.io/tui/ai-design/#act-4)、[第五幕](https://pingjiang2013.github.io/tui/ai-design/#act-5)。
 
@@ -71,7 +71,7 @@
 
 从分数得到概率：[第二十五幕](https://pingjiang2013.github.io/tui/ai-design/#act-25)，或[共同分配](https://pingjiang2013.github.io/tui/ai-design/#act-25-distribution)、[指数转换](https://pingjiang2013.github.io/tui/ai-design/#act-25-convert)、[拼接与归一化](https://pingjiang2013.github.io/tui/ai-design/#act-25-normalize)。表示、分数和概率实时联动，保留上一幕编辑与旋转状态；当前分配并非真实世界频率。
 
-从目标构造评分：[第二十六幕](https://pingjiang2013.github.io/tui/ai-design/#act-26)，或[整组答案的份额](https://pingjiang2013.github.io/tui/ai-design/#act-26-records)、[exp反查](https://pingjiang2013.github.io/tui/ai-design/#act-26-inverse)、[真实贡献相加](https://pingjiang2013.github.io/tui/ai-design/#act-26-ruler)、[当前损失曲线](https://pingjiang2013.github.io/tui/ai-design/#act-26-curve)。目标、选择依据、机制和数学依次建立，取消独立减半示例与隐藏公式按钮。
+从共同预测理解整体评分：[第二十六幕](https://pingjiang2013.github.io/tui/ai-design/#act-26)，或[两次填空的完整结果表](https://pingjiang2013.github.io/tui/ai-design/#act-26-records)、[逐句评分的换算](https://pingjiang2013.github.io/tui/ai-design/#act-26-inverse)、[贡献相加](https://pingjiang2013.github.io/tui/ai-design/#act-26-ruler)、[单句与整体联动](https://pingjiang2013.github.io/tui/ai-design/#act-26-curve)。从为什么要同时照顾两句出发，不再操作概率嵌套。
 
 ## 本地开发
 
