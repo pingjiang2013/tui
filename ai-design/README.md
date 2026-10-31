@@ -4,7 +4,7 @@
 
 在线体验：<https://pingjiang2013.github.io/tui/ai-design/>
 
-目前包含二十七幕，文字部分已实现配对、编号、多维预测表示、Softmax概率分配、负对数损失，以及一次真实的表示更新：
+目前包含二十八幕，文字部分已实现配对、编号、多维预测表示、Softmax概率分配、负对数损失、数值近似更新与沿共享分母追踪解析梯度：
 
 1. 根据已有记录做出预测。
 2. 衡量预测差距，让电脑自己调整。
@@ -76,6 +76,10 @@
 27. 拖动狗的表示，直接观察九格预测里的原文概率面积变化；再逐个位置描出真实总损失曲线，放大局部观察两侧试算的坡度，最后让同一个点沿曲线完成一次真实更新。支持撤回、重做与历史回看。
 
 让原文改变表示：[第二十七幕](https://pingjiang2013.github.io/tui/ai-design/#act-27)，或[移动表示](https://pingjiang2013.github.io/tui/ai-design/#act-27-probe)、[描出损失曲线](https://pingjiang2013.github.io/tui/ai-design/#act-27-rate)、[正式移动一次](https://pingjiang2013.github.io/tui/ai-design/#act-27-update)。仅训练一个分量，梯度为两侧数值近似，学习率1。曲线采样用于观察，不是训练的搜索过程；点击正式执行才写入共享表示，随后展开这一步的实际变化。
+
+28. 从损失的两个端点解释同一次移动为何帮助狗却伤害猫；用同一总量刻度连接指数与对数计算，从局部比例得到P狗，再逐点合并两句损失及其影响，以解析梯度真实更新一个分量。
+
+从当前计算直接追踪影响：[第二十八幕](https://pingjiang2013.github.io/tui/ai-design/#act-28)，或[找到损失端点](https://pingjiang2013.github.io/tui/ai-design/#act-28-source)、[移动端点](https://pingjiang2013.github.io/tui/ai-design/#act-28-endpoints)、[衔接两段计算](https://pingjiang2013.github.io/tui/ai-design/#act-28-chain)、[汇合两句影响](https://pingjiang2013.github.io/tui/ai-design/#act-28-merge)、[解析梯度更新](https://pingjiang2013.github.io/tui/ai-design/#act-28-update)。沿用当前共享表示，仅正式执行才保存；未训练整张表示表。
 
 ## 本地开发
 
