@@ -81,7 +81,7 @@
 
 从概率竞争理解反馈：[第二十八幕](https://pingjiang2013.github.io/tui/ai-design/#act-28)，或[拖动概率面积](https://pingjiang2013.github.io/tui/ai-design/#act-28-source)、[先扩大再缩回](https://pingjiang2013.github.io/tui/ai-design/#act-28-endpoints)、[缩回为什么有损失](https://pingjiang2013.github.io/tui/ai-design/#act-28-chain)、[合并两句影响](https://pingjiang2013.github.io/tui/ai-design/#act-28-merge)、[实际更新](https://pingjiang2013.github.io/tui/ai-design/#act-28-update)。解释操作的目的和计算来源，再引入局部影响；正式执行才保存，已有表示及历史保留。
 
-29. 先临时降低“鸟”的分数，观察两次预测的损失，再比较三个候选收到的反馈。以同一组旧预测计算全部梯度，真实共同更新三个睡觉方向分量；先执行一轮，再开放十轮运行、暂停、单步和逐轮撤回。
+29. 先临时降低“鸟”的分数，观察两次预测的损失；再在同一画面追踪两条原文怎样把影响送回全部候选，并显示正确答案的影响如何相消。合并反馈后真实共同更新，支持十轮运行、暂停、单步和逐轮撤回。
 
 让所有候选共同学习：[第二十九幕](https://pingjiang2013.github.io/tui/ai-design/#act-29)，或[观察竞争者](https://pingjiang2013.github.io/tui/ai-design/#act-29-observe)、[比较参数的反馈](https://pingjiang2013.github.io/tui/ai-design/#act-29-feedback)、[共同训练](https://pingjiang2013.github.io/tui/ai-design/#act-29-train)。继承当前表示；观察不保存，正式训练才写入。另一方向的分量和此前训练记录保持不变。
 
