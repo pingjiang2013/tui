@@ -42,6 +42,7 @@
     #minimal-ai-scene .ma-term[aria-pressed="true"] { border-color:var(--ma-accent); color:var(--ma-accent); }
     #minimal-ai-scene .ma-term[data-ma-active="true"] { border-color:var(--ma-accent); color:var(--ma-accent); }
     #minimal-ai-scene .ma-probe-term { min-width:2.6em; font-size:1.35em; font-variant-numeric:tabular-nums; }
+    #minimal-ai-scene .ma-flight-actions { justify-content:flex-end; margin:12px 0 0; min-height:36px; }
     #minimal-ai-scene .ma-controls { display:flex; align-items:center; flex-wrap:wrap; gap:8px 16px; }
     #minimal-ai-scene .ma-controls button { font:inherit; color:var(--ma-muted); background:none; border:0; border-bottom:1px solid var(--ma-axis); padding:2px 0; cursor:pointer; }
     #minimal-ai-scene .ma-controls button[aria-pressed="true"] { color:var(--ma-accent); border-color:var(--ma-accent); }
@@ -217,6 +218,7 @@
       }
     }
     function updateNav() {
+      if(flightControls)flightControls.hidden=true;
       if(current()==='flight'){flightNav();return;}
       back.disabled=state.scene===0;
       next.disabled=false;
@@ -4074,7 +4076,7 @@
     if(globalThis.location?.hash==='#act-4') state.scene=scenes.indexOf('step-purpose');
     if(globalThis.location?.hash==='#act-5') state.scene=scenes.indexOf('bias-observe');
 
-    let flightLesson=null;
+    let flightLesson=null,flightControls=null;
     function flightInit(){ensureUsageLesson();if(!flightLesson)flightLesson={stage:0,base:adaptRows(usageLesson.rows),trial:usageLesson.rows[2][1],records:[],cursor:0,phase:0,remaining:0};}
     function flightMath(rows){const ps=[0,1].map(k=>probSoftmax(rows.map(r=>r[k]))),loss=-Math.log(ps[0][0])-Math.log(ps[0][1])-Math.log(ps[1][2]),delta=rows.map((r,i)=>[Number(i<2)-2*ps[0][i],Number(i===2)-ps[1][i]]);return {ps,loss,delta};}
     function flightRows(){const v=flightLesson;return v.cursor?adaptRows(v.records[v.cursor-1].after):adaptRows(v.base);}
@@ -4085,10 +4087,14 @@
     function flightCopy(){flightInit();copy.replaceChildren();const v=flightLesson;
       const paragraphs=[['刚才的训练让模型在“睡觉”的上下文中减少选择“鸟”。但原文还有“小鸟在飞翔”。我们希望它在这里增加选择“鸟”，同时保留刚才学到的区别。','同一个字，怎样同时满足这两个预测要求？接下来继续使用刚才的表示，加入另一种用法。'],['拖动图中的“鸟”，沿飞翔方向移动。观察它在两条读取轴上的投影。移动的是同一个点：飞翔方向读出的分数改变，睡觉方向读出的分数保持不变。','沿着虚线看：同一个点在两个方向上读出分数，再分别得到选择鸟的概率。圆中的灰色部分表示这个概率；这里观察的是副本。'],['现在回到保存的表示。睡觉的两条原文与飞翔的一条原文，各自告诉模型如何调整“鸟”。两种颜色对应两种上下文，箭头的方向和长度来自实际计算。','两份建议都根据同一份旧参数计算。把位移首尾相接，得到共同更新的落点；这里展开的是相加，并没有先更新再计算另一份建议。'],['回到保存的表示，让“小猫在睡觉”“小狗在睡觉”和“小鸟在飞翔”共同参与训练。点击更新，看鸟的位置、两个读取结果和概率怎样一起改变。','猫和狗也会一起调整。每轮都先根据同一份旧表示计算全部影响，再共同更新；三次预测的损失相加，判断这一轮是否改善了预测。'],['这些数字不是事先填写的词义标签。它们因为参与预测而受到调整，逐渐记录训练材料中的用法区别。','这里刻意使用互相垂直的两个读取方向，方便看清独立调整。真实表示的维度通常没有这样明确的名称。我们目前仍在做简化的上下文填空，下一步再探索上下文怎样参与计算。']];paragraphs[v.stage].forEach(t=>paragraph(t));
 
-      if(v.stage===3){const p=paragraph(autoRunning?'正在共同训练，还剩 '+v.remaining+' 轮。可以在右下暂停。':v.remaining?'已暂停，还剩 '+v.remaining+' 轮。':'当前保留 '+v.cursor+' 轮共同更新。');if(v.cursor&&!autoRunning){usageButton(p,'再更新一轮','data-flight-step','',()=>{stopAutomation();cancelPlotAnimation(true);flightStep();flightRefresh();});usageButton(p,'这一段学到了什么 →','data-flight-ending','',()=>{stopAutomation();v.stage=4;lastPlot=null;flightRefresh();});}}
+      if(v.stage===3)paragraph(autoRunning?'正在共同训练，还剩 '+v.remaining+' 轮。':v.remaining?'已暂停，还剩 '+v.remaining+' 轮。':'当前保留 '+v.cursor+' 轮共同更新。');
     }
-    function flightNav(){const v=flightLesson;back.hidden=false;back.disabled=false;back.textContent=v.stage===3&&v.cursor?'← 撤回一轮':'← 上一页';next.textContent=['看看同一个表示 →','让同一个表示学习两种用法 →','让三个字共同学习 →',autoRunning?'暂停':v.remaining?'继续剩余'+v.remaining+'轮':v.cursor?'再训练十轮 →':'共同更新一轮 →','回看这一幕 ↻'][v.stage];automatic.hidden=true;automatic.textContent=autoRunning?'暂停':'再训练十轮';automatic.disabled=false;}
-    function flightNext(){const v=flightLesson;if(v.stage===3&&v.cursor){flightRun();return;}stopAutomation();if(v.stage===3&&!v.cursor){flightStep();flightRefresh();return;}v.stage=v.stage===1?3:(v.stage+1)%5;v.phase=0;flightRefresh();}
+    function flightNav(){const v=flightLesson;back.hidden=false;back.disabled=false;back.textContent=v.stage===3&&v.cursor?'← 撤回一轮':'← 上一页';next.textContent=['看看同一个表示 →','让同一个表示学习两种用法 →','','这一段学到了什么 →','回看这一幕 ↻'][v.stage];automatic.hidden=true;
+      if(!flightControls){flightControls=document.createElement('div');flightControls.className='ma-controls ma-flight-actions';flightControls.setAttribute('aria-label','训练操作');figure.appendChild(flightControls);}flightControls.replaceChildren();flightControls.hidden=v.stage!==3;
+      if(v.stage===3){if(!v.cursor)usageButton(flightControls,'共同更新一轮','data-flight-step','',()=>{stopAutomation();flightStep();flightRefresh();});else{if(!autoRunning)usageButton(flightControls,'再更新一轮','data-flight-step','',()=>{stopAutomation();cancelPlotAnimation(true);flightStep();flightRefresh();});usageButton(flightControls,autoRunning?'暂停':v.remaining?'继续剩余'+v.remaining+'轮':'再训练十轮','data-flight-batch','',flightRun);}next.disabled=!v.cursor;}
+      else next.disabled=false;
+    }
+    function flightNext(){const v=flightLesson;stopAutomation();v.stage=v.stage===1?3:(v.stage+1)%5;v.phase=0;flightRefresh();}
     function flightBack(){stopAutomation();const v=flightLesson;if(v.stage===3&&v.cursor){v.motionFrom=v.cursor;v.cursor--;usageLesson.rows=flightRows();flightRefresh();return;}if(v.stage===0){state.scene=scenes.indexOf('vocab-ending');renderScene();return;}v.stage=v.stage===3?1:v.stage-1;v.phase=0;flightRefresh();}
     let flightGeometry=null;
     function flightSet(value){flightLesson.trial=clamp(value,flightLesson.base[2][1]-1.5,flightLesson.base[2][1]+1.5);renderStage();}
@@ -4104,19 +4110,19 @@
       if(v.stage===3&&round!==null){const n=Math.min(v.records.length,Math.ceil(round)),r=v.records[n-1];if(r){const t=round-(n-1);rows=r.before.map((row,i)=>row.map((x,k)=>x+(r.after[i][k]-x)*t));}else rows=adaptRows(v.base);}
       const angle=usageLesson.rotated?Math.PI/4:0,R=a=>usageRotate(a,angle),d=flightMath(rows),cloud=[...v.base,[0,0],[v.base[2][0],v.base[2][1]-1.5],[v.base[2][0],v.base[2][1]+1.5]];
       let future=adaptRows(v.base);for(let j=0;j<20;j++){const delta=flightMath(future).delta;future=future.map((r,i)=>r.map((x,k)=>x+delta[i][k]));cloud.push(...future);}
-      const rotated=cloud.map(R),xmin=Math.min(...rotated.map(p=>p[0]))-.45,xmax=Math.max(...rotated.map(p=>p[0]))+.45,ymin=Math.min(...rotated.map(p=>p[1]))-.45,ymax=Math.max(...rotated.map(p=>p[1]))+.45,scale=Math.min((w-78)/(xmax-xmin),178/(ymax-ymin)),cx=w/2-(xmin+xmax)*scale/2,cy=236+(ymin+ymax)*scale/2,P=a=>{const q=R(a);return [cx+q[0]*scale,cy-q[1]*scale];},bird=rows[2],bp=P(bird),origin=P([0,0]),fly=R([0,1]),sleep=R([1,0]),inkBird=muted;
-      adaptFrame(w,474,'同一个鸟的表示投影到睡觉和飞翔两个读取方向，连线连接对应预测。概率灰色面积根据当前显示参数实时计算。');
+      const rotated=cloud.map(R),xmin=Math.min(...rotated.map(p=>p[0]))-.45,xmax=Math.max(...rotated.map(p=>p[0]))+.45,ymin=Math.min(...rotated.map(p=>p[1]))-.45,ymax=Math.max(...rotated.map(p=>p[1]))+.45,scale=Math.min((w*.58-40)/(xmax-xmin),180/(ymax-ymin)),cx=w*.29-(xmin+xmax)*scale/2,cy=190+(ymin+ymax)*scale/2,P=a=>{const q=R(a);return [cx+q[0]*scale,cy-q[1]*scale];},bird=rows[2],bp=P(bird),origin=P([0,0]),fly=R([0,1]),sleep=R([1,0]),inkBird=muted;
+      adaptFrame(w,365,'同一个鸟的表示投影到睡觉和飞翔两个读取方向，连线连接对应预测。概率灰色面积根据当前显示参数实时计算。');
       const axes=[[sleep,'睡觉'],[fly,'飞翔']];
-      axes.forEach(([dir,label],k)=>{const l=k===0?Math.min(w*.37,110):85,a=[origin[0]-dir[0]*l,origin[1]+dir[1]*l],b=[origin[0]+dir[0]*l,origin[1]-dir[1]*l];line(...a,...b,{stroke:axis});text(label,clamp(b[0]+(k===0?0:-19),22,w-22),b[1]+(k===0?19:-12),{'text-anchor':'middle','font-size':12,fill:muted});});
-      const circles=[[w-58,380],[w-58,52]];
-      [0,1].forEach(k=>{const foot=[0,0];foot[k]=bird[k];const q=P(foot),[x,y]=circles[k];line(...bp,...q,{stroke:inkBird,'stroke-dasharray':'3 5',opacity:.75});el('circle',{cx:q[0],cy:q[1],r:3,fill:inkBird});const bend=k===0?w-22:q[0];el('path',{d:'M '+q[0]+' '+q[1]+' L '+bend+' '+q[1]+' L '+bend+' '+y+' L '+(x+(k===0?34:-34))+' '+y,fill:'none',stroke:axis,'stroke-width':1,'stroke-dasharray':'2 5'});
+      axes.forEach(([dir,label],k)=>{const l=k===0?Math.min(w*.23,90):90,a=[origin[0]-dir[0]*l,origin[1]+dir[1]*l],b=[origin[0]+dir[0]*l,origin[1]-dir[1]*l];line(...a,...b,{stroke:axis});text(label,clamp(b[0]+(k===0?0:-19),22,w-22),b[1]+(k===0?19:-12),{'text-anchor':'middle','font-size':12,fill:muted});});
+      const circles=[[w-52,253],[w-52,93]];
+      [0,1].forEach(k=>{const foot=[0,0];foot[k]=bird[k];const q=P(foot),[x,y]=circles[k];line(...bp,...q,{stroke:inkBird,'stroke-dasharray':'3 5',opacity:.75});el('circle',{cx:q[0],cy:q[1],r:3,fill:inkBird});const bend=w*.66;el('path',{d:'M '+q[0]+' '+q[1]+' L '+bend+' '+q[1]+' L '+bend+' '+y+' L '+(x-34)+' '+y,fill:'none',stroke:axis,'stroke-width':1,'stroke-dasharray':'2 5'});
         const prob=d.ps[k][2],r=31;let start=-Math.PI/2;d.ps[k].forEach((value,i)=>{const end=start+value*2*Math.PI;el('path',{d:'M '+x+' '+y+' L '+(x+r*Math.cos(start))+' '+(y+r*Math.sin(start))+' A '+r+' '+r+' 0 '+Number(value>.5)+' 1 '+(x+r*Math.cos(end))+' '+(y+r*Math.sin(end))+' Z',fill:[accent,'var(--ma-net-second)',inkBird][i],'data-flight-probability':value,'data-flight-context':k,'data-flight-candidate':i});start=end;});text(k?'飞翔时选择鸟':'睡觉时选择鸟',x,y+(k?49:49),{'text-anchor':'middle','font-size':12});text(probPercent(prob),x,y+66,{'text-anchor':'middle','font-size':13,fill:inkBird});
       });
       const labelPositions=[];rows.forEach((r,i)=>{if(i===2)return;const q=P(r);el('circle',{cx:q[0],cy:q[1],r:4,fill:i===0?accent:'var(--ma-net-second)'});let ly=q[1]+(i===0?-14:20);if(Math.abs(ly-bp[1])<22&&Math.abs(q[0]-bp[0])<40)ly+=i===0?-20:20;labelPositions.push(ly);text(usageWords[i],q[0],ly,{'text-anchor':'middle','font-size':12,fill:i===0?accent:'var(--ma-net-second)'});});
       if(v.stage===3&&round!==null&&Math.abs(round-v.cursor)>.001){const n=Math.min(v.records.length,Math.ceil(round)),old=v.records[n-1]?.before[2];if(old){const q=P(old);el('circle',{cx:q[0],cy:q[1],r:4,fill:'none',stroke:inkBird,opacity:.5});line(...q,...bp,{stroke:inkBird,opacity:.4});}}
       el('circle',{cx:bp[0],cy:bp[1],r:6,fill:inkBird});text('鸟',bp[0]-13,bp[1]-13,{'text-anchor':'end','font-size':16,fill:ink});
       if(v.stage===1){flightGeometry={scale,direction:fly};adaptHandle(...bp,'拖动鸟，观察同一个表示在两个上下文中的预测');handle.setAttribute('aria-orientation','vertical');handle.style.borderColor='var(--ma-muted)';}
-      else if(v.stage===3)text('三次预测的总损失 '+d.loss.toFixed(4),w<400?20:w/2-100,461,{'font-size':12,fill:muted});
+      else if(v.stage===3)text('三次预测的总损失 '+d.loss.toFixed(4),w/2-90,357,{'font-size':12,fill:muted});
       svg.setAttribute('data-flight-cursor',v.cursor);svg.setAttribute('data-flight-remaining',v.remaining||0);svg.setAttribute('data-flight-running',String(autoRunning));svg.setAttribute('data-flight-saved',JSON.stringify(usageLesson.rows));svg.setAttribute('data-flight-rows',JSON.stringify(rows));svg.setAttribute('data-flight-loss',d.loss);svg.setAttribute('data-flight-view-round',round??0);
     }
 
