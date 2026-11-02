@@ -1839,3 +1839,12 @@ for(const width of [736,360,280]){
  batch();app.tick();app.hide();assert.equal(app.timers.size,0);app.show();batch();assert.equal(v().remaining,9);app.goToChapter('29');assert.equal(app.timers.size,0);
  console.log('PASS two-context batch '+width+': ten actual updates, pause/resume remaining rounds, right-side primary action, undo and navigation cancellation');
 }
+
+const prefixProgram=vocabProgram.replace('    const waveChapter=','    globalThis.__captureVocabMath({data:prefixData,state:()=>prefixLesson,history:()=>flightLesson?.records});\n    const waveChapter=');
+{
+ const app=mount(360,'#act-30',prefixProgram);app.advance();app.advance();app.figure.querySelectorAll('[data-flight-step]')[0].fire('click');app.figure.querySelectorAll('[data-flight-batch]')[0].fire('click');for(let i=0;i<10;i++)app.tick();const rows=JSON.stringify(app.usageMath.state().rows),history=JSON.stringify(app.vocabMath.history());app.goToChapter('31-read');assert.equal(JSON.stringify(app.vocabMath.data().rows),rows);const ps=JSON.stringify(app.vocabMath.data().ps);app.goToChapter('24-capacity');usageControl(app,'rotate').fire('click');app.goToChapter('31-read');app.vocabMath.data().ps.forEach((p,i)=>jointClose(p,JSON.parse(ps)[i]));assert.equal(JSON.stringify(app.usageMath.state().rows),rows);assert.equal(JSON.stringify(app.vocabMath.history()),history);
+}
+for(const width of [736,360,280]){
+ const app=mount(width,'#act-31',prefixProgram);assert.equal(app.figure.hidden,true);app.advance();assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'prefix-cut');app.advance();assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'prefix-read');const saved=JSON.stringify(app.usageMath.state().rows);for(const index of [0,1,2]){app.figure.querySelectorAll('[data-prefix-choice]')[index].fire('click');const d=app.vocabMath.data();d.scores.forEach((v,k)=>jointClose(v,app.usageMath.state().rows[index][k]));const e=d.scores.map(Math.exp),sum=e[0]+e[1];d.ps.forEach((v,k)=>jointClose(v,e[k]/sum));jointClose(d.ps[0]+d.ps[1],1);assert.equal(JSON.stringify(app.usageMath.state().rows),saved);}app.advance();assert.equal(app.figure.hidden,true);app.retreat();assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'prefix-read');assert.equal(app.vocabMath.state().selected,2);
+ console.log('PASS next-character prediction '+width+': actual shared rows, two real scores, Softmax, optional prefix changes, saved-model isolation and navigation');
+}
