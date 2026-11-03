@@ -46,7 +46,7 @@
   ]],['从神经元到神经网络',[
     '给直线加入转折','让一部分输出归零','权重、偏置与神经元','让输出权重学习','影响怎样逐层传递','整个神经元共同学习','为什么需要第二个神经元','两个分支协调输出','学习转折出现的位置','追踪两条路径的影响','理解层与层的组合','观察一张小神经网络','整张网络一起学习'
   ]],['走向文字与上下文',[
-    '从原文得到下一字任务','从用法学习文字表示','从分数得到概率','怎样评价文字预测','让原文改变表示','理解概率之间的竞争','让所有候选共同学习','同一个字，两种上下文','用前文预测下一个字','多个字共同参与预测','两句话各自需要不同份量'
+    '从原文得到下一字任务','从用法学习文字表示','从分数得到概率','怎样评价文字预测','让原文改变表示','理解概率之间的竞争','让所有候选共同学习','同一个字，两种上下文','用前文预测下一个字','多个字共同参与预测','两句话各自需要不同份量','这次想找什么：Query 与 Key'
   ]]];
   let number=0,opener=menu,previousOverflow='';
   groups.forEach(([title,items])=>{const h=document.createElement('h3');h.textContent=title;chapters.appendChild(h);const list=document.createElement('ol');items.forEach(label=>{number++;const li=document.createElement('li'),a=document.createElement('a'),n=document.createElement('span');a.href='#act-'+number;a.dataset.chapter=number;n.textContent=String(number).padStart(2,'0');a.append(n,document.createTextNode(label));li.appendChild(a);list.appendChild(li);});chapters.appendChild(list);});
