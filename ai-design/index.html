@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="从已有记录做出预测，追踪参数怎样影响误差，再通过越过与摆动理解导数、学习率和训练。">
-<title>知微 · 让预测逐步变准</title>
+<meta name="description" content="通过真实计算与交互探索，从一次预测开始，逐步理解模型怎样学习、神经网络怎样计算，以及文字怎样参与预测。">
+<title>知微 · 从零理解 AI</title>
 <style>html{color-scheme:light dark;background:light-dark(#fffefb,#21221f)}body{margin:0;padding:24px;box-sizing:border-box}@media(max-width:480px){body{padding:12px}}</style>
 </head>
 <body>
@@ -4083,6 +4083,8 @@
     globalThis.addEventListener?.('pagehide',stopAutomation);
     globalThis.addEventListener?.('pageshow',()=>{if((current().startsWith('adapt-')||current().startsWith('signal-')||current().startsWith('vocab-'))&&plotMotion){updateNav();return;}stopAutomation();if(wholeMode())refreshMesh();else if(current().startsWith('vocab-'))refreshVocab();else updateNav();});
     globalThis.addEventListener?.('hashchange',()=>{
+      if(!globalThis.location?.hash||globalThis.location.hash==='#home'){stopAutomation();return;}
+      if(globalThis.location.hash==='#act-1'){state.scene=0;renderScene();return;}
       if(globalThis.location?.hash==='#act-2') {state.scene=7;renderScene();}
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
@@ -4251,6 +4253,68 @@
   })();
   </script>
 </div>
+
+<style>
+  .zw-shell { --paper:light-dark(#fffefb,#21221f); --ink:light-dark(#30322c,#edece5); --muted:light-dark(#6b7063,#b9bdaf); --axis:light-dark(#cbd0c2,#656b5d); --accent:light-dark(#b75a2e,#efa577); color:var(--ink); font-family:system-ui,"Noto Sans SC","Microsoft YaHei",sans-serif; box-sizing:border-box; }
+  #minimal-ai-scene[hidden],.zw-shell[hidden] { display:none!important; }
+  #minimal-ai-scene { margin-top:44px; }
+  .zw-menu { position:fixed; z-index:50; top:10px; left:14px; width:44px; height:44px; display:grid; align-content:center; justify-content:center; gap:5px; border:0; background:var(--paper); cursor:pointer; border-radius:3px; }
+  .zw-menu span { display:block; width:21px; height:1.5px; background:var(--ink); }
+  .zw-shell a,.zw-shell button { -webkit-tap-highlight-color:transparent; }
+  .zw-shell a:focus-visible,.zw-shell button:focus-visible { outline:2px solid var(--accent); outline-offset:5px; }
+  #zw-home { max-width:620px; min-height:calc(100svh - 48px); margin:0 auto; padding:70px 26px 40px; display:flex; flex-direction:column; justify-content:center; }
+  #zw-home .zw-name { font-size:17px; letter-spacing:.12em; margin:0 0 35px; color:var(--muted); }
+  #zw-home h1 { font-size:34px; line-height:1.65; font-weight:500; margin:0 0 26px; }
+  #zw-home .zw-intro { max-width:32em; font-size:18px; line-height:1.95; margin:0 0 36px; }
+  .zw-home-actions { display:flex; flex-wrap:wrap; gap:20px 30px; align-items:center; }
+  .zw-home-actions a,.zw-home-actions button { font:inherit; font-size:16px; color:var(--ink); border:0; border-bottom:1px solid var(--ink); background:none; text-decoration:none; padding:6px 0; cursor:pointer; }
+  .zw-home-actions button { color:var(--muted); border-color:var(--axis); }
+  #zw-directory { position:fixed; inset:0 auto 0 0; margin:0; width:min(340px,calc(100vw - 28px)); height:100dvh; max-height:none; max-width:none; padding:24px 22px 35px; border:0; border-right:1px solid var(--axis); background:var(--paper); overflow-y:auto; overscroll-behavior:contain; }
+  #zw-directory::backdrop { background:rgb(0 0 0 / .25); }
+  .zw-directory-top { position:sticky; top:0; z-index:1; background:var(--paper); display:flex; align-items:center; justify-content:space-between; margin:0 0 20px; padding:5px 0; }
+  #zw-directory h2 { font-size:19px; font-weight:500; margin:0; }
+  #zw-directory .zw-close { font:inherit; font-size:24px; color:var(--muted); background:none; border:0; padding:3px 8px; cursor:pointer; }
+  #zw-directory .zw-home-link { display:block; padding:9px 0; color:var(--ink); text-decoration:none; font-size:15px; }
+  #zw-directory h3 { font-size:12px; font-weight:400; color:var(--muted); margin:27px 0 10px; letter-spacing:.05em; }
+  #zw-directory ol { margin:0; padding:0; list-style:none; }
+  #zw-directory li a { display:flex; gap:12px; align-items:baseline; padding:10px 8px; margin:0 -8px; color:var(--ink); text-decoration:none; font-size:14px; line-height:1.6; border-radius:2px; }
+  #zw-directory li a span { min-width:21px; font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  #zw-directory li a:hover { background:light-dark(#f2f1eb,#2a2c26); }
+  #zw-directory a[aria-current] { color:var(--accent); }
+  @media(max-width:480px) { #zw-home { padding:65px 16px 35px; min-height:calc(100svh - 24px); } #zw-home h1 { font-size:28px; } #zw-home .zw-intro { font-size:16px; } #zw-home .zw-name { margin-bottom:25px; } }
+</style>
+<button class="zw-shell zw-menu" id="zw-menu-button" type="button" aria-label="打开学习目录" aria-controls="zw-directory" aria-expanded="false"><span></span><span></span><span></span></button>
+<main class="zw-shell" id="zw-home" tabindex="-1" hidden>
+  <p class="zw-name">知微</p>
+  <h1>从零理解 AI，<br>从一次预测开始。</h1>
+  <p class="zw-intro">一步步建立模型，观察它怎样计算、怎样学习，再走向文字与语言模型。用操作追踪真实的计算，让每一个新机制都有来由。</p>
+  <div class="zw-home-actions"><a href="#act-1">从头开始 →</a><button type="button" id="zw-home-directory">浏览目录</button></div>
+</main>
+<dialog class="zw-shell" id="zw-directory" aria-labelledby="zw-directory-title">
+  <div class="zw-directory-top"><h2 id="zw-directory-title">学习目录</h2><button class="zw-close" id="zw-directory-close" type="button" aria-label="关闭目录">×</button></div>
+  <nav aria-label="学习章节"><a class="zw-home-link" href="#home">返回首页</a><div id="zw-chapters"></div></nav>
+</dialog>
+<script>
+(() => {
+  const home=document.getElementById('zw-home'),scene=document.getElementById('minimal-ai-scene'),menu=document.getElementById('zw-menu-button'),dialog=document.getElementById('zw-directory'),close=document.getElementById('zw-directory-close'),chapters=document.getElementById('zw-chapters');
+  const groups=[['预测与学习',[
+    '从记录做出预测','让机器改善预测','参数怎样影响误差','调整的步幅','让预测整体平移','两个参数共同调整','为什么用平方衡量误差','沿平方误差下降','直线预测的局限'
+  ]],['从神经元到神经网络',[
+    '给直线加入转折','让一部分输出归零','权重、偏置与神经元','让输出权重学习','影响怎样逐层传递','整个神经元共同学习','为什么需要第二个神经元','两个分支协调输出','学习转折出现的位置','追踪两条路径的影响','理解层与层的组合','观察一张小神经网络','整张网络一起学习'
+  ]],['走向文字与上下文',[
+    '从原文得到下一字任务','从用法学习文字表示','从分数得到概率','怎样评价文字预测','让原文改变表示','理解概率之间的竞争','让所有候选共同学习','同一个字，两种上下文','用前文预测下一个字','多个字共同参与预测','两句话各自需要不同份量'
+  ]]];
+  let number=0,opener=menu,previousOverflow='';
+  groups.forEach(([title,items])=>{const h=document.createElement('h3');h.textContent=title;chapters.appendChild(h);const list=document.createElement('ol');items.forEach(label=>{number++;const li=document.createElement('li'),a=document.createElement('a'),n=document.createElement('span');a.href='#act-'+number;a.dataset.chapter=number;n.textContent=String(number).padStart(2,'0');a.append(n,document.createTextNode(label));li.appendChild(a);list.appendChild(li);});chapters.appendChild(list);});
+  function route(){const hash=location.hash,isHome=!hash||hash==='#home';home.hidden=!isHome;scene.hidden=isHome;const match=hash.match(/^#act-(\d+)(?:-|$)/),current=match?Number(match[1]):null;dialog.querySelectorAll('a').forEach(a=>{a.removeAttribute('aria-current');if((isHome&&a.hash==='#home')||Number(a.dataset.chapter)===current)a.setAttribute('aria-current','page');});}
+  function open(button){opener=button;previousOverflow=document.body.style.overflow;document.body.style.overflow='hidden';dialog.showModal();menu.setAttribute('aria-expanded','true');close.focus();dialog.querySelector('a[aria-current]')?.scrollIntoView({block:'nearest'});}
+  menu.addEventListener('click',()=>open(menu));document.getElementById('zw-home-directory').addEventListener('click',event=>open(event.currentTarget));close.addEventListener('click',()=>dialog.close());
+  dialog.addEventListener('close',()=>{document.body.style.overflow=previousOverflow;menu.setAttribute('aria-expanded','false');opener.focus();});
+  dialog.addEventListener('click',event=>{const link=event.target.closest('a');if(link){dialog.close();if(link.hash===location.hash)window.dispatchEvent(new HashChangeEvent('hashchange'));}if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();}});
+  scene.tabIndex=-1;
+  addEventListener('hashchange',()=>{route();window.scrollTo(0,0);requestAnimationFrame(()=>(home.hidden?scene:home).focus({preventScroll:true}));});route();
+})();
+</script>
 
 </body>
 </html>

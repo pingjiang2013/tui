@@ -4072,6 +4072,8 @@
     globalThis.addEventListener?.('pagehide',stopAutomation);
     globalThis.addEventListener?.('pageshow',()=>{if((current().startsWith('adapt-')||current().startsWith('signal-')||current().startsWith('vocab-'))&&plotMotion){updateNav();return;}stopAutomation();if(wholeMode())refreshMesh();else if(current().startsWith('vocab-'))refreshVocab();else updateNav();});
     globalThis.addEventListener?.('hashchange',()=>{
+      if(!globalThis.location?.hash||globalThis.location.hash==='#home'){stopAutomation();return;}
+      if(globalThis.location.hash==='#act-1'){state.scene=0;renderScene();return;}
       if(globalThis.location?.hash==='#act-2') {state.scene=7;renderScene();}
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
