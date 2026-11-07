@@ -2091,3 +2091,45 @@ for(const hash of ['#act-57','#act-57-single','#act-57-batch']){
  assert.ok(api.plans().history.at(-1).records.every(r=>r.probabilities[r.target]>=.9));
 }
 {const app=mount(280,'#act-47-train',multilearnProgram);app.advance();app.goToChapter(57);assert.equal(JSON.stringify(app.vocabMath.data().parameters),JSON.stringify(app.vocabMath.prior().parameters));assert.ok(app.vocabMath.plans().history.at(-1).records.every(r=>r.probabilities[r.target]>.9));}
+
+// Inference must append its own output and rerun the shared forward computation.
+const autogenProgram=script.replace('    const waveChapter=','    globalThis.__captureVocabMath({data:autogenView,state:()=>autogenLesson,plans:autogenPlans,forward:multilearnForward,prior:()=>multilearnPlans().history.at(-1),upstream:()=>({attention:maskModel(true),head:multilearnLesson.head,parameters:multilearnLesson.initial,step:multilearnLesson.batchIndex}),gain:g=>{projectInit();projectLesson.gain=g;renderScene();},flat:()=>{autogenLesson.head=[[0,0],[0,0],[0,0]];autogenLesson.plans=null;}});\n    const waveChapter=');
+for(const width of [736,360,280]){
+ const app=mount(width,'#act-58',autogenProgram),api=app.vocabMath,json=x=>JSON.stringify(x),P=api.plans(),L=api.state(),up=json(api.upstream()),frozen=json([L.parameters,L.head]);
+ assert.equal(json(api.data().ids),'[0,1]');assert.equal(json(api.data().parameters),json(api.prior().parameters));
+ for(const key of ['inputs','Q','K','V','scores','shares','context','h','logits','probabilities'])assert.equal(json(P.first[key]),json(api.prior().records[0][key]));
+ assert.equal(P.firstId,P.first.probabilities.indexOf(Math.max(...P.first.probabilities)));assert.equal(P.secondId,P.second.probabilities.indexOf(Math.max(...P.second.probabilities)));
+ assert.equal(json(P.second.ids),json([0,1,P.firstId]));assert.equal(P.second.inputs.length,3);assert.notEqual(json(P.second.probabilities),json(P.first.probabilities));
+ for(const d of [P.first,P.second]){
+  assert.equal('loss' in d,false);assert.equal('target' in d,false);jointClose(d.shares.reduce((s,p)=>s+p,0),1);
+  const words=[[0,1],[1,0],[1,.5]],expected=d.ids.map((id,i)=>words[id].map(v=>v+.25+.5*i));assert.equal(json(d.inputs),json(expected));
+  for(const k of ['Q','K','V'])d[k].forEach((row,i)=>row.forEach((v,j)=>jointClose(v,expected[i].reduce((sum,x,a)=>sum+x*L.parameters['W'+k][a][j],0))));
+  for(let j=0;j<2;j++){jointClose(d.context[j],d.V.reduce((sum,v,i)=>sum+v[j]*d.shares[i],0));jointClose(d.h[j],d.context[j]+d.inputs.at(-1)[j]);}
+  d.scores.forEach((v,i)=>jointClose(v,d.K[i].reduce((sum,k,j)=>sum+k*d.Q.at(-1)[j],0)));
+  const max=Math.max(...d.logits),denom=d.logits.reduce((sum,v)=>sum+Math.exp(v-max),0);d.probabilities.forEach((p,i)=>jointClose(p,Math.exp(d.logits[i]-max)/denom));
+ }
+ assert.throws(()=>api.forward(L.parameters,P.finalIds,L.head),/Unsupported teaching prefix/);
+ app.advance();assert.equal(api.state().firstDone,true);assert.equal(json(api.data().ids),'[0,1]');assert.equal(json(api.data().visibleIds),json([0,1,P.firstId]));assert.equal(app.svg.querySelectorAll('[data-autogen-token]').length,3);
+ app.automatic.fire('click');assert.equal(api.state().firstDone,true);assert.equal(json([L.parameters,L.head]),frozen);
+ app.advance();assert.equal(json(api.data().probabilities),json(P.first.probabilities));app.advance();assert.equal(api.state().readDone,true);assert.equal(json(api.data().probabilities),json(P.second.probabilities));assert.equal(api.data().ids.length,3);
+ app.advance();app.advance();assert.equal(api.state().secondDone,true);assert.equal(json(api.data().visibleIds),json(P.finalIds));assert.equal(api.data().ids.length,3);assert.equal(app.svg.querySelectorAll('[data-autogen-token]').length,4);
+ const g=JSON.parse(app.svg.getAttribute('data-autogen-geometry')),segments=JSON.parse(app.svg.getAttribute('data-autogen-segments'));segments.forEach((v,i)=>jointClose(v.width/g.bandW,P.second.probabilities[i]));
+ assert.equal(json([L.parameters,L.head]),frozen);assert.equal(json(api.upstream()),up);
+ app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.equal(api.state().firstDone,false);assert.equal(api.state().readDone,false);assert.equal(api.state().secondDone,false);assert.equal(json(api.data().visibleIds),'[0,1]');
+ console.log('PASS generation '+width+': learned parameters inherited, shared forward identity, true argmax, output becomes input, new last query, exact probability widths, second output and frozen weights');
+}
+{
+ const app=mount(280,'#act-58',autogenProgram,true),api=app.vocabMath,P=api.plans();app.advance();app.frame(1300);
+ assert.equal(api.state().action,'first');assert.equal(api.data().ids.length,2);assert.equal(api.data().visibleIds.length,2);const g=JSON.parse(app.svg.getAttribute('data-autogen-geometry')),point=JSON.parse(app.svg.getAttribute('data-autogen-flyingPoint'));assert.ok(point.y>g.wordY&&point.y<g.bandY+54);
+ app.resizeHeight();assert.equal(api.state().action,'first');app.frame(1300);assert.equal(api.state().firstDone,true);app.advance();app.advance();app.frame(1050);
+ assert.ok(api.state().phase<1);assert.equal(api.data().ids.length,2);assert.equal(JSON.stringify(api.data().probabilities),JSON.stringify(P.first.probabilities));
+ app.frame(1000);assert.ok(api.state().phase>=1);assert.equal(api.data().ids.length,3);assert.equal(JSON.stringify(api.data().probabilities),JSON.stringify(P.second.probabilities));app.frame(2000);assert.equal(api.state().readDone,true);
+ app.advance();app.advance();app.hide();assert.equal(api.state().action,null);assert.equal(api.state().secondDone,true);assert.equal(api.data().visibleIds.length,4);app.show();app.frame(10000);assert.equal(api.data().visibleIds.length,4);
+ app.retreat();assert.equal(api.state().readDone,true);assert.equal(api.data().ids.length,3);app.retreat();assert.equal(api.data().ids.length,2);assert.equal(api.state().firstDone,true);
+ console.log('PASS generation motion: chosen word travels, old prediction leaves before new input, real query changes, resize, backtracking and no extra hidden-tab generation');
+}
+for(const hash of ['#act-58-feed','#act-58-repeat']){
+ const app=mount(280,hash,autogenProgram,'reduce'),api=app.vocabMath;assert.equal(api.state().firstDone,true);assert.equal(api.data().ids.length,hash.endsWith('repeat')?3:2);api.gain(2);assert.equal(api.data().ids.length,hash.endsWith('repeat')?3:2);app.advance();assert.equal(api.state().action,null);
+}
+{const app=mount(280,'#act-58',autogenProgram);app.vocabMath.flat();const P=app.vocabMath.plans();assert.equal(P.firstId,0);assert.equal(P.secondId,0);app.advance();app.advance();app.advance();app.advance();app.advance();assert.equal(JSON.stringify(app.vocabMath.data().visibleIds),'[0,1,0,0]');}
+{const app=mount(280,'#act-47-train',autogenProgram);app.advance();app.goToChapter(58);assert.equal(JSON.stringify(app.vocabMath.data().parameters),JSON.stringify(app.vocabMath.prior().parameters));}
