@@ -2038,3 +2038,56 @@ for(const width of [736,360,280]){
 {const app=mount(280,'#act-56-joint',attlearnProgram,'reduce');assert.equal(JSON.stringify(app.vocabMath.shown().parameters),JSON.stringify(app.vocabMath.plans().value.parameters));app.advance();assert.equal(app.vocabMath.state().jDone,true);}
 {const app=mount(280,'#act-47-train',attlearnProgram);app.advance();app.goToChapter(56);assert.equal(app.vocabMath.data().sourceSteps,1);}
 {const app=mount(280,'#act-55-train',attlearnProgram);app.advance();app.advance();app.advance();assert.match(app.copy.textContent,/V 决定从这些位置/);}
+
+// Two different prefixes must train the same attention parameters, without answer leakage.
+const multilearnProgram=script.replace('    const waveChapter=','    globalThis.__captureVocabMath({data:multilearnShown,model:multilearnModel,step:multilearnStep,evaluate:multilearnEvaluate,plans:multilearnPlans,state:()=>multilearnLesson,prior:()=>attlearnPlans().joint,upstream:()=>maskModel(true),head:()=>attlearnLesson.head,gain:g=>{projectInit();projectLesson.gain=g;renderScene();}});\n    const waveChapter=');
+for(const width of [736,360,280]){
+ const app=mount(width,'#act-57',multilearnProgram),api=app.vocabMath,P=api.plans(),L=api.state();
+ const json=x=>JSON.stringify(x),base=api.data(),up=json(api.upstream()),head=json(api.head());
+ assert.equal(json(base.parameters),json(api.prior().parameters));
+ assert.equal(base.records.length,2);assert.equal(json(base.records[0].ids),'[0,1]');assert.equal(json(base.records[1].ids),'[2,1]');
+ assert.equal(json(base.records[0].inputs[1]),json(base.records[1].inputs[1]));
+ for(const r of base.records){assert.equal(r.inputs.length,2);jointClose(r.shares.reduce((a,b)=>a+b,0),1);jointClose(r.loss,-Math.log(r.probabilities[r.target]));for(let j=0;j<2;j++)jointClose(r.context[j],r.V.reduce((sum,v,i)=>sum+v[j]*r.shares[i],0));}
+ // Check each record, at both initial and learned states; no shared feedback may be dropped.
+ for(const p of [P.initial.parameters,P.history.at(-1).parameters])for(const i of [0,1]){
+  const d=api.model(p,i);
+  for(const k of ['WQ','WK','WV'])for(let a=0;a<2;a++)for(let b=0;b<2;b++){
+   const high=JSON.parse(json(p)),low=JSON.parse(json(p)),eps=1e-5;high[k][a][b]+=eps;low[k][a][b]-=eps;
+   jointClose(d.gradients[k][a][b],(api.model(high,i).loss-api.model(low,i).loss)/(2*eps),3e-7);
+  }
+ }
+ const single=P.single.after;
+ assert.ok(single.records[0].loss<base.records[0].loss);assert.ok(single.records[1].loss>base.records[1].loss);
+ const step=api.step(single.parameters,[0,1]);
+ for(const k of ['WQ','WK','WV'])for(let a=0;a<2;a++)for(let b=0;b<2;b++){
+  const mean=(single.records[0].gradients[k][a][b]+single.records[1].gradients[k][a][b])/2;
+  jointClose(step.gradients[k][a][b],mean);jointClose(step.parameters[k][a][b],single.parameters[k][a][b]-step.rate*mean);
+ }
+ for(let i=1;i<P.history.length;i++)assert.ok(P.history[i].loss<P.history[i-1].loss);
+ assert.ok(P.history.at(-1).records.every(r=>r.probabilities[r.target]>=.92));
+ app.advance();assert.equal(json(api.data().parameters),json(base.parameters));app.advance();assert.equal(json(api.data().parameters),json(single.parameters));
+ app.automatic.fire('click');assert.equal(json(api.data().parameters),json(base.parameters));app.automatic.fire('click');assert.equal(json(api.data().parameters),json(single.parameters));
+ app.advance();assert.equal(json(api.data().parameters),json(single.parameters));app.advance();assert.equal(json(api.data().parameters),json(P.history.at(-1).parameters));
+ app.automatic.fire('click');assert.equal(json(api.data().parameters),json(single.parameters));app.automatic.fire('click');
+ assert.equal(json(api.upstream()),up);assert.equal(json(api.head()),head);
+ const g=JSON.parse(app.svg.getAttribute('data-multilearn-geometry')),screens=JSON.parse(app.svg.getAttribute('data-multilearn-screens'));
+ api.data().records.forEach((r,i)=>{jointClose(screens[i].x,g.left+(r.context[0]-g.minX)*g.scale);jointClose(screens[i].y,g.bottom-(r.context[1]-g.minY)*g.scale);});
+ app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.equal(json(api.data().parameters),json(base.parameters));
+ console.log('PASS shared records '+width+': 48 finite-difference gradients, prefix-only inputs, shared parameter effects, exact averaged feedback, decreasing mean loss, two distinct predictions, compare and restore');
+}
+{
+ const app=mount(280,'#act-57-batch',multilearnProgram,true),api=app.vocabMath;
+ assert.equal(JSON.stringify(api.data().parameters),JSON.stringify(api.plans().single.parameters));
+ app.advance();app.frame(500);assert.ok(api.state().phase<2);assert.equal(JSON.stringify(api.data().parameters),JSON.stringify(api.plans().single.parameters));
+ app.frame(2200);const phase=api.state().phase;assert.ok(phase>2);assert.ok(phase<api.plans().history.length);app.resizeHeight();jointClose(api.state().phase,phase);
+ app.advance();const index=api.state().batchIndex;assert.ok(index>0);assert.equal(api.state().action,null);assert.equal(app.frames.size,0);assert.equal(JSON.stringify(api.data().parameters),JSON.stringify(api.plans().history[index].parameters));
+ app.frame(10000);assert.equal(api.state().batchIndex,index);app.advance();app.frame(800);app.hide();assert.equal(api.state().action,null);assert.equal(app.frames.size,0);const held=JSON.stringify(api.data());app.show();app.frame(10000);assert.equal(JSON.stringify(api.data()),held);
+ app.advance();app.frame(10000);assert.equal(api.state().batchIndex,api.plans().history.length-1);
+ console.log('PASS shared records motion: losses combine before training, real per-step interpolation, pause/resume, resize and hidden-tab stop');
+}
+for(const hash of ['#act-57','#act-57-single','#act-57-batch']){
+ const app=mount(280,hash,multilearnProgram,'reduce'),api=app.vocabMath;assert.equal(app.figure.hidden,false);
+ api.gain(2);assert.ok(api.plans().history.at(-1).loss<api.plans().single.after.loss);
+ assert.ok(api.plans().history.at(-1).records.every(r=>r.probabilities[r.target]>=.9));
+}
+{const app=mount(280,'#act-47-train',multilearnProgram);app.advance();app.goToChapter(57);assert.equal(JSON.stringify(app.vocabMath.data().parameters),JSON.stringify(app.vocabMath.prior().parameters));assert.ok(app.vocabMath.plans().history.at(-1).records.every(r=>r.probabilities[r.target]>.9));}

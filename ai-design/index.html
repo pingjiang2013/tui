@@ -104,7 +104,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','mesh-purpose','mesh-input','mesh-ablate','mesh-ending','whole-purpose','whole-goal','whole-records','whole-paths','whole-average','whole-train','whole-ending','text-purpose','text-pairs','text-ids','text-renumber','text-ending','usage-purpose','usage-observe','usage-dimensions','usage-data','usage-capacity','usage-lookup','usage-ending','prob-observe','prob-distribution','prob-convert','prob-normalize','prob-ending','loss-observe','loss-records','loss-design','loss-ruler','loss-inverse','loss-curve','loss-ending','adapt-purpose','adapt-probe','adapt-rate','adapt-update','adapt-ending','signal-purpose','signal-source','signal-endpoints','signal-chain','signal-merge','signal-update','signal-ending','vocab-purpose','vocab-observe','vocab-feedback','vocab-train','vocab-ending','flight','prefix-purpose','prefix-cut','prefix-read','prefix-ending','blend-purpose','blend-compose','blend-explore','blend-ending','weight-purpose','weight-equal','weight-mix','weight-ending','qk-purpose','qk-observe','qk-match','qk-ending','roles-purpose','roles-read','roles-match','roles-offer','roles-ending','derive-purpose','derive-q','derive-k','derive-shared','derive-link','derive-ending','rows-purpose','rows-build','rows-inspect','rows-ending','scores-purpose','scores-pair','scores-row','scores-all','scores-inspect','scores-ending','portions-exp','portions-cat','portions-white','portions-table','portions-ending','values-read','values-name','values-ending','project-fixed','project-adjust','project-shared','project-ending','residual-prepare','residual-join','residual-both','residual-ending','round-run','round-ending','place-content','place-position','place-verify','place-ending','mask-leak','mask-cut','mask-rows','mask-ending','readout-purpose','readout-score','readout-prob','readout-ending','tune-loss','tune-feedback','tune-train','tune-ending','backflow-fan','backflow-sum','backflow-residual','backflow-ending','vgrad-source','vgrad-return','vgrad-ending','agrad-source','agrad-feedback','agrad-trial','agrad-ending','sgrad-source','sgrad-response','sgrad-feedback','sgrad-ending','qgrad-source','qgrad-paths','qgrad-joint','qgrad-ending','kgrad-source','kgrad-feedback','kgrad-ending','wkshare-purpose','wkshare-rule','wkshare-feedback','wkshare-ending','wkgroup-goal','wkgroup-compose','wkgroup-train','wkgroup-ending','attlearn-goal','attlearn-value','attlearn-joint','attlearn-ending','emb-purpose','emb-lookup','emb-vector','emb-compute','emb-ending'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','mesh-purpose','mesh-input','mesh-ablate','mesh-ending','whole-purpose','whole-goal','whole-records','whole-paths','whole-average','whole-train','whole-ending','text-purpose','text-pairs','text-ids','text-renumber','text-ending','usage-purpose','usage-observe','usage-dimensions','usage-data','usage-capacity','usage-lookup','usage-ending','prob-observe','prob-distribution','prob-convert','prob-normalize','prob-ending','loss-observe','loss-records','loss-design','loss-ruler','loss-inverse','loss-curve','loss-ending','adapt-purpose','adapt-probe','adapt-rate','adapt-update','adapt-ending','signal-purpose','signal-source','signal-endpoints','signal-chain','signal-merge','signal-update','signal-ending','vocab-purpose','vocab-observe','vocab-feedback','vocab-train','vocab-ending','flight','prefix-purpose','prefix-cut','prefix-read','prefix-ending','blend-purpose','blend-compose','blend-explore','blend-ending','weight-purpose','weight-equal','weight-mix','weight-ending','qk-purpose','qk-observe','qk-match','qk-ending','roles-purpose','roles-read','roles-match','roles-offer','roles-ending','derive-purpose','derive-q','derive-k','derive-shared','derive-link','derive-ending','rows-purpose','rows-build','rows-inspect','rows-ending','scores-purpose','scores-pair','scores-row','scores-all','scores-inspect','scores-ending','portions-exp','portions-cat','portions-white','portions-table','portions-ending','values-read','values-name','values-ending','project-fixed','project-adjust','project-shared','project-ending','residual-prepare','residual-join','residual-both','residual-ending','round-run','round-ending','place-content','place-position','place-verify','place-ending','mask-leak','mask-cut','mask-rows','mask-ending','readout-purpose','readout-score','readout-prob','readout-ending','tune-loss','tune-feedback','tune-train','tune-ending','backflow-fan','backflow-sum','backflow-residual','backflow-ending','vgrad-source','vgrad-return','vgrad-ending','agrad-source','agrad-feedback','agrad-trial','agrad-ending','sgrad-source','sgrad-response','sgrad-feedback','sgrad-ending','qgrad-source','qgrad-paths','qgrad-joint','qgrad-ending','kgrad-source','kgrad-feedback','kgrad-ending','wkshare-purpose','wkshare-rule','wkshare-feedback','wkshare-ending','wkgroup-goal','wkgroup-compose','wkgroup-train','wkgroup-ending','attlearn-goal','attlearn-value','attlearn-joint','attlearn-ending','multilearn-goal','multilearn-single','multilearn-batch','multilearn-ending','emb-purpose','emb-lookup','emb-vector','emb-compute','emb-ending'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -116,7 +116,7 @@
     let plotFrame=null,plotMotion=null,lastPlot=null;
     let direction=null,stepLesson=null,biasLesson=null,biasGeometry=null,wave=null,bend=null,outputLesson=null,relayLesson=null;
     const current=()=>scenes[state.scene];
-    const textOnly=()=>['attlearn-ending','wkgroup-ending','wkshare-purpose','wkshare-ending','kgrad-ending','qgrad-ending','sgrad-ending','agrad-ending','vgrad-ending','backflow-ending','tune-ending','readout-ending','mask-ending','place-ending','round-ending','residual-ending','project-ending','values-ending','portions-ending','purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','mesh-purpose','mesh-ending','whole-purpose','whole-ending','text-purpose','text-ending','usage-purpose','usage-ending','prob-ending','loss-ending','adapt-purpose','adapt-ending','signal-purpose','signal-ending','vocab-purpose','vocab-ending','prefix-purpose','prefix-ending','blend-purpose','blend-ending','weight-purpose','weight-ending','qk-purpose','qk-ending','roles-purpose','derive-purpose','derive-ending','rows-purpose','rows-ending','scores-purpose','scores-ending','emb-purpose','emb-ending'].includes(current())||(current()==='flight'&&(!flightLesson||[0,4].includes(flightLesson.stage)))||(current()==='vocab-feedback'&&vocabLesson?.causalStage===0);
+    const textOnly=()=>['multilearn-ending','attlearn-ending','wkgroup-ending','wkshare-purpose','wkshare-ending','kgrad-ending','qgrad-ending','sgrad-ending','agrad-ending','vgrad-ending','backflow-ending','tune-ending','readout-ending','mask-ending','place-ending','round-ending','residual-ending','project-ending','values-ending','portions-ending','purpose','why-rule','ending','learn-purpose','learn-ending','direction-purpose','direction-rate','direction-ending','step-purpose','step-ending','bias-ending','wave-multi-purpose','wave-ending','bend-purpose','bend-ending','output-purpose','output-ending','relay-purpose','relay-ending','joint-purpose','joint-ending','pair-ending','duo-purpose','duo-ending','onset-purpose','onset-ending','net-purpose','net-ending','deep-summary','deep-purpose','deep-ending','mesh-purpose','mesh-ending','whole-purpose','whole-ending','text-purpose','text-ending','usage-purpose','usage-ending','prob-ending','loss-ending','adapt-purpose','adapt-ending','signal-purpose','signal-ending','vocab-purpose','vocab-ending','prefix-purpose','prefix-ending','blend-purpose','blend-ending','weight-purpose','weight-ending','qk-purpose','qk-ending','roles-purpose','derive-purpose','derive-ending','rows-purpose','rows-ending','scores-purpose','scores-ending','emb-purpose','emb-ending'].includes(current())||(current()==='flight'&&(!flightLesson||[0,4].includes(flightLesson.stage)))||(current()==='vocab-feedback'&&vocabLesson?.causalStage===0);
     const predict=(seconds,distance=state.distance)=>rule.start+seconds*distance;
     const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
     const number=value=>Number(value.toFixed(1)).toString();
@@ -145,6 +145,7 @@
       return `第3秒的预测现在是${number(p3)}厘米，与记录相差${number(difference)}厘米。你调整的是同一条规则，所以其他时刻的预测也跟着改变。`;
     }
     function renderCopy() {
+      if(current().startsWith('multilearn-')){multilearnCopy();return;}
       if(current().startsWith('attlearn-')){attlearnCopy();return;}
       if(current().startsWith('wkgroup-')){wkgroupCopy();return;}
       if(current().startsWith('wkshare-')){wkshareCopy();return;}
@@ -268,6 +269,7 @@
       }
     }
     function updateNav() {
+      if(current().startsWith('multilearn-')){multilearnNav();return;}
       if(current().startsWith('attlearn-')){attlearnNav();return;}
       if(current().startsWith('wkgroup-')){wkgroupNav();return;}
       if(current().startsWith('wkshare-')){wkshareNav();return;}
@@ -333,6 +335,7 @@
       next.textContent=labels[state.scene];
     }
     function renderStage() {
+      if(current().startsWith('multilearn-')){multilearnDraw();return;}
       if(current().startsWith('attlearn-')){attlearnDraw();return;}
       if(current().startsWith('wkgroup-')){wkgroupDraw();return;}
       if(current().startsWith('wkshare-')){wkshareDraw();return;}
@@ -679,6 +682,7 @@
     }
     function refreshLearning() {renderCopy();updateNav();renderStage();}
     function stopAutomation() {
+      if(current().startsWith('multilearn-')&&multilearnLesson?.action==='batch')multilearnPause();
       sgradEndDrag();
       agradEndDrag();
       if(current()==='round-run'&&roundLesson){roundLesson.auto=false;roundLesson.running=false;}
@@ -4014,11 +4018,11 @@
       if(current().startsWith('direction-')) ensureDirection();
       if(current()==='predict'||current()==='calculation') ensureSnapshot();
       svg.setAttribute('role','img');handle.setAttribute('role','slider');handle.style.cursor='';
-      root.className=(textOnly()?'ma-text-page':'ma-interactive-page')+((current().startsWith('usage-')||current().startsWith('prob-')||current().startsWith('loss-')||current().startsWith('adapt-')||current().startsWith('signal-')||current().startsWith('vocab-')||current()==='flight'||current().startsWith('blend-')||current().startsWith('weight-')||current().startsWith('qk-')||current().startsWith('roles-')||current().startsWith('derive-')||current().startsWith('rows-')||current().startsWith('scores-')||current().startsWith('portions-')||current().startsWith('values-')||current().startsWith('project-')||current().startsWith('residual-')||current().startsWith('round-')||current().startsWith('place-')||current().startsWith('mask-')||current().startsWith('readout-')||current().startsWith('tune-')||current().startsWith('backflow-')||current().startsWith('vgrad-')||current().startsWith('agrad-')||current().startsWith('sgrad-')||current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-'))?' ma-usage-page':'')+((current().startsWith('qk-')||current().startsWith('roles-')||current().startsWith('derive-')||current().startsWith('rows-')||current().startsWith('scores-')||current().startsWith('portions-')||current().startsWith('values-')||current().startsWith('project-')||current().startsWith('residual-')||current().startsWith('round-')||current().startsWith('place-')||current().startsWith('mask-')||current().startsWith('readout-')||current().startsWith('tune-')||current().startsWith('backflow-')||current().startsWith('vgrad-')||current().startsWith('agrad-')||current().startsWith('sgrad-')||current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-'))&&!textOnly()?' ma-qk-page':'');
+      root.className=(textOnly()?'ma-text-page':'ma-interactive-page')+((current().startsWith('usage-')||current().startsWith('prob-')||current().startsWith('loss-')||current().startsWith('adapt-')||current().startsWith('signal-')||current().startsWith('vocab-')||current()==='flight'||current().startsWith('blend-')||current().startsWith('weight-')||current().startsWith('qk-')||current().startsWith('roles-')||current().startsWith('derive-')||current().startsWith('rows-')||current().startsWith('scores-')||current().startsWith('portions-')||current().startsWith('values-')||current().startsWith('project-')||current().startsWith('residual-')||current().startsWith('round-')||current().startsWith('place-')||current().startsWith('mask-')||current().startsWith('readout-')||current().startsWith('tune-')||current().startsWith('backflow-')||current().startsWith('vgrad-')||current().startsWith('agrad-')||current().startsWith('sgrad-')||current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-'))?' ma-usage-page':'')+((current().startsWith('qk-')||current().startsWith('roles-')||current().startsWith('derive-')||current().startsWith('rows-')||current().startsWith('scores-')||current().startsWith('portions-')||current().startsWith('values-')||current().startsWith('project-')||current().startsWith('residual-')||current().startsWith('round-')||current().startsWith('place-')||current().startsWith('mask-')||current().startsWith('readout-')||current().startsWith('tune-')||current().startsWith('backflow-')||current().startsWith('vgrad-')||current().startsWith('agrad-')||current().startsWith('sgrad-')||current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-'))&&!textOnly()?' ma-qk-page':'');
       if(current().startsWith('backflow-'))root.className+=' ma-backflow-page';
-      if(current().startsWith('attlearn-'))root.className+=' ma-attlearn-page';
-      if(current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-'))root.className+=' ma-wkshare-page';
-      if(current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-'))root.className+=' ma-qgrad-page';
+      if(current().startsWith('attlearn-')||current().startsWith('multilearn-'))root.className+=' ma-attlearn-page';
+      if(current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-'))root.className+=' ma-wkshare-page';
+      if(current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-'))root.className+=' ma-qgrad-page';
       figure.hidden=textOnly();handle.hidden=true;renderCopy();updateNav();renderStage();
     }
     function changeRule(value) {
@@ -4087,6 +4091,7 @@
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(current().startsWith('multilearn-')){stopAutomation();multilearnLesson.action=null;multilearnLesson.compare=false;state.scene--;renderScene();return;}
       if(current().startsWith('attlearn-')){stopAutomation();attlearnLesson.action=null;attlearnLesson.compare=false;state.scene--;renderScene();return;}
       if(current().startsWith('wkgroup-')){stopAutomation();wkgroupLesson.action=null;wkgroupLesson.held=false;wkgroupLesson.compare=false;state.scene--;renderScene();return;}
       if(current().startsWith('wkshare-')){stopAutomation();wkshareLesson.action=null;wkshareLesson.held=false;wkshareLesson.probed=false;state.scene--;renderScene();return;}
@@ -4128,6 +4133,7 @@
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(current().startsWith('multilearn-')){multilearnNext();return;}
       if(current().startsWith('attlearn-')){attlearnNext();return;}
       if(current().startsWith('wkgroup-')){wkgroupNext();return;}
       if(current().startsWith('wkshare-')){wkshareNext();return;}
@@ -4172,6 +4178,7 @@
       state.scene++;state.highlight=null;renderScene();
     });
     automatic.addEventListener('click',()=>{
+      if(current().startsWith('multilearn-')){multilearnReplay();return;}
       if(current().startsWith('attlearn-')){attlearnReplay();return;}
       if(current().startsWith('wkgroup-')){wkgroupReplay();return;}
       if(current().startsWith('wkshare-')){wkshareStart(current()==='wkshare-rule'?'probe':'merge');return;}
@@ -4225,13 +4232,14 @@
     globalThis.addEventListener?.('pagehide',stopAutomation);
     globalThis.addEventListener?.('pageshow',()=>{if((current().startsWith('adapt-')||current().startsWith('signal-')||current().startsWith('vocab-'))&&plotMotion){updateNav();return;}stopAutomation();if(wholeMode())refreshMesh();else if(current().startsWith('vocab-'))refreshVocab();else updateNav();});
     globalThis.addEventListener?.('hashchange',()=>{
+      if(multilearnLesson?.action){stopAutomation();multilearnLesson.action=null;}
       if(!globalThis.location?.hash||globalThis.location.hash==='#home'){stopAutomation();return;}
       if(globalThis.location.hash==='#act-1'){state.scene=0;renderScene();return;}
       if(globalThis.location?.hash==='#act-2') {state.scene=7;renderScene();}
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
-      const chapter={'#act-56':'attlearn-goal','#act-56-value':'attlearn-value','#act-56-joint':'attlearn-joint','#act-55':'wkgroup-goal','#act-55-rules':'wkgroup-compose','#act-55-compose':'wkgroup-compose','#act-55-train':'wkgroup-train','#act-54':'wkshare-purpose','#act-54-rule':'wkshare-rule','#act-54-feedback':'wkshare-feedback','#act-53':'kgrad-source','#act-53-feedback':'kgrad-feedback','#act-52':'qgrad-source','#act-52-paths':'qgrad-paths','#act-52-joint':'qgrad-joint','#act-51':'sgrad-source','#act-51-response':'sgrad-response','#act-51-feedback':'sgrad-feedback','#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber','#act-24':'usage-purpose','#act-24-usage':'usage-observe','#act-24-dimensions':'usage-dimensions','#act-24-data':'usage-data','#act-24-capacity':'usage-capacity','#act-50':'agrad-source','#act-50-feedback':'agrad-feedback','#act-50-trial':'agrad-trial','#act-49':'vgrad-source','#act-49-return':'vgrad-return','#act-48':'backflow-fan','#act-48-sum':'backflow-sum','#act-48-residual':'backflow-residual','#act-47':'tune-loss','#act-47-feedback':'tune-feedback','#act-47-train':'tune-train','#act-46':'readout-purpose','#act-46-score':'readout-score','#act-46-prob':'readout-prob','#act-45':'mask-leak','#act-45-cut':'mask-cut','#act-45-rows':'mask-rows','#act-44':'place-content','#act-44-position':'place-position','#act-44-verify':'place-verify','#act-43':'round-run','#act-42':'residual-prepare','#act-42-join':'residual-join','#act-42-both':'residual-both','#act-41':'project-fixed','#act-41-adjust':'project-adjust','#act-41-shared':'project-shared','#act-40':'values-read','#act-40-values':'values-name','#act-39':'portions-exp','#act-39-cat':'portions-cat','#act-39-white':'portions-white','#act-39-table':'portions-table','#act-38':'scores-purpose','#act-38-pair':'scores-pair','#act-38-inspect':'scores-inspect','#act-37':'rows-purpose','#act-37-build':'rows-build','#act-37-inspect':'rows-inspect','#act-36':'derive-purpose','#act-36-q':'derive-q','#act-36-k':'derive-k','#act-36-shared':'derive-shared','#act-36-link':'derive-link','#act-35':'roles-purpose','#act-35-read':'roles-read','#act-35-match':'roles-match','#act-35-offer':'roles-offer','#act-34':'qk-purpose','#act-34-observe':'qk-observe','#act-34-match':'qk-match','#act-33':'weight-purpose','#act-33-equal':'weight-equal','#act-33-mix':'weight-mix','#act-32':'blend-purpose','#act-32-compose':'blend-compose','#act-32-explore':'blend-explore','#act-31':'prefix-purpose','#act-31-read':'prefix-read','#act-30':'flight','#act-29':'vocab-purpose','#act-29-observe':'vocab-observe','#act-29-feedback':'vocab-feedback','#act-29-train':'vocab-train','#act-28':'signal-purpose','#act-28-source':'signal-source','#act-28-endpoints':'signal-endpoints','#act-28-chain':'signal-chain','#act-28-merge':'signal-merge','#act-28-update':'signal-update','#act-27':'adapt-purpose','#act-27-probe':'adapt-probe','#act-27-rate':'adapt-rate','#act-27-update':'adapt-update','#act-26':'loss-observe','#act-26-design':'loss-design','#act-26-inverse':'loss-inverse','#act-26-ruler':'loss-ruler','#act-26-records':'loss-records','#act-26-curve':'loss-curve','#act-25':'prob-observe','#act-25-distribution':'prob-distribution','#act-25-convert':'prob-convert','#act-25-normalize':'prob-normalize','#act-24-shared':'usage-lookup','#act-24-lab':'emb-purpose','#act-24-lookup':'emb-lookup','#act-24-vector':'emb-vector','#act-24-compute':'emb-compute'}[globalThis.location?.hash];
+      const chapter={'#act-57':'multilearn-goal','#act-57-single':'multilearn-single','#act-57-batch':'multilearn-batch','#act-56':'attlearn-goal','#act-56-value':'attlearn-value','#act-56-joint':'attlearn-joint','#act-55':'wkgroup-goal','#act-55-rules':'wkgroup-compose','#act-55-compose':'wkgroup-compose','#act-55-train':'wkgroup-train','#act-54':'wkshare-purpose','#act-54-rule':'wkshare-rule','#act-54-feedback':'wkshare-feedback','#act-53':'kgrad-source','#act-53-feedback':'kgrad-feedback','#act-52':'qgrad-source','#act-52-paths':'qgrad-paths','#act-52-joint':'qgrad-joint','#act-51':'sgrad-source','#act-51-response':'sgrad-response','#act-51-feedback':'sgrad-feedback','#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber','#act-24':'usage-purpose','#act-24-usage':'usage-observe','#act-24-dimensions':'usage-dimensions','#act-24-data':'usage-data','#act-24-capacity':'usage-capacity','#act-50':'agrad-source','#act-50-feedback':'agrad-feedback','#act-50-trial':'agrad-trial','#act-49':'vgrad-source','#act-49-return':'vgrad-return','#act-48':'backflow-fan','#act-48-sum':'backflow-sum','#act-48-residual':'backflow-residual','#act-47':'tune-loss','#act-47-feedback':'tune-feedback','#act-47-train':'tune-train','#act-46':'readout-purpose','#act-46-score':'readout-score','#act-46-prob':'readout-prob','#act-45':'mask-leak','#act-45-cut':'mask-cut','#act-45-rows':'mask-rows','#act-44':'place-content','#act-44-position':'place-position','#act-44-verify':'place-verify','#act-43':'round-run','#act-42':'residual-prepare','#act-42-join':'residual-join','#act-42-both':'residual-both','#act-41':'project-fixed','#act-41-adjust':'project-adjust','#act-41-shared':'project-shared','#act-40':'values-read','#act-40-values':'values-name','#act-39':'portions-exp','#act-39-cat':'portions-cat','#act-39-white':'portions-white','#act-39-table':'portions-table','#act-38':'scores-purpose','#act-38-pair':'scores-pair','#act-38-inspect':'scores-inspect','#act-37':'rows-purpose','#act-37-build':'rows-build','#act-37-inspect':'rows-inspect','#act-36':'derive-purpose','#act-36-q':'derive-q','#act-36-k':'derive-k','#act-36-shared':'derive-shared','#act-36-link':'derive-link','#act-35':'roles-purpose','#act-35-read':'roles-read','#act-35-match':'roles-match','#act-35-offer':'roles-offer','#act-34':'qk-purpose','#act-34-observe':'qk-observe','#act-34-match':'qk-match','#act-33':'weight-purpose','#act-33-equal':'weight-equal','#act-33-mix':'weight-mix','#act-32':'blend-purpose','#act-32-compose':'blend-compose','#act-32-explore':'blend-explore','#act-31':'prefix-purpose','#act-31-read':'prefix-read','#act-30':'flight','#act-29':'vocab-purpose','#act-29-observe':'vocab-observe','#act-29-feedback':'vocab-feedback','#act-29-train':'vocab-train','#act-28':'signal-purpose','#act-28-source':'signal-source','#act-28-endpoints':'signal-endpoints','#act-28-chain':'signal-chain','#act-28-merge':'signal-merge','#act-28-update':'signal-update','#act-27':'adapt-purpose','#act-27-probe':'adapt-probe','#act-27-rate':'adapt-rate','#act-27-update':'adapt-update','#act-26':'loss-observe','#act-26-design':'loss-design','#act-26-inverse':'loss-inverse','#act-26-ruler':'loss-ruler','#act-26-records':'loss-records','#act-26-curve':'loss-curve','#act-25':'prob-observe','#act-25-distribution':'prob-distribution','#act-25-convert':'prob-convert','#act-25-normalize':'prob-normalize','#act-24-shared':'usage-lookup','#act-24-lab':'emb-purpose','#act-24-lookup':'emb-lookup','#act-24-vector':'emb-vector','#act-24-compute':'emb-compute'}[globalThis.location?.hash];
       if(chapter){state.scene=scenes.indexOf(chapter);renderScene();if(globalThis.location?.hash==='#act-21-node')meshOpenDetail('d');}
     });
     document.addEventListener('visibilitychange',()=>{
@@ -5083,9 +5091,9 @@
       jointAfter:'这次，读取份额与 V 的表示一起改变，新的上下文更支持“小狗”作为下一词。模型同时改进了怎样寻找、怎样匹配，以及怎样表达读到的信息。这些方法通过同一个预测任务联系起来，共同影响最终结果。',
       ending:plans.value.rate||plans.joint.rate?'注意力的学习包含相互配合的两件事：选择哪些信息，以及把这些信息组织成怎样的表示。我们已经把生成 Q、K、V 的共享权重接入同一次预测，让它们共同学习。':'当前反馈没有给出可改善预测的更新，这一轮保留原来的表示与匹配。选择内容与表达内容，都需要由预测任务的结果来检验。'};}
     function attlearnCopy(){attlearnInit();copy.style.minHeight='';copy.replaceChildren();const texts=attlearnTexts(),s=current();if(s==='attlearn-ending'){paragraph(texts.ending);paragraph('更多“前文—下一词”样例，会带来不同的读取与表达需求。接下来让这些反馈共同训练模型，看看它能否把学到的方法用于新的前文。');return;}let height=0;for(const value of [texts.goal,texts.valueBefore,texts.valueAfter,texts.jointBefore,texts.jointAfter]){copy.replaceChildren();paragraph(value);height=Math.max(height,copy.getBoundingClientRect().height);}copy.replaceChildren();const joint=s==='attlearn-joint',done=joint?attlearnLesson.jDone:attlearnLesson.vDone,value=s==='attlearn-goal'?texts.goal:done&&!attlearnLesson.compare?(joint?texts.jointAfter:texts.valueAfter):(joint?texts.jointBefore:texts.valueBefore);paragraph(value);copy.style.minHeight=height+'px';}
-    function attlearnNav(){const s=current(),joint=s==='attlearn-joint',done=joint?attlearnLesson.jDone:attlearnLesson.vDone,plan=joint?attlearnPlans().joint:attlearnPlans().value;back.hidden=false;back.disabled=false;back.textContent='← 上一页';next.disabled=!!attlearnLesson.action;automatic.hidden=!!attlearnLesson.action||s==='attlearn-goal'||s==='attlearn-ending'||!done;automatic.textContent=attlearnLesson.compare?'看新结果':'对照原来';next.textContent=s==='attlearn-goal'?'读到后怎样表达 →':s==='attlearn-value'?(done||!plan.rate?'让它们一起学习 →':'学习传递的内容 →'):s==='attlearn-joint'?(done?'恢复原值，继续 →':plan.rate?'共同学习一次 →':'继续 →'):'重看这次学习 ↻';}
+    function attlearnNav(){const s=current(),joint=s==='attlearn-joint',done=joint?attlearnLesson.jDone:attlearnLesson.vDone,plan=joint?attlearnPlans().joint:attlearnPlans().value;back.hidden=false;back.disabled=false;back.textContent='← 上一页';next.disabled=!!attlearnLesson.action;automatic.hidden=!!attlearnLesson.action||s==='attlearn-goal'||s==='attlearn-ending'||!done;automatic.textContent=attlearnLesson.compare?'看新结果':'对照原来';next.textContent=s==='attlearn-goal'?'读到后怎样表达 →':s==='attlearn-value'?(done||!plan.rate?'让它们一起学习 →':'学习传递的内容 →'):s==='attlearn-joint'?(done?'恢复原值，继续 →':plan.rate?'共同学习一次 →':'继续 →'):'让不同前文共同训练 →';}
     function attlearnStart(){stopAutomation();attlearnInit();attlearnLesson.action=current()==='attlearn-joint'?'joint':'value';attlearnLesson.phase=0;attlearnLesson.compare=false;lastPlot=null;attlearnCopy();attlearnNav();attlearnDraw();}
-    function attlearnNext(){if(attlearnLesson.action)return;const s=current(),plans=attlearnPlans();if(s==='attlearn-value'&&!attlearnLesson.vDone&&plans.value.rate){attlearnStart();return;}if(s==='attlearn-joint'&&!attlearnLesson.jDone&&plans.joint.rate){attlearnStart();return;}attlearnLesson.compare=false;if(s==='attlearn-value')attlearnLesson.vDone=true;if(s==='attlearn-ending'){attlearnLesson.vDone=false;attlearnLesson.jDone=false;state.scene=scenes.indexOf('attlearn-goal');}else{state.scene++;if(current()==='attlearn-ending'){attlearnLesson.vDone=false;attlearnLesson.jDone=false;}}renderScene();}
+    function attlearnNext(){if(attlearnLesson.action)return;const s=current(),plans=attlearnPlans();if(s==='attlearn-value'&&!attlearnLesson.vDone&&plans.value.rate){attlearnStart();return;}if(s==='attlearn-joint'&&!attlearnLesson.jDone&&plans.joint.rate){attlearnStart();return;}attlearnLesson.compare=false;if(s==='attlearn-value')attlearnLesson.vDone=true;if(s==='attlearn-ending'){attlearnLesson.vDone=false;attlearnLesson.jDone=false;state.scene=scenes.indexOf('multilearn-goal');}else{state.scene++;if(current()==='attlearn-ending'){attlearnLesson.vDone=false;attlearnLesson.jDone=false;}}renderScene();}
     function attlearnReplay(){attlearnLesson.compare=!attlearnLesson.compare;attlearnCopy();attlearnNav();attlearnDraw();}
     function attlearnGeometry(w){const plans=attlearnPlans(),models=[attlearnModel(),plans.value.after,plans.joint.after],values=[[0,0],...models.flatMap(d=>[...d.V.slice(0,2),d.context])],minX=Math.min(-.15,...values.map(v=>v[0]-.25)),maxX=Math.max(...values.map(v=>v[0]))+.3,minY=Math.min(-.15,...values.map(v=>v[1]-.25)),maxY=Math.max(...values.map(v=>v[1]))+.3,layout=Math.min(w,560),inset=(w-layout)/2,scale=Math.min((layout-70)/(maxX-minX),270/(maxY-minY)),plotWidth=(maxX-minX)*scale,plotHeight=(maxY-minY)*scale,left=(w-plotWidth)/2,top=40,right=left+plotWidth,bottom=top+plotHeight,footer=bottom+118;return {width:w,layout,inset,minX,maxX,minY,maxY,scale,left,right,top,bottom,footer,height:footer+27};}
     function attlearnPoint(g,v){return {x:g.left+(v[0]-g.minX)*g.scale,y:g.bottom-(v[1]-g.minY)*g.scale};}
@@ -5100,7 +5108,219 @@
       text('底色越浓，这个上下文越支持“小狗”',w/2,g.bottom+69,{'text-anchor':'middle','font-size':g.layout<330?10:12,fill:muted});const fmt=v=>Number(v.toFixed(3));text('小狗 '+(after?probPercent(base.probabilities[2])+' → ':'')+probPercent(d.probabilities[2])+' · 损失 '+(after?fmt(base.loss)+' → ':'')+fmt(d.loss),w/2,g.footer,{'text-anchor':'middle','font-size':g.layout<330?11:13,fill:after?accent:muted});for(const [key,value] of Object.entries({...d,baseParameters:base.parameters,baseV:base.V,baseShares:base.shares,baseContext:base.context,baseLoss:base.loss,geometry:g,field,screen:{A,B,P},busy:!!attlearnLesson.action,action:attlearnLesson.action,phase:attlearnLesson.phase,vDone:attlearnLesson.vDone,jDone:attlearnLesson.jDone,compare:attlearnLesson.compare}))svg.setAttribute('data-attlearn-'+key,JSON.stringify(value));lastPlot={scene:current(),width:w,distance:attlearnLesson.phase};if(progress!==null&&!attlearnLesson.action){attlearnCopy();attlearnNav();}
     }
 
-    const waveChapter={'#act-56':'attlearn-goal','#act-56-value':'attlearn-value','#act-56-joint':'attlearn-joint','#act-55':'wkgroup-goal','#act-55-rules':'wkgroup-compose','#act-55-compose':'wkgroup-compose','#act-55-train':'wkgroup-train','#act-54':'wkshare-purpose','#act-54-rule':'wkshare-rule','#act-54-feedback':'wkshare-feedback','#act-53':'kgrad-source','#act-53-feedback':'kgrad-feedback','#act-52':'qgrad-source','#act-52-paths':'qgrad-paths','#act-52-joint':'qgrad-joint','#act-51':'sgrad-source','#act-51-response':'sgrad-response','#act-51-feedback':'sgrad-feedback','#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber','#act-24':'usage-purpose','#act-24-usage':'usage-observe','#act-24-dimensions':'usage-dimensions','#act-24-data':'usage-data','#act-24-capacity':'usage-capacity','#act-50':'agrad-source','#act-50-feedback':'agrad-feedback','#act-50-trial':'agrad-trial','#act-49':'vgrad-source','#act-49-return':'vgrad-return','#act-48':'backflow-fan','#act-48-sum':'backflow-sum','#act-48-residual':'backflow-residual','#act-47':'tune-loss','#act-47-feedback':'tune-feedback','#act-47-train':'tune-train','#act-46':'readout-purpose','#act-46-score':'readout-score','#act-46-prob':'readout-prob','#act-45':'mask-leak','#act-45-cut':'mask-cut','#act-45-rows':'mask-rows','#act-44':'place-content','#act-44-position':'place-position','#act-44-verify':'place-verify','#act-43':'round-run','#act-42':'residual-prepare','#act-42-join':'residual-join','#act-42-both':'residual-both','#act-41':'project-fixed','#act-41-adjust':'project-adjust','#act-41-shared':'project-shared','#act-40':'values-read','#act-40-values':'values-name','#act-39':'portions-exp','#act-39-cat':'portions-cat','#act-39-white':'portions-white','#act-39-table':'portions-table','#act-38':'scores-purpose','#act-38-pair':'scores-pair','#act-38-inspect':'scores-inspect','#act-37':'rows-purpose','#act-37-build':'rows-build','#act-37-inspect':'rows-inspect','#act-36':'derive-purpose','#act-36-q':'derive-q','#act-36-k':'derive-k','#act-36-shared':'derive-shared','#act-36-link':'derive-link','#act-35':'roles-purpose','#act-35-read':'roles-read','#act-35-match':'roles-match','#act-35-offer':'roles-offer','#act-34':'qk-purpose','#act-34-observe':'qk-observe','#act-34-match':'qk-match','#act-33':'weight-purpose','#act-33-equal':'weight-equal','#act-33-mix':'weight-mix','#act-32':'blend-purpose','#act-32-compose':'blend-compose','#act-32-explore':'blend-explore','#act-31':'prefix-purpose','#act-31-read':'prefix-read','#act-30':'flight','#act-29':'vocab-purpose','#act-29-observe':'vocab-observe','#act-29-feedback':'vocab-feedback','#act-29-train':'vocab-train','#act-28':'signal-purpose','#act-28-source':'signal-source','#act-28-endpoints':'signal-endpoints','#act-28-chain':'signal-chain','#act-28-merge':'signal-merge','#act-28-update':'signal-update','#act-27':'adapt-purpose','#act-27-probe':'adapt-probe','#act-27-rate':'adapt-rate','#act-27-update':'adapt-update','#act-26':'loss-observe','#act-26-design':'loss-design','#act-26-inverse':'loss-inverse','#act-26-ruler':'loss-ruler','#act-26-records':'loss-records','#act-26-curve':'loss-curve','#act-25':'prob-observe','#act-25-distribution':'prob-distribution','#act-25-convert':'prob-convert','#act-25-normalize':'prob-normalize','#act-24-shared':'usage-lookup','#act-24-lab':'emb-purpose','#act-24-lookup':'emb-lookup','#act-24-vector':'emb-vector','#act-24-compute':'emb-compute'}[globalThis.location?.hash];
+    // A small shared attention model, reused by both teaching records.
+    const multilearnGroups=['WQ','WK','WV'];
+    let multilearnLesson=null;
+    function multilearnClone(p){return Object.fromEntries(multilearnGroups.map(k=>[k,p[k].map(r=>[...r])]));}
+    function multilearnInit(){
+      attlearnInit();
+      const initial=multilearnClone(attlearnPlans().joint.parameters),head=attlearnLesson.head.map(r=>[...r]);
+      const signature=JSON.stringify([initial,head,attlearnLesson.sourceSteps]);
+      if(multilearnLesson?.signature===signature)return;
+      multilearnLesson={signature,initial,head,singleDone:current()==='multilearn-batch',phase:0,action:null,compare:false,batchIndex:0,plans:null};
+    }
+    function multilearnModel(parameters,index){
+      const ids=index===0?[0,1]:[2,1],target=index===0?2:0;
+      const inputs=ids.map((id,i)=>placeLexical[id].map((v,j)=>v+placePositions[i][j]));
+      const project=W=>inputs.map(x=>W[0].map((_,j)=>x.reduce((sum,v,k)=>sum+v*W[k][j],0)));
+      const Q=project(parameters.WQ),K=project(parameters.WK),V=project(parameters.WV);
+      const scores=K.map(k=>k.reduce((sum,v,j)=>sum+v*Q[1][j],0)),shares=probSoftmax(scores);
+      const context=[0,1].map(j=>V.reduce((sum,v,i)=>sum+v[j]*shares[i],0));
+      const h=context.map((v,j)=>v+inputs[1][j]),head=multilearnLesson.head;
+      const logits=head.map(r=>r.reduce((sum,v,j)=>sum+v*h[j],0)),probabilities=probSoftmax(logits);
+      const maximum=Math.max(...logits),loss=maximum+Math.log(logits.reduce((sum,v)=>sum+Math.exp(v-maximum),0))-logits[target];
+      const outputGradient=probabilities.map((v,i)=>v-(i===target?1:0));
+      const contextGradient=[0,1].map(j=>head.reduce((sum,r,i)=>sum+r[j]*outputGradient[i],0));
+      const valueGradient=shares.map(a=>contextGradient.map(v=>a*v));
+      const shareGradient=V.map(v=>v.reduce((sum,x,j)=>sum+x*contextGradient[j],0));
+      const mean=shares.reduce((sum,a,i)=>sum+a*shareGradient[i],0);
+      const scoreGradient=shares.map((a,i)=>a*(shareGradient[i]-mean));
+      const queryGradient=[0,1].map(j=>K.reduce((sum,k,i)=>sum+k[j]*scoreGradient[i],0));
+      const keyGradient=K.map((_,i)=>Q[1].map(v=>v*scoreGradient[i]));
+      const gradients={
+        WQ:parameters.WQ.map((r,a)=>r.map((_,b)=>inputs[1][a]*queryGradient[b])),
+        WK:parameters.WK.map((r,a)=>r.map((_,b)=>inputs.reduce((sum,x,i)=>sum+x[a]*keyGradient[i][b],0))),
+        WV:parameters.WV.map((r,a)=>r.map((_,b)=>inputs.reduce((sum,x,i)=>sum+x[a]*valueGradient[i][b],0)))
+      };
+      return {index,ids,target,inputs,Q,K,V,scores,shares,context,h,logits,probabilities,loss,gradients};
+    }
+    function multilearnEvaluate(parameters){
+      const records=[0,1].map(i=>multilearnModel(parameters,i));
+      return {parameters:multilearnClone(parameters),records,loss:(records[0].loss+records[1].loss)/2};
+    }
+    function multilearnStep(parameters,indices){
+      const base=multilearnEvaluate(parameters),gradients=Object.fromEntries(multilearnGroups.map(k=>[k,parameters[k].map((r,a)=>r.map((_,b)=>indices.reduce((s,i)=>s+base.records[i].gradients[k][a][b],0)/indices.length))]));
+      const objective=d=>indices.reduce((sum,i)=>sum+d.records[i].loss,0)/indices.length;
+      const norm=Math.max(...multilearnGroups.flatMap(k=>gradients[k].flat().map(Math.abs)));
+      if(norm<1e-12)return {parameters:base.parameters,after:base,rate:0,gradients};
+      let rate=(indices.length===1?.42:.22)/norm;
+      for(let n=0;n<24;n++){
+        const next=Object.fromEntries(multilearnGroups.map(k=>[k,parameters[k].map((r,a)=>r.map((v,b)=>v-rate*gradients[k][a][b]))]));
+        const after=multilearnEvaluate(next);
+        if(objective(after)<objective(base)-1e-12)return {parameters:next,after,rate,gradients};
+        rate/=2;
+      }
+      return {parameters:base.parameters,after:base,rate:0,gradients};
+    }
+    function multilearnPlans(){
+      if(multilearnLesson.plans)return multilearnLesson.plans;
+      const initial=multilearnEvaluate(multilearnLesson.initial),single=multilearnStep(initial.parameters,[0]);
+      const history=[single.after];
+      for(let i=0;i<1024;i++){
+        const step=multilearnStep(history.at(-1).parameters,[0,1]);
+        if(!step.rate)break;
+        history.push(step.after);
+        if(step.after.records.every(r=>r.probabilities[r.target]>=.92))break;
+      }
+      return multilearnLesson.plans={initial,single,history};
+    }
+    function multilearnShown(){
+      const s=current(),L=multilearnLesson,P=multilearnPlans();
+      let from=P.initial,to=from,u=0;
+      if(s==='multilearn-single'){
+        to=P.single.after;u=L.action==='single'?clamp(L.phase,0,1):L.singleDone&&!L.compare?1:0;
+      }else if(s==='multilearn-batch'){
+        const last=P.history.length-1,position=L.compare?0:L.action==='batch'?clamp(L.phase-2,0,last):L.batchIndex;
+        const i=Math.min(Math.floor(position),last);from=P.history[i];to=P.history[Math.min(i+1,last)];u=position-i;
+      }
+      const parameters=Object.fromEntries(multilearnGroups.map(k=>[k,from.parameters[k].map((r,a)=>r.map((v,b)=>v+(to.parameters[k][a][b]-v)*u))]));
+      return multilearnEvaluate(parameters);
+    }
+
+
+
+
+    function multilearnTexts(){
+      const P=multilearnPlans(),d=multilearnShown();
+      const change=d.records[1].probabilities[0]-P.initial.records[1].probabilities[0];
+      return {
+        goal:'模型不能遇到什么前文，都回答“小狗”。这里选了两条教学记录，箭头后是原文中的下一词，右侧是模型给它的概率。两点是两段前文读出的上下文；橙色区域更支持“小狗”，蓝色区域更支持“小猫”。同一套参数，能根据不同前文作出不同预测吗？',
+        singleBefore:'两句话用的是同一套参数。现在只用第一条记录教它，让“小猫 追”之后更可能出现“小狗”。观察两个上下文点：这次调整，也会改变另一句话得到的表示和预测。',
+        singleAfter:!P.single.rate?'这一步没有改变参数，两句的预测也保持原样。共享参数的调整需要来自预测的反馈；没有找到降低第一句损失的更新时，我们就保留原值。':'第一句的预测更符合记录了。'+(Math.abs(change)<1e-7?'另一句的预测在这一步几乎没变。':change<0?'但第二句需要的“小猫”反而更不容易出现：模型更偏向“小狗”，还没有学会区分两段前文。':'第二句也从这次调整中受益。共享参数的一次改变，可能同时帮助不同前文。')+'我们不能只凭第一句的改善，判断它是否学得更好。',
+        batchBefore:'我们希望模型兼顾这两条记录。每句都根据原文中下一词的概率计算损失：概率越低，损失越大。把两份损失合起来取平均，就能同时衡量两次预测。用它的反馈调整共享参数，看看两段前文能否获得各自有用的表示。',
+        batchAfter:P.history.length===1?'这次没有找到让平均损失继续降低的调整，两句的预测保持原样。共同训练的依据是两条记录的整体表现；没有改进时，也不把参数变化当作学习成果。':d.records.every(r=>r.probabilities[r.target]>.85)?'两点走向了不同的区域：同一套参数，现在能根据不同前文，更支持记录中各自的下一词。它没有分别保存两套规则，而是学会用同一种计算方法，把不同的输入变成有区别的表示。':'两句的平均损失降低了，但它还没有充分区分这两段前文。共同训练看的是整体表现；并不要求每一步都让每一句变好。',
+        ending:'训练语言模型，就是让许多“前文—下一词”记录共同塑造共享参数。每条记录都提供一次预测和反馈；模型需要学到能应对不同前文的方法，而不是永远偏向某个答案。'
+      };
+    }
+    function multilearnCopy(){
+      multilearnInit();copy.style.minHeight='';copy.replaceChildren();
+      const T=multilearnTexts(),s=current(),L=multilearnLesson;
+      if(s==='multilearn-ending'){paragraph(T.ending);paragraph('这两条教学记录只演示了学习的过程，还不足以学会语言。接下来，我们把模型的预测接到前文后面，看看文字怎样一步步生成。');return;}
+      let height=0;
+      for(const value of [T.goal,T.singleBefore,T.singleAfter,T.batchBefore,T.batchAfter]){copy.replaceChildren();paragraph(value);height=Math.max(height,copy.getBoundingClientRect().height);}
+      copy.replaceChildren();
+      paragraph(s==='multilearn-goal'?T.goal:s==='multilearn-single'?(L.singleDone&&!L.compare?T.singleAfter:T.singleBefore):(L.batchIndex===multilearnPlans().history.length-1&&!L.compare?T.batchAfter:T.batchBefore));
+      copy.style.minHeight=height+'px';
+    }
+    function multilearnNav(){
+      const L=multilearnLesson,s=current(),last=multilearnPlans().history.length-1;
+      back.hidden=false;back.disabled=false;back.textContent='← 上一页';
+      next.disabled=!!L.action&&L.action!=='batch';
+      automatic.hidden=!!L.action||!(s==='multilearn-single'&&L.singleDone||s==='multilearn-batch'&&L.batchIndex>0);
+      automatic.textContent=L.compare?'看新结果':'对照学习前';automatic.setAttribute('aria-pressed',String(L.compare));
+      next.textContent=s==='multilearn-goal'?'只教一句会怎样 →':s==='multilearn-single'?(L.singleDone?'让两句共同决定 →':'只用第一句学习 →'):s==='multilearn-batch'?(L.action?'暂停学习':L.batchIndex===last?'这一段学到了什么 →':L.batchIndex?'继续共同学习 →':'用两句一起学习 →'):'重看这次学习 ↻';
+    }
+    function multilearnPause(){
+      const L=multilearnLesson;if(L.action!=='batch')return;
+      cancelPlotAnimation();L.batchIndex=Math.min(multilearnPlans().history.length-1,Math.ceil(Math.max(0,L.phase-2)));
+      L.action=null;L.phase=L.batchIndex+2;multilearnCopy();multilearnNav();multilearnDraw();
+    }
+    function multilearnStart(kind){
+      const L=multilearnLesson;if(L.action)return;
+      L.compare=false;L.action=kind;L.phase=kind==='batch'&&L.batchIndex>0?L.batchIndex+2:0;
+      lastPlot=null;multilearnCopy();multilearnNav();multilearnDraw();
+    }
+    function multilearnNext(){
+      const L=multilearnLesson,s=current(),P=multilearnPlans();
+      if(L.action==='batch'){multilearnPause();return;}
+      if(L.action)return;
+
+      if(s==='multilearn-single'&&!L.singleDone){multilearnStart('single');return;}
+      if(s==='multilearn-batch'&&L.batchIndex<P.history.length-1){multilearnStart('batch');return;}
+      L.compare=false;
+      if(s==='multilearn-ending'){L.singleDone=false;L.batchIndex=0;L.phase=0;state.scene=scenes.indexOf('multilearn-goal');}
+      else state.scene++;
+      renderScene();
+    }
+    function multilearnReplay(){if(multilearnLesson.action)return;multilearnLesson.compare=!multilearnLesson.compare;multilearnCopy();multilearnNav();multilearnDraw();}
+    function multilearnGeometry(w){
+      const P=multilearnPlans(),values=[P.initial,P.single.after,...P.history].flatMap(d=>d.records.map(r=>r.context));
+      const minX=Math.min(0,...values.map(v=>v[0]))-.5,maxX=Math.max(...values.map(v=>v[0]))+.7;
+      const minY=Math.min(0,...values.map(v=>v[1]))-.6,maxY=Math.max(...values.map(v=>v[1]))+.7;
+      const layout=Math.min(w,560),scale=Math.min((layout-64)/(maxX-minX),250/(maxY-minY));
+      const left=(w-(maxX-minX)*scale)/2,top=120,bottom=top+(maxY-minY)*scale,right=w-left;
+      return {width:w,layout,minX,maxX,minY,maxY,left,right,top,bottom,scale,height:bottom+112};
+    }
+    function multilearnPoint(g,v){return {x:g.left+(v[0]-g.minX)*g.scale,y:g.bottom-(v[1]-g.minY)*g.scale};}
+    let multilearnFieldCache=null;
+    function multilearnField(g){
+      const key=JSON.stringify([multilearnLesson.signature,g]);
+      if(multilearnFieldCache?.key===key){svg.appendChild(multilearnFieldCache.node);return;}
+      const group=el('g',{'data-multilearn-field':'','shape-rendering':'crispEdges','aria-hidden':'true'}),nx=44,ny=32;
+      const query=placeLexical[1].map((v,j)=>v+placePositions[1][j]);
+      for(let iy=0;iy<ny;iy++)for(let ix=0;ix<nx;ix++){
+        const v=[g.minX+(ix+.5)/nx*(g.maxX-g.minX),g.maxY-(iy+.5)/ny*(g.maxY-g.minY)];
+        const h=v.map((x,j)=>x+query[j]),p=probSoftmax(multilearnLesson.head.map(r=>r.reduce((s,x,j)=>s+x*h[j],0))),diff=p[2]-p[0];
+        el('rect',{x:g.left+ix*(g.right-g.left)/nx,y:g.top+iy*(g.bottom-g.top)/ny,width:(g.right-g.left)/nx+.05,height:(g.bottom-g.top)/ny+.05,fill:diff>=0?accent:'var(--ma-net-second)',opacity:.025+.2*Math.abs(diff),'data-multilearn-cell':ix+','+iy,'data-probabilities':JSON.stringify(p)},group);
+      }
+      multilearnFieldCache={key,node:group};
+    }
+    function multilearnMark(p,index,color,attrs={}){
+      return index===0?el('circle',{cx:p.x,cy:p.y,r:5,fill:color,...attrs}):el('path',{d:`M ${p.x} ${p.y-7} l 7 7 -7 7 -7 -7 Z`,fill:'none',stroke:color,'stroke-width':2,...attrs});
+    }
+    function multilearnDraw(progress=null){
+      multilearnInit();const L=multilearnLesson,P=multilearnPlans(),s=current(),last=P.history.length-1;
+      if(s==='multilearn-ending')return;
+      if(progress!==null){L.phase=progress;if(L.action==='batch')L.batchIndex=Math.min(last,Math.floor(Math.max(0,L.phase-2)));const target=L.action==='single'?1:last+2;if(L.phase>=target-1e-8){if(L.action==='single')L.singleDone=true;if(L.action==='batch')L.batchIndex=last;L.action=null;}}
+      const w=Math.max(240,figure.getBoundingClientRect().width||736);
+      if(L.action&&progress===null){
+        if(L.action==='batch'){
+          const start=L.phase,begin=Math.max(0,start-2),mergeMs=start<2?1800*(2-start)/2:0,trainMs=last?6700*(last-begin)/last:0,duration=mergeMs+trainMs;
+          lastPlot={scene:s,width:w,distance:0};
+          animatePlot(s,w,1,t=>{const elapsed=t*duration,phase=elapsed<mergeMs?start+(2-start)*elapsed/mergeMs:2+begin+(last-begin)*(trainMs?clamp((elapsed-mergeMs)/trainMs,0,1):1);multilearnDraw(phase);},Math.max(1,duration));
+        }else {lastPlot={scene:s,width:w,distance:L.phase};animatePlot(s,w,1,p=>multilearnDraw(p),2400);}
+        return;
+      }
+      const d=multilearnShown(),g=multilearnGeometry(w),colors=[accent,'var(--ma-net-second)'];
+      const before=s==='multilearn-batch'?P.single.after:P.initial;
+      adaptFrame(w,g.height,'同一套注意力参数在两段前文上的预测');svg.setAttribute('role','group');
+      multilearnField(g);
+      const origin=multilearnPoint(g,[0,0]);line(g.left,origin.y,g.right,origin.y,{opacity:.65});line(origin.x,g.top,origin.x,g.bottom,{opacity:.65});
+      text('上下文分量 2',g.left,g.top-15,{'font-size':10,fill:muted});text('上下文分量 1',g.right,g.bottom+22,{'font-size':10,fill:muted,'text-anchor':'end'});
+      for(let v=0;v<=Math.max(g.maxX,g.maxY);v+=2){if(v<=g.maxX){const p=multilearnPoint(g,[v,0]);line(p.x,origin.y-3,p.x,origin.y+3);text(v,p.x,origin.y+15,{'font-size':10,fill:muted,'text-anchor':'middle'});}if(v>0&&v<=g.maxY){const p=multilearnPoint(g,[0,v]);line(origin.x-3,p.y,origin.x+3,p.y);text(v,origin.x-8,p.y+4,{'font-size':10,fill:muted,'text-anchor':'end'});}}
+      const left=(w-Math.min(w-12,460))/2,right=w-left;
+      for(let i=0;i<2;i++){
+        const y=26+i*45,r=d.records[i],color=colors[i];
+        const group=el('g',{'data-multilearn-record':i,'aria-label':`记录${i+1}`});
+        if(i===0)el('circle',{cx:left+5,cy:y-5,r:4,fill:color},group);else el('path',{d:`M ${left+5} ${y-11} l 6 6 -6 6 -6 -6 Z`,fill:'var(--ma-paper)',stroke:color,'stroke-width':1.5},group);
+        text((i===0?'小猫':'小狗')+' 追 → '+placeNames[r.target],left+20,y,{'font-size':g.layout<330?13:16,fill:ink},group);
+        text(probPercent(r.probabilities[r.target]),right,y,{'text-anchor':'end','font-size':g.layout<330?13:16,fill:color},group);
+      }
+      const screens=[];
+      d.records.forEach((r,i)=>{
+        const p=multilearnPoint(g,r.context),old=multilearnPoint(g,before.records[i].context),color=colors[i];screens.push(p);
+        if(!L.compare&&JSON.stringify(r.context)!==JSON.stringify(before.records[i].context)){
+          multilearnMark(old,i,color,{opacity:.25});
+          const route=[before.records[i].context];
+          if(s==='multilearn-batch')for(let n=1;n<=L.batchIndex;n++)route.push(P.history[n].records[i].context);
+          route.push(r.context);
+          el('path',{d:route.map((v,n)=>{const z=multilearnPoint(g,v);return `${n?'L':'M'} ${z.x} ${z.y}`;}).join(' '),fill:'none',stroke:color,'stroke-width':1.5,opacity:.55});
+        }
+        const n=multilearnMark(p,i,color,{'data-multilearn-point':i});el('title',{},n).textContent=(i===0?'小猫':'小狗')+'追的上下文：'+r.context.map(v=>Number(v.toFixed(4))).join('，');
+      });
+      if(s==='multilearn-batch'){
+        const merge=L.action==='batch'?clamp(L.phase,0,2):L.batchIndex>0&&!L.compare?2:0;
+        const scale=Math.min((g.layout-65)/(P.single.after.loss*2+1e-9),80),shrink=1-.5*clamp(merge-1,0,1),gap=20*(1-clamp(merge,0,1));
+        const lengths=d.records.map(r=>r.loss*scale*shrink),start=(w-lengths[0]-lengths[1]-gap)/2,y=g.bottom+57;
+        let x=start;lengths.forEach((length,i)=>{el('rect',{x,y,width:Math.max(0,length),height:8,rx:1,fill:colors[i],opacity:.8,'data-multilearn-loss':i});x+=length+gap;});
+        if(merge<2){text(Number(d.records[0].loss.toFixed(3)),start,y-9,{'font-size':11,fill:colors[0]});text(Number(d.records[1].loss.toFixed(3)),start+lengths[0]+lengths[1]+gap,y-9,{'font-size':11,fill:colors[1],'text-anchor':'end'});}
+        text(merge>=2?'两句的平均损失 '+Number(d.loss.toFixed(3)):'两句各自的损失，合起来再取平均',w/2,y+35,{'text-anchor':'middle','font-size':g.layout<330?11:13,fill:muted});
+      }else text('同一套参数 · 两段前文',w/2,g.bottom+65,{'text-anchor':'middle','font-size':12,fill:muted});
+      for(const [key,value] of Object.entries({...d,before:before.parameters,busy:!!L.action,action:L.action,phase:L.phase,batchIndex:L.batchIndex,totalSteps:last,compare:L.compare,singleDone:L.singleDone,geometry:g,screens}))svg.setAttribute('data-multilearn-'+key,JSON.stringify(value));
+      lastPlot={scene:s,width:w,distance:L.phase};if(progress!==null&&!L.action){multilearnCopy();multilearnNav();}
+    }
+
+    const waveChapter={'#act-57':'multilearn-goal','#act-57-single':'multilearn-single','#act-57-batch':'multilearn-batch','#act-56':'attlearn-goal','#act-56-value':'attlearn-value','#act-56-joint':'attlearn-joint','#act-55':'wkgroup-goal','#act-55-rules':'wkgroup-compose','#act-55-compose':'wkgroup-compose','#act-55-train':'wkgroup-train','#act-54':'wkshare-purpose','#act-54-rule':'wkshare-rule','#act-54-feedback':'wkshare-feedback','#act-53':'kgrad-source','#act-53-feedback':'kgrad-feedback','#act-52':'qgrad-source','#act-52-paths':'qgrad-paths','#act-52-joint':'qgrad-joint','#act-51':'sgrad-source','#act-51-response':'sgrad-response','#act-51-feedback':'sgrad-feedback','#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber','#act-24':'usage-purpose','#act-24-usage':'usage-observe','#act-24-dimensions':'usage-dimensions','#act-24-data':'usage-data','#act-24-capacity':'usage-capacity','#act-50':'agrad-source','#act-50-feedback':'agrad-feedback','#act-50-trial':'agrad-trial','#act-49':'vgrad-source','#act-49-return':'vgrad-return','#act-48':'backflow-fan','#act-48-sum':'backflow-sum','#act-48-residual':'backflow-residual','#act-47':'tune-loss','#act-47-feedback':'tune-feedback','#act-47-train':'tune-train','#act-46':'readout-purpose','#act-46-score':'readout-score','#act-46-prob':'readout-prob','#act-45':'mask-leak','#act-45-cut':'mask-cut','#act-45-rows':'mask-rows','#act-44':'place-content','#act-44-position':'place-position','#act-44-verify':'place-verify','#act-43':'round-run','#act-42':'residual-prepare','#act-42-join':'residual-join','#act-42-both':'residual-both','#act-41':'project-fixed','#act-41-adjust':'project-adjust','#act-41-shared':'project-shared','#act-40':'values-read','#act-40-values':'values-name','#act-39':'portions-exp','#act-39-cat':'portions-cat','#act-39-white':'portions-white','#act-39-table':'portions-table','#act-38':'scores-purpose','#act-38-pair':'scores-pair','#act-38-inspect':'scores-inspect','#act-37':'rows-purpose','#act-37-build':'rows-build','#act-37-inspect':'rows-inspect','#act-36':'derive-purpose','#act-36-q':'derive-q','#act-36-k':'derive-k','#act-36-shared':'derive-shared','#act-36-link':'derive-link','#act-35':'roles-purpose','#act-35-read':'roles-read','#act-35-match':'roles-match','#act-35-offer':'roles-offer','#act-34':'qk-purpose','#act-34-observe':'qk-observe','#act-34-match':'qk-match','#act-33':'weight-purpose','#act-33-equal':'weight-equal','#act-33-mix':'weight-mix','#act-32':'blend-purpose','#act-32-compose':'blend-compose','#act-32-explore':'blend-explore','#act-31':'prefix-purpose','#act-31-read':'prefix-read','#act-30':'flight','#act-29':'vocab-purpose','#act-29-observe':'vocab-observe','#act-29-feedback':'vocab-feedback','#act-29-train':'vocab-train','#act-28':'signal-purpose','#act-28-source':'signal-source','#act-28-endpoints':'signal-endpoints','#act-28-chain':'signal-chain','#act-28-merge':'signal-merge','#act-28-update':'signal-update','#act-27':'adapt-purpose','#act-27-probe':'adapt-probe','#act-27-rate':'adapt-rate','#act-27-update':'adapt-update','#act-26':'loss-observe','#act-26-design':'loss-design','#act-26-inverse':'loss-inverse','#act-26-ruler':'loss-ruler','#act-26-records':'loss-records','#act-26-curve':'loss-curve','#act-25':'prob-observe','#act-25-distribution':'prob-distribution','#act-25-convert':'prob-convert','#act-25-normalize':'prob-normalize','#act-24-shared':'usage-lookup','#act-24-lab':'emb-purpose','#act-24-lookup':'emb-lookup','#act-24-vector':'emb-vector','#act-24-compute':'emb-compute'}[globalThis.location?.hash];
     if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     if(globalThis.location?.hash==='#act-21-node'){
@@ -5109,7 +5329,7 @@
     }
     new ResizeObserver(entries=>{
       // Height-only layout changes must not finish the current teaching animation.
-      if(entries?.length&&(current().startsWith('vocab-')||current()==='flight'||current().startsWith('blend-')||current().startsWith('weight-')||current().startsWith('roles-')||current().startsWith('derive-')||current().startsWith('rows-')||current().startsWith('scores-')||current().startsWith('portions-')||current().startsWith('values-')||current().startsWith('project-')||current().startsWith('residual-')||current().startsWith('round-')||current().startsWith('place-')||current().startsWith('mask-')||current().startsWith('readout-')||current().startsWith('tune-')||current().startsWith('backflow-')||current().startsWith('vgrad-')||current().startsWith('agrad-')||current().startsWith('sgrad-')||current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-'))&&lastPlot?.width===Math.max(240,figure.getBoundingClientRect().width||736))return;
+      if(entries?.length&&(current().startsWith('vocab-')||current()==='flight'||current().startsWith('blend-')||current().startsWith('weight-')||current().startsWith('roles-')||current().startsWith('derive-')||current().startsWith('rows-')||current().startsWith('scores-')||current().startsWith('portions-')||current().startsWith('values-')||current().startsWith('project-')||current().startsWith('residual-')||current().startsWith('round-')||current().startsWith('place-')||current().startsWith('mask-')||current().startsWith('readout-')||current().startsWith('tune-')||current().startsWith('backflow-')||current().startsWith('vgrad-')||current().startsWith('agrad-')||current().startsWith('sgrad-')||current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-'))&&lastPlot?.width===Math.max(240,figure.getBoundingClientRect().width||736))return;
       if(current().startsWith('vocab-')){stopAutomation();renderCopy();updateNav();}
       if(entries?.length&&(meshView()?.detail||current().startsWith('adapt-')||current().startsWith('signal-'))&&plotMotion&&lastPlot?.width===Math.max(240,figure.getBoundingClientRect().width||736))return;
       cancelPlotAnimation(true);lastPlot=null;
@@ -5167,7 +5387,7 @@
   ]],['从神经元到神经网络',[
     '给直线加入转折','让一部分输出归零','权重、偏置与神经元','让输出权重学习','影响怎样逐层传递','整个神经元共同学习','为什么需要第二个神经元','两个分支协调输出','学习转折出现的位置','追踪两条路径的影响','理解层与层的组合','观察一张小神经网络','整张网络一起学习'
   ]],['走向文字与上下文',[
-    '从原文得到下一字任务','从用法学习文字表示','从分数得到概率','怎样评价文字预测','让原文改变表示','理解概率之间的竞争','让所有候选共同学习','同一个字，两种上下文','用前文预测下一个字','多个字共同参与预测','两句话各自需要不同份量','这次想找什么：Query 与 Key','让词的表示结合上下文','同一份表示怎样生成 Q 和 K','把各位置的 Q 和 K 排起来','逐格形成匹配分数表','每个位置各自分配读取份量','按权重读入信息：Value','准备传递的内容：V 的共享变换','把上下文补回原表示','回放一轮上下文更新','让位置参与计算','预测时只能读取已知内容','把上下文表示变成下一词概率','让正确答案调整读出权重','把反馈送回上下文表示','读入的内容收到多少反馈','内容不变，重新分配读取份额','把读取反馈传回匹配分数','同一个 Q 收到多条路径的反馈','固定 Q，把反馈传回每份 K','让生成 K 的共享权重学习','学习更有用的匹配方式','让选择与表达共同学习'
+    '从原文得到下一字任务','从用法学习文字表示','从分数得到概率','怎样评价文字预测','让原文改变表示','理解概率之间的竞争','让所有候选共同学习','同一个字，两种上下文','用前文预测下一个字','多个字共同参与预测','两句话各自需要不同份量','这次想找什么：Query 与 Key','让词的表示结合上下文','同一份表示怎样生成 Q 和 K','把各位置的 Q 和 K 排起来','逐格形成匹配分数表','每个位置各自分配读取份量','按权重读入信息：Value','准备传递的内容：V 的共享变换','把上下文补回原表示','回放一轮上下文更新','让位置参与计算','预测时只能读取已知内容','把上下文表示变成下一词概率','让正确答案调整读出权重','把反馈送回上下文表示','读入的内容收到多少反馈','内容不变，重新分配读取份额','把读取反馈传回匹配分数','同一个 Q 收到多条路径的反馈','固定 Q，把反馈传回每份 K','让生成 K 的共享权重学习','学习更有用的匹配方式','让选择与表达共同学习','让不同前文共同训练'
   ]]];
   let number=0,opener=menu,previousOverflow='';
   groups.forEach(([title,items])=>{const h=document.createElement('h3');h.textContent=title;chapters.appendChild(h);const list=document.createElement('ol');items.forEach(label=>{number++;const li=document.createElement('li'),a=document.createElement('a'),n=document.createElement('span');a.href='#act-'+number;a.dataset.chapter=number;n.textContent=String(number).padStart(2,'0');a.append(n,document.createTextNode(label));li.appendChild(a);list.appendChild(li);});chapters.appendChild(list);});
