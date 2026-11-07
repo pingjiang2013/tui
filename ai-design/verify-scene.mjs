@@ -2155,7 +2155,7 @@ for(const width of [736,360,280]){
  for(const run of [L.original,L.retry])run.forEach((e,i)=>{assert.equal(json(e.model.ids),json([0,1,...run.slice(0,i).map(r=>r.id)]));assert.equal(e.id,api.index(e.model.probabilities,e.u));});
  app.automatic.fire('click');assert.equal(calls,6);assert.equal(json(L.original),original);assert.equal(json(api.data().reference),reference);assert.equal(json([L.parameters,L.head]),frozen);assert.equal(json(api.upstream()),up);
  const segments=JSON.parse(app.svg.getAttribute('data-sampler-segments'));segments.forEach((s,i)=>jointClose(s.width/g.bandW,api.data().probabilities[i]));
- app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.equal(calls,6);assert.equal(L.original.length,0);assert.equal(L.retry.length,0);assert.equal(api.data().event,null);
+ app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.equal(calls,6);assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'thermo-goal');assert.equal(json([L.parameters,L.head]),frozen);
  console.log('PASS sampling '+width+': interval boundaries, zero shares, uniform-position measure, non-argmax choice, one draw per decision, replay without resampling, new-prefix inference, independent retry and frozen model');
 }
 {
@@ -2167,3 +2167,36 @@ for(const [hash,expected] of [['#act-59-continue',1],['#act-59-retry',2]]){
 }
 {const app=mount(280,'#act-47-train',samplerProgram);app.advance();app.goToChapter(59);assert.equal(JSON.stringify(app.vocabMath.data().parameters),JSON.stringify(app.vocabMath.prior()));}
 {let u;const app=mount(280,'#act-59',samplerProgram,false,()=>u),api=app.vocabMath,p=api.data().probabilities;u=p[0]+p[1]/2;app.advance();assert.equal(api.data().event.id,1);assert.ok(p[1]>0&&p[1]<.0005);assert.match(app.svg.textContent,/<0.1%/);}
+
+// Temperature transforms final vocabulary logits, never attention or learned weights.
+const thermoProgram=script.replace('    const waveChapter=','    globalThis.__captureVocabMath({data:thermoView,state:()=>thermoLesson,distribution:thermoDistribution,model:thermoModel,set:thermoSetTemperature,prior:()=>autogenLesson.parameters,upstream:()=>({parameters:multilearnLesson.initial,head:multilearnLesson.head,step:multilearnLesson.batchIndex}),controls:()=>({root:thermoControls,range:thermoRange,choices:thermoChoices}),gain:g=>{projectInit();projectLesson.gain=g;renderScene();}});\n    const waveChapter=');
+for(const width of [736,360,280]){
+ let calls=0;const values=[.15,.9,.02,.7,.9],app=mount(width,'#act-60',thermoProgram,false,()=>values[calls++]??.9),api=app.vocabMath,json=x=>JSON.stringify(x),L=api.state(),base=api.data(),frozen=json([L.parameters,L.head]),up=json(api.upstream()),entropy=p=>-p.reduce((s,v)=>s+(v>0?v*Math.log(v):0),0);
+ assert.equal(calls,0);assert.equal(L.temperature,1);assert.equal(json(L.parameters),json(api.prior()));assert.equal(json(base.probabilities),json(base.originalProbabilities));assert.equal(api.controls().root.hidden,true);
+ let lastEntropy=-Infinity;for(const t of [.5,1,2,2.5,3]){
+  const d=api.model([0,1],t),weights=base.probabilities.map(p=>p**(1/t)),sum=weights.reduce((a,b)=>a+b,0);
+  d.probabilities.forEach((p,i)=>jointClose(p,weights[i]/sum));assert.ok(entropy(d.probabilities)>lastEntropy);lastEntropy=entropy(d.probabilities);
+  for(const k of ['inputs','Q','K','V','scores','shares','context','h','logits'])assert.equal(json(d[k]),json(base[k]));
+  for(let i=0;i<3;i++){jointClose(d.scaledGaps[i],(base.logits[i]-Math.max(...base.logits))/t);for(let j=0;j<3;j++)if(base.logits[i]>base.logits[j])assert.ok(d.probabilities[i]>d.probabilities[j]);}
+ }
+ const a=api.distribution([1001,999,1000],2),b=api.distribution([101001,100999,101000],2);assert.equal(json(a.probabilities),json(b.probabilities));assert.equal(json(api.distribution([4,4,4],.5).probabilities),json(api.distribution([4,4,4],3).probabilities));assert.equal(json(api.distribution([10000,-10000,0],.5).probabilities),'[1,0,0]');
+ for(const t of [0,-1,NaN,Infinity])assert.throws(()=>api.distribution(base.logits,t),/finite and positive/);
+ app.advance();assert.equal(L.opened,true);jointClose(L.temperature,2.5);assert.equal(api.controls().choices.hidden,false);assert.equal(calls,0);
+ app.advance();assert.equal(api.controls().root.hidden,true);app.advance();assert.equal(L.mechanism,true);assert.equal(calls,0);const range=api.controls().range;range.value='1';range.fire('input');jointClose(L.temperature,1);assert.equal(json(api.data().probabilities),json(base.probabilities));
+ const points=JSON.parse(app.svg.getAttribute('data-thermo-scorePoints')),g=JSON.parse(app.svg.getAttribute('data-thermo-geometry'));points.forEach((p,i)=>jointClose(p.x,g.left+g.bandW*(1+api.data().scaledGaps[i]/g.axisSpan)));
+ app.advance();assert.equal(calls,1);assert.equal(L.previewU,.15);const fixed=JSON.parse(app.svg.getAttribute('data-thermo-marker')).x;api.set(1);assert.equal(api.data().chosen.id,2);api.set(3);assert.equal(api.data().chosen.id,0);jointClose(JSON.parse(app.svg.getAttribute('data-thermo-marker')).x,fixed);assert.equal(calls,1);
+ app.advance();assert.equal(calls,3);assert.equal(L.runDone,true);assert.equal(range.disabled,true);assert.equal(L.runTemperature,3);assert.equal(L.run.length,2);assert.equal(api.data().visibleIds.length,4);assert.equal(json(L.run[1].model.ids),json([0,1,L.run[0].id]));
+ L.run.forEach(e=>{assert.equal(e.model.temperature,3);assert.equal(e.id,samplerIndexForTest(e.model.probabilities,e.u));const scaled=api.distribution(e.model.logits,3);assert.equal(json(e.model.probabilities),json(scaled.probabilities));});
+ api.set(.5);assert.equal(L.temperature,3);assert.equal(calls,3);app.automatic.fire('click');assert.equal(L.run.length,0);assert.equal(L.runDone,false);assert.equal(range.disabled,false);assert.equal(api.data().visibleIds.length,2);assert.equal(calls,3);api.set(.5);app.advance();assert.equal(calls,5);assert.equal(L.runTemperature,.5);
+ assert.equal(json([L.parameters,L.head]),frozen);assert.equal(json(api.upstream()),up);app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.equal(L.temperature,1);assert.equal(L.opened,false);assert.equal(L.mechanism,false);assert.equal(L.previewU,null);assert.equal(calls,5);app.goToChapter(58);assert.equal(api.controls().root.hidden,true);
+ console.log('PASS temperature '+width+': exact logit scaling, T=1 identity, entropy/rank/shift invariants, frozen attention and weights, linked score positions, fixed preview, fresh two-word generation and locked run settings');
+}
+function samplerIndexForTest(p,u){let total=0;for(let i=0;i<p.length;i++){total+=p[i];if(u<total)return i;}return p.length-1;}
+{
+ let calls=0;const app=mount(280,'#act-60',thermoProgram,true,()=>{calls++;return .15;}),api=app.vocabMath;app.advance();app.frame(1450);jointClose(api.state().temperature,1.75);assert.equal(api.state().opened,false);assert.equal(calls,0);const phase=api.state().phase;app.resizeHeight();jointClose(api.state().phase,phase);app.frame(1450);app.advance();app.advance();app.frame(1450);jointClose(api.state().temperature,1.75);app.frame(1450);app.advance();assert.equal(calls,1);app.advance();assert.equal(calls,3);assert.equal(api.controls().range.disabled,true);app.frame(1000);assert.equal(api.data().ids.length,2);app.frame(3000);assert.equal(api.data().ids.length,3);app.hide();assert.equal(api.state().action,null);assert.equal(api.state().runDone,true);assert.equal(calls,3);app.show();app.frame(10000);assert.equal(calls,3);app.retreat();assert.equal(api.state().runDone,false);assert.equal(api.data().ids.length,2);
+ console.log('PASS temperature motion: real per-frame probability recomputation, meaningful gap replay, continuous prefix growth, immutable run temperature, resize and no extra hidden sampling');
+}
+for(const [hash,expected] of [['#act-60-scores',0],['#act-60-sample',1]]){
+ let calls=0;const app=mount(280,hash,thermoProgram,'reduce',()=>{calls++;return .15;}),api=app.vocabMath;assert.equal(calls,expected);api.gain(2);assert.equal(api.state().signature,JSON.stringify([api.state().parameters,api.state().head]));assert.equal(calls,expected*2);app.advance();assert.equal(api.state().action,null);
+}
+{let calls=0;const app=mount(280,'#act-59',thermoProgram,false,()=>{calls++;return .13;});app.advance();app.goToChapter(60);app.advance();app.advance();app.advance();app.advance();assert.equal(app.vocabMath.state().previewU,.13);assert.equal(calls,1);}
