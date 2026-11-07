@@ -8,7 +8,7 @@ const fragment=await readFile(new URL('./minimal-learning-scene.html',import.met
 const script=fragment.match(/<script>([\s\S]*?)<\/script>/)[1];
 new vm.Script(script,{filename:fileURLToPath(new URL('./minimal-learning-scene.html',import.meta.url))});
 
-function mount(width,hash='',program=script,motion=false) {
+function mount(width,hash='',program=script,motion=false,random=null) {
   class Element {
     constructor(tag) {this.tag=tag;this.children=[];this.attrs={};this.events={};this.style={};this._text='';this.hidden=false;this.disabled=false;}
     setAttribute(key,value) {this.attrs[key]=String(value);}
@@ -37,7 +37,7 @@ function mount(width,hash='',program=script,motion=false) {
   const document={hidden:false,getElementById:id=>id==='minimal-ai-scene'?root:null,createElement:tag=>new Element(tag),createElementNS:(_,tag)=>new Element(tag),createTextNode:value=>Object.assign(new Element('#text'),{textContent:value}),addEventListener:(name,callback)=>{documentEvents[name]=callback;}};
   const motionPlatform=motion?{performance:{now:()=>frameTime},requestAnimationFrame:callback=>{frames.set(++frameId,callback);return frameId;},cancelAnimationFrame:id=>frames.delete(id),matchMedia:()=>({matches:motion==='reduce'})}:{};
   let waveMath,bendMath,outputMath,relayMath,jointMath,pairMath,duoMath,onsetMath,netMath,meshMath,wholeMath,textMath,embMath,usageMath,probMath,lossMath,adaptMath,signalMath,vocabMath;
-  vm.runInNewContext(program,{document,ResizeObserver:class{constructor(callback){resizeCallback=callback;}observe(){}},Math,Number,String,location,__captureWaveMath:value=>{waveMath=value;},__captureBendMath:value=>{bendMath=value;},__captureOutputMath:value=>{outputMath=value;},__captureRelayMath:value=>{relayMath=value;},__captureJointMath:value=>{jointMath=value;},__capturePairMath:value=>{pairMath=value;},__captureDuoMath:value=>{duoMath=value;},__captureOnsetMath:value=>{onsetMath=value;},__captureNetMath:value=>{netMath=value;},__captureMeshMath:value=>{meshMath=value;},__captureWholeMath:value=>{wholeMath=value;},__captureTextMath:value=>{textMath=value;},__captureEmbMath:value=>{embMath=value;},__captureUsageMath:value=>{usageMath=value;},__captureProbMath:value=>{probMath=value;},__captureLossMath:value=>{lossMath=value;},__captureAdaptMath:value=>{adaptMath=value;},__captureSignalMath:value=>{signalMath=value;},__captureVocabMath:value=>{vocabMath=value;},__recordParameter:value=>evaluations.push(value),__recordDerivative:value=>derivativeInputs.push(value),setTimeout:callback=>{timers.set(++timerId,callback);return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,callback)=>{pageEvents[name]=callback;},...motionPlatform});
+  vm.runInNewContext(program,{document,ResizeObserver:class{constructor(callback){resizeCallback=callback;}observe(){}},Math:random?Object.assign(Object.create(Math),{random}):Math,Number,String,location,__captureWaveMath:value=>{waveMath=value;},__captureBendMath:value=>{bendMath=value;},__captureOutputMath:value=>{outputMath=value;},__captureRelayMath:value=>{relayMath=value;},__captureJointMath:value=>{jointMath=value;},__capturePairMath:value=>{pairMath=value;},__captureDuoMath:value=>{duoMath=value;},__captureOnsetMath:value=>{onsetMath=value;},__captureNetMath:value=>{netMath=value;},__captureMeshMath:value=>{meshMath=value;},__captureWholeMath:value=>{wholeMath=value;},__captureTextMath:value=>{textMath=value;},__captureEmbMath:value=>{embMath=value;},__captureUsageMath:value=>{usageMath=value;},__captureProbMath:value=>{probMath=value;},__captureLossMath:value=>{lossMath=value;},__captureAdaptMath:value=>{adaptMath=value;},__captureSignalMath:value=>{signalMath=value;},__captureVocabMath:value=>{vocabMath=value;},__recordParameter:value=>evaluations.push(value),__recordDerivative:value=>derivativeInputs.push(value),setTimeout:callback=>{timers.set(++timerId,callback);return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,callback)=>{pageEvents[name]=callback;},...motionPlatform});
   return {root,copy,figure,svg,handle,back,next,automatic,timers,frames,evaluations,derivativeInputs,waveMath,bendMath,outputMath,relayMath,jointMath,pairMath,duoMath,onsetMath,netMath,meshMath,wholeMath,textMath,embMath,usageMath,probMath,lossMath,adaptMath,signalMath,vocabMath,
     advance(){next.fire('click');},retreat(){back.fire('click');},key(key){handle.fire('keydown',{key});},
     documentPointer(type,event){documentEvents[type]?.({target:document,...event});},
@@ -2115,7 +2115,7 @@ for(const width of [736,360,280]){
  app.advance();app.advance();assert.equal(api.state().secondDone,true);assert.equal(json(api.data().visibleIds),json(P.finalIds));assert.equal(api.data().ids.length,3);assert.equal(app.svg.querySelectorAll('[data-autogen-token]').length,4);
  const g=JSON.parse(app.svg.getAttribute('data-autogen-geometry')),segments=JSON.parse(app.svg.getAttribute('data-autogen-segments'));segments.forEach((v,i)=>jointClose(v.width/g.bandW,P.second.probabilities[i]));
  assert.equal(json([L.parameters,L.head]),frozen);assert.equal(json(api.upstream()),up);
- app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.equal(api.state().firstDone,false);assert.equal(api.state().readDone,false);assert.equal(api.state().secondDone,false);assert.equal(json(api.data().visibleIds),'[0,1]');
+ app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.equal(app.svg.getAttribute('data-ma-chart-kind'),'sampler-pick');assert.equal(json([L.parameters,L.head]),frozen);
  console.log('PASS generation '+width+': learned parameters inherited, shared forward identity, true argmax, output becomes input, new last query, exact probability widths, second output and frozen weights');
 }
 {
@@ -2133,3 +2133,37 @@ for(const hash of ['#act-58-feed','#act-58-repeat']){
 }
 {const app=mount(280,'#act-58',autogenProgram);app.vocabMath.flat();const P=app.vocabMath.plans();assert.equal(P.firstId,0);assert.equal(P.secondId,0);app.advance();app.advance();app.advance();app.advance();app.advance();assert.equal(JSON.stringify(app.vocabMath.data().visibleIds),'[0,1,0,0]');}
 {const app=mount(280,'#act-47-train',autogenProgram);app.advance();app.goToChapter(58);assert.equal(JSON.stringify(app.vocabMath.data().parameters),JSON.stringify(app.vocabMath.prior().parameters));}
+
+// Controlled random inputs verify all branches without arranging production outcomes.
+const samplerProgram=script.replace('    const waveChapter=','    globalThis.__captureVocabMath({data:samplerView,state:()=>samplerLesson,index:samplerIndex,forward:multilearnForward,prior:()=>autogenLesson.parameters,upstream:()=>({parameters:multilearnLesson.initial,head:multilearnLesson.head,step:multilearnLesson.batchIndex}),gain:g=>{projectInit();projectLesson.gain=g;renderScene();}});\n    const waveChapter=');
+for(const width of [736,360,280]){
+ let calls=0;const values=[.025,.95,.84,.015,.43,.55],app=mount(width,'#act-59',samplerProgram,false,()=>values[calls++]??.9),api=app.vocabMath,json=x=>JSON.stringify(x),L=api.state(),base=api.data(),frozen=json([L.parameters,L.head]),up=json(api.upstream());
+ assert.equal(calls,0);assert.equal(json(base.parameters),json(api.prior()));assert.equal(base.event,null);assert.equal(base.reference,null);assert.equal(json(base.visibleIds),'[0,1]');
+ const p=[.2,.3,.5];for(const [u,id] of [[0,0],[.19999,0],[.2,1],[.49999,1],[.5,2],[.99999,2]])assert.equal(api.index(p,u),id);
+ for(const u of [0,.3,.999])assert.equal(api.index([0,1,0],u),1);
+ for(const u of [-.1,1,NaN,Infinity])assert.throws(()=>api.index(p,u),/Invalid sampling/);
+ assert.throws(()=>api.index([.2,.3,.6],.5),/Invalid sampling/);assert.throws(()=>api.index([-.1,1.1],.5),/Invalid sampling/);
+ const count=[0,0,0];for(let i=0;i<10000;i++)count[api.index(base.probabilities,(i+.5)/10000)]++;count.forEach((n,i)=>assert.ok(Math.abs(n-base.probabilities[i]*10000)<=1));
+ app.advance();assert.equal(calls,1);const first=api.data(),event=L.original[0];assert.equal(event.u,.025);assert.equal(event.id,api.index(base.probabilities,event.u));assert.equal(event.id,0);assert.notEqual(event.id,base.probabilities.indexOf(Math.max(...base.probabilities)));assert.equal(first.ids.length,2);assert.equal(first.visibleIds.length,3);
+ const marker=JSON.parse(app.svg.getAttribute('data-sampler-marker')),g=JSON.parse(app.svg.getAttribute('data-sampler-geometry'));jointClose(marker.x,g.left+event.u*g.bandW);
+ const originalFirst=json(event);app.automatic.fire('click');app.resizeHeight();app.resize();assert.equal(calls,1);assert.equal(json(L.original[0]),originalFirst);
+ app.advance();assert.equal(calls,1);app.advance();assert.equal(calls,2);assert.equal(L.continueDone,true);assert.equal(json(api.data().ids),json([0,1,event.id]));assert.equal(api.data().visibleIds.length,4);
+ const newModel=api.forward(L.parameters,[0,1,event.id],L.head);assert.equal(json(api.data().probabilities),json(newModel.probabilities));const original=json(L.original),reference=json(api.data().visibleIds);
+ app.automatic.fire('click');assert.equal(calls,2);assert.equal(json(L.original),original);
+ app.advance();assert.equal(api.data().event,null);assert.equal(json(api.data().ids),'[0,1]');assert.equal(json(api.data().probabilities),json(base.probabilities));assert.equal(json(api.data().reference),reference);assert.equal(calls,2);
+ app.advance();assert.equal(calls,4);assert.equal(L.retryDone,true);assert.equal(json(L.original),original);assert.equal(json(api.data().reference),reference);
+ for(const run of [L.original,L.retry])run.forEach((e,i)=>{assert.equal(json(e.model.ids),json([0,1,...run.slice(0,i).map(r=>r.id)]));assert.equal(e.id,api.index(e.model.probabilities,e.u));});
+ app.automatic.fire('click');assert.equal(calls,6);assert.equal(json(L.original),original);assert.equal(json(api.data().reference),reference);assert.equal(json([L.parameters,L.head]),frozen);assert.equal(json(api.upstream()),up);
+ const segments=JSON.parse(app.svg.getAttribute('data-sampler-segments'));segments.forEach((s,i)=>jointClose(s.width/g.bandW,api.data().probabilities[i]));
+ app.advance();assert.equal(app.figure.hidden,true);app.advance();assert.equal(calls,6);assert.equal(L.original.length,0);assert.equal(L.retry.length,0);assert.equal(api.data().event,null);
+ console.log('PASS sampling '+width+': interval boundaries, zero shares, uniform-position measure, non-argmax choice, one draw per decision, replay without resampling, new-prefix inference, independent retry and frozen model');
+}
+{
+ let calls=0;const app=mount(280,'#act-59',samplerProgram,true,()=>{calls++;return .9;}),api=app.vocabMath;app.advance();const u=api.state().original[0].u;app.frame(1300);assert.equal(calls,1);assert.equal(api.data().event.u,u);assert.equal(api.data().ids.length,2);app.resizeHeight();assert.equal(calls,1);app.frame(1300);app.advance();app.advance();assert.equal(calls,2);app.frame(1000);assert.equal(api.data().ids.length,2);app.frame(1500);assert.equal(api.data().ids.length,3);app.frame(2500);app.advance();app.advance();assert.equal(calls,4);app.frame(1800);assert.equal(api.data().ids.length,2);app.frame(3000);assert.equal(api.data().ids.length,3);app.hide();assert.equal(api.state().action,null);assert.equal(api.state().retryDone,true);assert.equal(calls,4);assert.equal(api.data().visibleIds.length,4);app.show();app.frame(10000);assert.equal(calls,4);assert.match(app.copy.textContent,/这次两行的结果相同/);app.retreat();assert.equal(calls,4);assert.equal(api.data().ids.length,3);app.retreat();assert.equal(api.data().ids.length,2);
+ console.log('PASS sampling motion: fixed random marker, old/new distribution continuity, real prefix switch, same-outcome honesty, resize, backtracking and no hidden extra draws');
+}
+for(const [hash,expected] of [['#act-59-continue',1],['#act-59-retry',2]]){
+ let calls=0;const app=mount(280,hash,samplerProgram,'reduce',()=>{calls++;return .9;}),api=app.vocabMath;assert.equal(calls,expected);app.resizeHeight();assert.equal(calls,expected);app.advance();assert.equal(calls,hash.endsWith('retry')?4:2);api.gain(2);assert.equal(api.state().signature,JSON.stringify([api.state().parameters,api.state().head]));
+}
+{const app=mount(280,'#act-47-train',samplerProgram);app.advance();app.goToChapter(59);assert.equal(JSON.stringify(app.vocabMath.data().parameters),JSON.stringify(app.vocabMath.prior()));}
+{let u;const app=mount(280,'#act-59',samplerProgram,false,()=>u),api=app.vocabMath,p=api.data().probabilities;u=p[0]+p[1]/2;app.advance();assert.equal(api.data().event.id,1);assert.ok(p[1]>0&&p[1]<.0005);assert.match(app.svg.textContent,/<0.1%/);}
