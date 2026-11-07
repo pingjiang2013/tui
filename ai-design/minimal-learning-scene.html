@@ -93,7 +93,7 @@
     const copy=root.querySelector('[data-ma-copy]'), figure=root.querySelector('[data-ma-figure]');
     const svg=root.querySelector('[data-ma-svg]'), handle=root.querySelector('[data-ma-handle]');
     const back=root.querySelector('[data-ma-back]'), next=root.querySelector('[data-ma-next]'), automatic=root.querySelector('[data-ma-auto]');
-    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','mesh-purpose','mesh-input','mesh-ablate','mesh-ending','whole-purpose','whole-goal','whole-records','whole-paths','whole-average','whole-train','whole-ending','text-purpose','text-pairs','text-ids','text-renumber','text-ending','usage-purpose','usage-observe','usage-dimensions','usage-data','usage-capacity','usage-lookup','usage-ending','prob-observe','prob-distribution','prob-convert','prob-normalize','prob-ending','loss-observe','loss-records','loss-design','loss-ruler','loss-inverse','loss-curve','loss-ending','adapt-purpose','adapt-probe','adapt-rate','adapt-update','adapt-ending','signal-purpose','signal-source','signal-endpoints','signal-chain','signal-merge','signal-update','signal-ending','vocab-purpose','vocab-observe','vocab-feedback','vocab-train','vocab-ending','flight','prefix-purpose','prefix-cut','prefix-read','prefix-ending','blend-purpose','blend-compose','blend-explore','blend-ending','weight-purpose','weight-equal','weight-mix','weight-ending','qk-purpose','qk-observe','qk-match','qk-ending','roles-purpose','roles-read','roles-match','roles-offer','roles-ending','derive-purpose','derive-q','derive-k','derive-shared','derive-link','derive-ending','rows-purpose','rows-build','rows-inspect','rows-ending','scores-purpose','scores-pair','scores-row','scores-all','scores-inspect','scores-ending','portions-exp','portions-cat','portions-white','portions-table','portions-ending','values-read','values-name','values-ending','project-fixed','project-adjust','project-shared','project-ending','residual-prepare','residual-join','residual-both','residual-ending','round-run','round-ending','place-content','place-position','place-verify','place-ending','mask-leak','mask-cut','mask-rows','mask-ending','readout-purpose','readout-score','readout-prob','readout-ending','tune-loss','tune-feedback','tune-train','tune-ending','backflow-fan','backflow-sum','backflow-residual','backflow-ending','vgrad-source','vgrad-return','vgrad-ending','agrad-source','agrad-feedback','agrad-trial','agrad-ending','sgrad-source','sgrad-response','sgrad-feedback','sgrad-ending','qgrad-source','qgrad-paths','qgrad-joint','qgrad-ending','kgrad-source','kgrad-feedback','kgrad-ending','wkshare-purpose','wkshare-rule','wkshare-feedback','wkshare-ending','wkgroup-goal','wkgroup-compose','wkgroup-train','wkgroup-ending','attlearn-goal','attlearn-value','attlearn-joint','attlearn-ending','multilearn-goal','multilearn-single','multilearn-batch','multilearn-ending','autogen-pick','autogen-feed','autogen-repeat','autogen-ending','sampler-pick','sampler-continue','sampler-retry','sampler-ending','thermo-goal','thermo-scores','thermo-sample','thermo-ending','emb-purpose','emb-lookup','emb-vector','emb-compute','emb-ending'];
+    const scenes=['purpose','records','why-rule','adjust','predict','calculation','ending','learn-purpose','learn-map','learn-measure','learn-try','learn-loop','learn-check','learn-ending','direction-purpose','direction-near','direction-gaps','direction-average','direction-rate','direction-apply','direction-far','direction-ending','step-purpose','step-map','step-close','step-scale','step-practice','step-ending','bias-observe','bias-shift','bias-ending','wave-multi-purpose','wave-effects','wave-joint','wave-score-purpose','wave-score','wave-strips','wave-normalize','wave-gradient','wave-train','wave-shape','wave-intervals','wave-ending','bend-purpose','bend-repair','bend-gate','bend-result','bend-neuron','bend-ending','output-purpose','output-probe','output-train','output-ending','relay-purpose','relay-shift','relay-gate','relay-result','relay-chain-trace','relay-train','relay-ending','joint-purpose','joint-path','joint-train','joint-ending','pair-observe','pair-shape','pair-add','pair-ending','duo-purpose','duo-train','duo-ending','onset-purpose','onset-train','onset-ending','net-purpose','net-forward','net-backward','net-batch','net-train','net-ending','deep-summary','deep-limits','deep-purpose','deep-compose','deep-ending','mesh-purpose','mesh-input','mesh-ablate','mesh-ending','whole-purpose','whole-goal','whole-records','whole-paths','whole-average','whole-train','whole-ending','text-purpose','text-pairs','text-ids','text-renumber','text-ending','usage-purpose','usage-observe','usage-dimensions','usage-data','usage-capacity','usage-lookup','usage-ending','prob-observe','prob-distribution','prob-convert','prob-normalize','prob-ending','loss-observe','loss-records','loss-design','loss-ruler','loss-inverse','loss-curve','loss-ending','adapt-purpose','adapt-probe','adapt-rate','adapt-update','adapt-ending','signal-purpose','signal-source','signal-endpoints','signal-chain','signal-merge','signal-update','signal-ending','vocab-purpose','vocab-observe','vocab-feedback','vocab-train','vocab-ending','flight','prefix-purpose','prefix-cut','prefix-read','prefix-ending','blend-purpose','blend-compose','blend-explore','blend-ending','weight-purpose','weight-equal','weight-mix','weight-ending','qk-purpose','qk-observe','qk-match','qk-ending','roles-purpose','roles-read','roles-match','roles-offer','roles-ending','derive-purpose','derive-q','derive-k','derive-shared','derive-link','derive-ending','rows-purpose','rows-build','rows-inspect','rows-ending','scores-purpose','scores-pair','scores-row','scores-all','scores-inspect','scores-ending','portions-exp','portions-cat','portions-white','portions-table','portions-ending','values-read','values-name','values-ending','project-fixed','project-adjust','project-shared','project-ending','residual-prepare','residual-join','residual-both','residual-ending','round-run','round-ending','place-content','place-position','place-verify','place-ending','mask-leak','mask-cut','mask-rows','mask-ending','readout-purpose','readout-score','readout-prob','readout-ending','tune-loss','tune-feedback','tune-train','tune-ending','backflow-fan','backflow-sum','backflow-residual','backflow-ending','vgrad-source','vgrad-return','vgrad-ending','agrad-source','agrad-feedback','agrad-trial','agrad-ending','sgrad-source','sgrad-response','sgrad-feedback','sgrad-ending','qgrad-source','qgrad-paths','qgrad-joint','qgrad-ending','kgrad-source','kgrad-feedback','kgrad-ending','wkshare-purpose','wkshare-rule','wkshare-feedback','wkshare-ending','wkgroup-goal','wkgroup-compose','wkgroup-train','wkgroup-ending','attlearn-goal','attlearn-value','attlearn-joint','attlearn-ending','multilearn-goal','multilearn-single','multilearn-batch','multilearn-ending','autogen-pick','autogen-feed','autogen-repeat','autogen-ending','sampler-pick','sampler-continue','sampler-retry','sampler-ending','thermo-goal','thermo-scores','thermo-sample','thermo-ending','unified-records','unified-joint','unified-train','emb-purpose','emb-lookup','emb-vector','emb-compute','emb-ending'];
     // Scenario data and prediction parameters are deliberately independent.
     const simulation={positionAt:seconds=>20+30*seconds};
     const records=[0,1,2,3].map(seconds=>({seconds,position:simulation.positionAt(seconds)}));
@@ -134,6 +134,7 @@
       return `第3秒的预测现在是${number(p3)}厘米，与记录相差${number(difference)}厘米。你调整的是同一条规则，所以其他时刻的预测也跟着改变。`;
     }
     function renderCopy() {
+      if(current().startsWith('unified-')){unifiedCopy();return;}
       if(current().startsWith('thermo-')){thermoCopy();return;}
       if(current().startsWith('sampler-')){samplerCopy();return;}
       if(current().startsWith('autogen-')){autogenCopy();return;}
@@ -261,6 +262,7 @@
       }
     }
     function updateNav() {
+      if(current().startsWith('unified-')){unifiedNav();return;}
       if(current().startsWith('thermo-')){thermoNav();return;}
       if(current().startsWith('sampler-')){samplerNav();return;}
       if(current().startsWith('autogen-')){autogenNav();return;}
@@ -330,6 +332,7 @@
       next.textContent=labels[state.scene];
     }
     function renderStage() {
+      if(current().startsWith('unified-')){unifiedDraw();return;}
       if(current().startsWith('thermo-')){thermoDraw();return;}
       if(current().startsWith('sampler-')){samplerDraw();return;}
       if(current().startsWith('autogen-')){autogenDraw();return;}
@@ -680,6 +683,7 @@
     }
     function refreshLearning() {renderCopy();updateNav();renderStage();}
     function stopAutomation() {
+      if(current().startsWith('unified-')&&unifiedLesson?.action==='train')unifiedPause();
       if(current().startsWith('multilearn-')&&multilearnLesson?.action==='batch')multilearnPause();
       sgradEndDrag();
       agradEndDrag();
@@ -4017,11 +4021,11 @@
       if(current().startsWith('direction-')) ensureDirection();
       if(current()==='predict'||current()==='calculation') ensureSnapshot();
       svg.setAttribute('role','img');handle.setAttribute('role','slider');handle.style.cursor='';
-      root.className=(textOnly()?'ma-text-page':'ma-interactive-page')+((current().startsWith('usage-')||current().startsWith('prob-')||current().startsWith('loss-')||current().startsWith('adapt-')||current().startsWith('signal-')||current().startsWith('vocab-')||current()==='flight'||current().startsWith('blend-')||current().startsWith('weight-')||current().startsWith('qk-')||current().startsWith('roles-')||current().startsWith('derive-')||current().startsWith('rows-')||current().startsWith('scores-')||current().startsWith('portions-')||current().startsWith('values-')||current().startsWith('project-')||current().startsWith('residual-')||current().startsWith('round-')||current().startsWith('place-')||current().startsWith('mask-')||current().startsWith('readout-')||current().startsWith('tune-')||current().startsWith('backflow-')||current().startsWith('vgrad-')||current().startsWith('agrad-')||current().startsWith('sgrad-')||current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-')||current().startsWith('autogen-')||current().startsWith('sampler-')||current().startsWith('thermo-'))?' ma-usage-page':'')+((current().startsWith('qk-')||current().startsWith('roles-')||current().startsWith('derive-')||current().startsWith('rows-')||current().startsWith('scores-')||current().startsWith('portions-')||current().startsWith('values-')||current().startsWith('project-')||current().startsWith('residual-')||current().startsWith('round-')||current().startsWith('place-')||current().startsWith('mask-')||current().startsWith('readout-')||current().startsWith('tune-')||current().startsWith('backflow-')||current().startsWith('vgrad-')||current().startsWith('agrad-')||current().startsWith('sgrad-')||current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-')||current().startsWith('autogen-')||current().startsWith('sampler-')||current().startsWith('thermo-'))&&!textOnly()?' ma-qk-page':'');
+      root.className=(textOnly()?'ma-text-page':'ma-interactive-page')+((current().startsWith('usage-')||current().startsWith('prob-')||current().startsWith('loss-')||current().startsWith('adapt-')||current().startsWith('signal-')||current().startsWith('vocab-')||current()==='flight'||current().startsWith('blend-')||current().startsWith('weight-')||current().startsWith('qk-')||current().startsWith('roles-')||current().startsWith('derive-')||current().startsWith('rows-')||current().startsWith('scores-')||current().startsWith('portions-')||current().startsWith('values-')||current().startsWith('project-')||current().startsWith('residual-')||current().startsWith('round-')||current().startsWith('place-')||current().startsWith('mask-')||current().startsWith('readout-')||current().startsWith('tune-')||current().startsWith('backflow-')||current().startsWith('vgrad-')||current().startsWith('agrad-')||current().startsWith('sgrad-')||current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-')||current().startsWith('autogen-')||current().startsWith('sampler-')||current().startsWith('thermo-')||current().startsWith('unified-'))?' ma-usage-page':'')+((current().startsWith('qk-')||current().startsWith('roles-')||current().startsWith('derive-')||current().startsWith('rows-')||current().startsWith('scores-')||current().startsWith('portions-')||current().startsWith('values-')||current().startsWith('project-')||current().startsWith('residual-')||current().startsWith('round-')||current().startsWith('place-')||current().startsWith('mask-')||current().startsWith('readout-')||current().startsWith('tune-')||current().startsWith('backflow-')||current().startsWith('vgrad-')||current().startsWith('agrad-')||current().startsWith('sgrad-')||current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-')||current().startsWith('autogen-')||current().startsWith('sampler-')||current().startsWith('thermo-')||current().startsWith('unified-'))&&!textOnly()?' ma-qk-page':'');
       if(current().startsWith('backflow-'))root.className+=' ma-backflow-page';
-      if(current().startsWith('attlearn-')||current().startsWith('multilearn-')||current().startsWith('autogen-')||current().startsWith('sampler-')||current().startsWith('thermo-'))root.className+=' ma-attlearn-page';
-      if(current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-')||current().startsWith('autogen-')||current().startsWith('sampler-')||current().startsWith('thermo-'))root.className+=' ma-wkshare-page';
-      if(current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-')||current().startsWith('autogen-')||current().startsWith('sampler-')||current().startsWith('thermo-'))root.className+=' ma-qgrad-page';
+      if(current().startsWith('attlearn-')||current().startsWith('multilearn-')||current().startsWith('autogen-')||current().startsWith('sampler-')||current().startsWith('thermo-')||current().startsWith('unified-'))root.className+=' ma-attlearn-page';
+      if(current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-')||current().startsWith('autogen-')||current().startsWith('sampler-')||current().startsWith('thermo-')||current().startsWith('unified-'))root.className+=' ma-wkshare-page';
+      if(current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-')||current().startsWith('autogen-')||current().startsWith('sampler-')||current().startsWith('thermo-')||current().startsWith('unified-'))root.className+=' ma-qgrad-page';
       figure.hidden=textOnly();handle.hidden=true;renderCopy();updateNav();renderStage();
     }
     function changeRule(value) {
@@ -4090,6 +4094,7 @@
       if(!(event.key in values)) return;event.preventDefault();changeRule(values[event.key]);
     });
     back.addEventListener('click',()=>{
+      if(current().startsWith('unified-')){unifiedBack();return;}
       if(current().startsWith('thermo-')){thermoBack();return;}
       if(current().startsWith('sampler-')){samplerBack();return;}
       if(current().startsWith('autogen-')){autogenBack();return;}
@@ -4135,6 +4140,7 @@
       if(state.scene>0){state.scene--;state.highlight=null;renderScene();}
     });
     next.addEventListener('click',()=>{
+      if(current().startsWith('unified-')){unifiedNext();return;}
       if(current().startsWith('thermo-')){thermoNext();return;}
       if(current().startsWith('sampler-')){samplerNext();return;}
       if(current().startsWith('autogen-')){autogenNext();return;}
@@ -4183,6 +4189,7 @@
       state.scene++;state.highlight=null;renderScene();
     });
     automatic.addEventListener('click',()=>{
+      if(current().startsWith('unified-')){unifiedReplay();return;}
       if(current().startsWith('thermo-')){thermoReplay();return;}
       if(current().startsWith('sampler-')){samplerReplay();return;}
       if(current().startsWith('autogen-')){autogenReplay();return;}
@@ -4240,6 +4247,8 @@
     globalThis.addEventListener?.('pagehide',stopAutomation);
     globalThis.addEventListener?.('pageshow',()=>{if((current().startsWith('adapt-')||current().startsWith('signal-')||current().startsWith('vocab-'))&&plotMotion){updateNav();return;}stopAutomation();if(wholeMode())refreshMesh();else if(current().startsWith('vocab-'))refreshVocab();else updateNav();});
     globalThis.addEventListener?.('hashchange',()=>{
+      if(unifiedLesson?.action==='train')unifiedPause();
+      if(generationSource&&!/^#act-(58|59|60)(?:-|$)/.test(globalThis.location?.hash??''))generationSource=null;
       if(multilearnLesson?.action){stopAutomation();multilearnLesson.action=null;}
       if(!globalThis.location?.hash||globalThis.location.hash==='#home'){stopAutomation();return;}
       if(globalThis.location.hash==='#act-1'){state.scene=0;renderScene();return;}
@@ -4247,7 +4256,7 @@
       if(globalThis.location?.hash==='#act-3') {state.scene=14;renderScene();}
       if(globalThis.location?.hash==='#act-4') {state.scene=scenes.indexOf('step-purpose');renderScene();}
       if(globalThis.location?.hash==='#act-5') {state.scene=scenes.indexOf('bias-observe');renderScene();}
-      const chapter={'#act-60':'thermo-goal','#act-60-scores':'thermo-scores','#act-60-sample':'thermo-sample','#act-59':'sampler-pick','#act-59-continue':'sampler-continue','#act-59-retry':'sampler-retry','#act-58':'autogen-pick','#act-58-feed':'autogen-feed','#act-58-repeat':'autogen-repeat','#act-57':'multilearn-goal','#act-57-single':'multilearn-single','#act-57-batch':'multilearn-batch','#act-56':'attlearn-goal','#act-56-value':'attlearn-value','#act-56-joint':'attlearn-joint','#act-55':'wkgroup-goal','#act-55-rules':'wkgroup-compose','#act-55-compose':'wkgroup-compose','#act-55-train':'wkgroup-train','#act-54':'wkshare-purpose','#act-54-rule':'wkshare-rule','#act-54-feedback':'wkshare-feedback','#act-53':'kgrad-source','#act-53-feedback':'kgrad-feedback','#act-52':'qgrad-source','#act-52-paths':'qgrad-paths','#act-52-joint':'qgrad-joint','#act-51':'sgrad-source','#act-51-response':'sgrad-response','#act-51-feedback':'sgrad-feedback','#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber','#act-24':'usage-purpose','#act-24-usage':'usage-observe','#act-24-dimensions':'usage-dimensions','#act-24-data':'usage-data','#act-24-capacity':'usage-capacity','#act-50':'agrad-source','#act-50-feedback':'agrad-feedback','#act-50-trial':'agrad-trial','#act-49':'vgrad-source','#act-49-return':'vgrad-return','#act-48':'backflow-fan','#act-48-sum':'backflow-sum','#act-48-residual':'backflow-residual','#act-47':'tune-loss','#act-47-feedback':'tune-feedback','#act-47-train':'tune-train','#act-46':'readout-purpose','#act-46-score':'readout-score','#act-46-prob':'readout-prob','#act-45':'mask-leak','#act-45-cut':'mask-cut','#act-45-rows':'mask-rows','#act-44':'place-content','#act-44-position':'place-position','#act-44-verify':'place-verify','#act-43':'round-run','#act-42':'residual-prepare','#act-42-join':'residual-join','#act-42-both':'residual-both','#act-41':'project-fixed','#act-41-adjust':'project-adjust','#act-41-shared':'project-shared','#act-40':'values-read','#act-40-values':'values-name','#act-39':'portions-exp','#act-39-cat':'portions-cat','#act-39-white':'portions-white','#act-39-table':'portions-table','#act-38':'scores-purpose','#act-38-pair':'scores-pair','#act-38-inspect':'scores-inspect','#act-37':'rows-purpose','#act-37-build':'rows-build','#act-37-inspect':'rows-inspect','#act-36':'derive-purpose','#act-36-q':'derive-q','#act-36-k':'derive-k','#act-36-shared':'derive-shared','#act-36-link':'derive-link','#act-35':'roles-purpose','#act-35-read':'roles-read','#act-35-match':'roles-match','#act-35-offer':'roles-offer','#act-34':'qk-purpose','#act-34-observe':'qk-observe','#act-34-match':'qk-match','#act-33':'weight-purpose','#act-33-equal':'weight-equal','#act-33-mix':'weight-mix','#act-32':'blend-purpose','#act-32-compose':'blend-compose','#act-32-explore':'blend-explore','#act-31':'prefix-purpose','#act-31-read':'prefix-read','#act-30':'flight','#act-29':'vocab-purpose','#act-29-observe':'vocab-observe','#act-29-feedback':'vocab-feedback','#act-29-train':'vocab-train','#act-28':'signal-purpose','#act-28-source':'signal-source','#act-28-endpoints':'signal-endpoints','#act-28-chain':'signal-chain','#act-28-merge':'signal-merge','#act-28-update':'signal-update','#act-27':'adapt-purpose','#act-27-probe':'adapt-probe','#act-27-rate':'adapt-rate','#act-27-update':'adapt-update','#act-26':'loss-observe','#act-26-design':'loss-design','#act-26-inverse':'loss-inverse','#act-26-ruler':'loss-ruler','#act-26-records':'loss-records','#act-26-curve':'loss-curve','#act-25':'prob-observe','#act-25-distribution':'prob-distribution','#act-25-convert':'prob-convert','#act-25-normalize':'prob-normalize','#act-24-shared':'usage-lookup','#act-24-lab':'emb-purpose','#act-24-lookup':'emb-lookup','#act-24-vector':'emb-vector','#act-24-compute':'emb-compute'}[globalThis.location?.hash];
+      const chapter={'#act-61':'unified-records','#act-61-joint':'unified-joint','#act-61-train':'unified-train','#act-60':'thermo-goal','#act-60-scores':'thermo-scores','#act-60-sample':'thermo-sample','#act-59':'sampler-pick','#act-59-continue':'sampler-continue','#act-59-retry':'sampler-retry','#act-58':'autogen-pick','#act-58-feed':'autogen-feed','#act-58-repeat':'autogen-repeat','#act-57':'multilearn-goal','#act-57-single':'multilearn-single','#act-57-batch':'multilearn-batch','#act-56':'attlearn-goal','#act-56-value':'attlearn-value','#act-56-joint':'attlearn-joint','#act-55':'wkgroup-goal','#act-55-rules':'wkgroup-compose','#act-55-compose':'wkgroup-compose','#act-55-train':'wkgroup-train','#act-54':'wkshare-purpose','#act-54-rule':'wkshare-rule','#act-54-feedback':'wkshare-feedback','#act-53':'kgrad-source','#act-53-feedback':'kgrad-feedback','#act-52':'qgrad-source','#act-52-paths':'qgrad-paths','#act-52-joint':'qgrad-joint','#act-51':'sgrad-source','#act-51-response':'sgrad-response','#act-51-feedback':'sgrad-feedback','#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber','#act-24':'usage-purpose','#act-24-usage':'usage-observe','#act-24-dimensions':'usage-dimensions','#act-24-data':'usage-data','#act-24-capacity':'usage-capacity','#act-50':'agrad-source','#act-50-feedback':'agrad-feedback','#act-50-trial':'agrad-trial','#act-49':'vgrad-source','#act-49-return':'vgrad-return','#act-48':'backflow-fan','#act-48-sum':'backflow-sum','#act-48-residual':'backflow-residual','#act-47':'tune-loss','#act-47-feedback':'tune-feedback','#act-47-train':'tune-train','#act-46':'readout-purpose','#act-46-score':'readout-score','#act-46-prob':'readout-prob','#act-45':'mask-leak','#act-45-cut':'mask-cut','#act-45-rows':'mask-rows','#act-44':'place-content','#act-44-position':'place-position','#act-44-verify':'place-verify','#act-43':'round-run','#act-42':'residual-prepare','#act-42-join':'residual-join','#act-42-both':'residual-both','#act-41':'project-fixed','#act-41-adjust':'project-adjust','#act-41-shared':'project-shared','#act-40':'values-read','#act-40-values':'values-name','#act-39':'portions-exp','#act-39-cat':'portions-cat','#act-39-white':'portions-white','#act-39-table':'portions-table','#act-38':'scores-purpose','#act-38-pair':'scores-pair','#act-38-inspect':'scores-inspect','#act-37':'rows-purpose','#act-37-build':'rows-build','#act-37-inspect':'rows-inspect','#act-36':'derive-purpose','#act-36-q':'derive-q','#act-36-k':'derive-k','#act-36-shared':'derive-shared','#act-36-link':'derive-link','#act-35':'roles-purpose','#act-35-read':'roles-read','#act-35-match':'roles-match','#act-35-offer':'roles-offer','#act-34':'qk-purpose','#act-34-observe':'qk-observe','#act-34-match':'qk-match','#act-33':'weight-purpose','#act-33-equal':'weight-equal','#act-33-mix':'weight-mix','#act-32':'blend-purpose','#act-32-compose':'blend-compose','#act-32-explore':'blend-explore','#act-31':'prefix-purpose','#act-31-read':'prefix-read','#act-30':'flight','#act-29':'vocab-purpose','#act-29-observe':'vocab-observe','#act-29-feedback':'vocab-feedback','#act-29-train':'vocab-train','#act-28':'signal-purpose','#act-28-source':'signal-source','#act-28-endpoints':'signal-endpoints','#act-28-chain':'signal-chain','#act-28-merge':'signal-merge','#act-28-update':'signal-update','#act-27':'adapt-purpose','#act-27-probe':'adapt-probe','#act-27-rate':'adapt-rate','#act-27-update':'adapt-update','#act-26':'loss-observe','#act-26-design':'loss-design','#act-26-inverse':'loss-inverse','#act-26-ruler':'loss-ruler','#act-26-records':'loss-records','#act-26-curve':'loss-curve','#act-25':'prob-observe','#act-25-distribution':'prob-distribution','#act-25-convert':'prob-convert','#act-25-normalize':'prob-normalize','#act-24-shared':'usage-lookup','#act-24-lab':'emb-purpose','#act-24-lookup':'emb-lookup','#act-24-vector':'emb-vector','#act-24-compute':'emb-compute'}[globalThis.location?.hash];
       if(chapter){state.scene=scenes.indexOf(chapter);renderScene();if(globalThis.location?.hash==='#act-21-node')meshOpenDetail('d');}
     });
     document.addEventListener('visibilitychange',()=>{
@@ -5127,9 +5136,10 @@
       if(multilearnLesson?.signature===signature)return;
       multilearnLesson={signature,initial,head,singleDone:current()==='multilearn-batch',phase:0,action:null,compare:false,batchIndex:0,plans:null};
     }
-    function multilearnForward(parameters,ids,head=multilearnLesson.head){
-      if(!ids.length||ids.length>placePositions.length||ids.some(id=>!Number.isInteger(id)||id<0||id>=placeLexical.length))throw new RangeError('Unsupported teaching prefix');
-      const inputs=ids.map((id,i)=>placeLexical[id].map((v,j)=>v+placePositions[i][j]));
+    function multilearnForward(parameters,ids,head=multilearnLesson.head,representation=null){
+      const lexical=representation?.lexical??placeLexical,positions=representation?.positions??placePositions;
+      if(!ids.length||ids.length>positions.length||ids.some(id=>!Number.isInteger(id)||id<0||id>=lexical.length))throw new RangeError('Unsupported teaching prefix');
+      const inputs=ids.map((id,i)=>lexical[id].map((v,j)=>v+positions[i][j]));
       const last=ids.length-1,project=W=>inputs.map(x=>W[0].map((_,j)=>x.reduce((sum,v,k)=>sum+v*W[k][j],0)));
       const Q=project(parameters.WQ),K=project(parameters.WK),V=project(parameters.WV);
       const scores=K.map(k=>k.reduce((sum,v,j)=>sum+v*Q[last][j],0)),shares=probSoftmax(scores);
@@ -5334,32 +5344,35 @@
     }
 
     // Inference shares exactly the same forward computation as chapter57 training.
+    let generationSource=null;
+    function generationRepresentation(p){return p?{lexical:p.lexical.map(r=>[...r]),positions:p.positions.map(r=>[...r])}:null;}
+    function generationSignature(parameters,head,representation){return JSON.stringify(representation?[parameters,head,representation]:[parameters,head]);}
     let autogenLesson=null;
     function autogenInit(){
       multilearnInit();const learned=multilearnPlans().history.at(-1);
-      const parameters=multilearnClone(learned.parameters),head=multilearnLesson.head.map(r=>[...r]);
-      const signature=JSON.stringify([parameters,head]);
+      const parameters=multilearnClone(generationSource?.model??learned.parameters),head=(generationSource?.model.head??multilearnLesson.head).map(r=>[...r]),representation=generationRepresentation(generationSource?.model);
+      const signature=generationSignature(parameters,head,representation);
       if(autogenLesson?.signature===signature)return;
-      autogenLesson={signature,parameters,head,phase:0,action:null,firstDone:current()!=='autogen-pick',readDone:current()==='autogen-repeat',secondDone:false,plans:null};
+      autogenLesson={signature,parameters,head,representation,sourceInfo:generationSource?{steps:generationSource.steps,loss:generationSource.loss}:null,phase:0,action:null,firstDone:current()!=='autogen-pick',readDone:current()==='autogen-repeat',secondDone:false,plans:null};
     }
     function autogenPlans(){
       const L=autogenLesson;if(L.plans)return L.plans;
-      const first=multilearnForward(L.parameters,[0,1],L.head);
+      const first=multilearnForward(L.parameters,[0,1],L.head,L.representation);
       const choose=d=>d.probabilities.reduce((best,p,i)=>p>d.probabilities[best]?i:best,0);
-      const firstId=choose(first),second=multilearnForward(L.parameters,[0,1,firstId],L.head),secondId=choose(second);
+      const firstId=choose(first),second=multilearnForward(L.parameters,[0,1,firstId],L.head,L.representation),secondId=choose(second);
       return L.plans={first,firstId,second,secondId,finalIds:[0,1,firstId,secondId]};
     }
     function autogenView(){
       const L=autogenLesson,P=autogenPlans(),s=current(),read=s==='autogen-repeat'||s==='autogen-feed'&&(L.readDone||L.action==='read'&&L.phase>=1);
       const model=read?P.second:P.first;
       const flying=L.action==='first'||L.action==='second',picked=s==='autogen-pick'?L.firstDone:s==='autogen-repeat'?L.secondDone:false;
-      return {...model,parameters:multilearnClone(L.parameters),head:L.head.map(r=>[...r]),chosenId:read?P.secondId:P.firstId,read,picked,flying,
+      return {...model,parameters:multilearnClone(L.parameters),head:L.head.map(r=>[...r]),representation:generationRepresentation(L.representation),sourceInfo:L.sourceInfo,chosenId:read?P.secondId:P.firstId,read,picked,flying,
         visibleIds:s==='autogen-repeat'&&L.secondDone?P.finalIds:s==='autogen-pick'&&!L.firstDone?[0,1]:[0,1,P.firstId]};
     }
     function autogenTexts(){
       const P=autogenPlans();
       return {
-        pick:'训练时，我们用原文中的下一词检查预测。现在只给模型“小猫 追”，让它自己接着写。框住的是当前预测位置，下面是它读取前文后得到的概率。这次先用一个简单办法：选概率最高的词。',
+        pick:(autogenLesson.sourceInfo?'这里继续使用刚才整段原文共同训练后的同一个模型。':'')+'训练时，我们用原文中的下一词检查预测。现在只给模型“小猫 追”，让它自己接着写。框住的是当前预测位置，下面是它读取前文后得到的概率。这次先用一个简单办法：选概率最高的词。',
         picked:'“'+placeNames[P.firstId]+'”来自刚才的预测：它是概率最高的候选。要继续往下写，我们就把这个词也放进前文，让模型根据更长的前文，再预测一个词。',
         feed:'接出的词也可以成为下一次的输入。把它接入前文，当前预测位置就来到这个新末词。模型从这里读取已有内容，重新计算下一词的概率。观察框、读取范围和下面的概率带怎样一起变化。',
         fed:'现在读到的前文更长了，当前预测位置也换了。下面这组概率，来自对新前文的一次重新计算。接下来选择的，是这一次预测中的词。',
@@ -5376,7 +5389,7 @@
     function autogenNav(){
       const L=autogenLesson,s=current(),done=s==='autogen-pick'?L.firstDone:s==='autogen-feed'?L.readDone:L.secondDone;
       back.hidden=false;back.disabled=false;back.textContent='← 上一页';next.disabled=!!L.action;
-      automatic.hidden=s==='autogen-ending'||!!L.action||!done;automatic.textContent='重放这一步';automatic.setAttribute('aria-pressed','false');
+      automatic.hidden=s==='autogen-ending'&&generationSource?false:s==='autogen-ending'||!!L.action||!done;automatic.textContent=s==='autogen-ending'&&generationSource?'回看训练':'重放这一步';automatic.setAttribute('aria-pressed','false');
       next.textContent=s==='autogen-pick'?(L.firstDone?'让它成为新的前文 →':'选出下一词 →'):s==='autogen-feed'?(L.readDone?'再接一个词 →':'根据新前文再预测 →'):s==='autogen-repeat'?(L.secondDone?'这一段学到了什么 →':'再选出一个词 →'):'给其他可能留机会 →';
     }
     function autogenStart(){
@@ -5391,7 +5404,7 @@
       if(s==='autogen-ending'){state.scene=scenes.indexOf('sampler-pick');}else state.scene++;
       renderScene();
     }
-    function autogenReplay(){autogenStart();}
+    function autogenReplay(){if(current()==='autogen-ending'&&generationSource){generationSource=null;state.scene=scenes.indexOf('unified-train');renderScene();return;}autogenStart();}
     function autogenBack(){
       stopAutomation();const L=autogenLesson;L.action=null;
       if(current()==='autogen-repeat'){L.readDone=true;L.secondDone=false;}
@@ -5469,12 +5482,12 @@
     }
     function samplerOne(run,random=Math.random){
       const L=samplerLesson,ids=[0,1,...run.map(e=>e.id)];
-      const model=multilearnForward(L.parameters,ids,L.head),u=random(),id=samplerIndex(model.probabilities,u);
+      const model=multilearnForward(L.parameters,ids,L.head,L.representation),u=random(),id=samplerIndex(model.probabilities,u);
       const event={u,id,model};run.push(event);return event;
     }
     function samplerInit(){
-      autogenInit();const parameters=multilearnClone(autogenLesson.parameters),head=autogenLesson.head.map(r=>[...r]),signature=JSON.stringify([parameters,head]);
-      if(samplerLesson?.signature!==signature)samplerLesson={signature,parameters,head,original:[],retry:[],phase:0,action:null,firstDone:false,continueDone:false,retryDone:false};
+      autogenInit();const parameters=multilearnClone(autogenLesson.parameters),head=autogenLesson.head.map(r=>[...r]),representation=generationRepresentation(autogenLesson.representation),signature=generationSignature(parameters,head,representation);
+      if(samplerLesson?.signature!==signature)samplerLesson={signature,parameters,head,representation,original:[],retry:[],phase:0,action:null,firstDone:false,continueDone:false,retryDone:false};
       const L=samplerLesson,s=current();
       if(['sampler-continue','sampler-retry'].includes(s)&&!L.original.length){samplerOne(L.original);L.firstDone=true;}
       if(s==='sampler-retry'&&L.original.length<2){samplerOne(L.original);L.continueDone=true;}
@@ -5483,7 +5496,7 @@
       const L=samplerLesson,s=current(),again=s==='sampler-retry',run=again?L.retry:L.original,p=L.phase;
       const second=again?(L.retryDone||L.action&&p>=2):(s==='sampler-continue'&&(L.continueDone||L.action&&p>=1));
       const event=run[second?1:0]??null;
-      const model=event?.model??multilearnForward(L.parameters,[0,1],L.head);
+      const model=event?.model??multilearnForward(L.parameters,[0,1],L.head,L.representation);
       let reveal=!!event,flight=null,outputDone=false,feeding=0,bandOpacity=1;
       if(s==='sampler-pick'){
         flight=L.action?clamp((p-.25)/.75,0,1):null;outputDone=L.firstDone;
@@ -5584,14 +5597,14 @@
       return {gaps,scaledGaps,probabilities:probSoftmax(scaledGaps)};
     }
     function thermoModel(ids,temperature=thermoLesson.temperature){
-      const L=thermoLesson,base=multilearnForward(L.parameters,ids,L.head);
+      const L=thermoLesson,base=multilearnForward(L.parameters,ids,L.head,L.representation);
       return {...base,originalProbabilities:[...base.probabilities],...thermoDistribution(base.logits,temperature),temperature};
     }
     function thermoInit(){
-      autogenInit();const parameters=multilearnClone(autogenLesson.parameters),head=autogenLesson.head.map(r=>[...r]),signature=JSON.stringify([parameters,head]);
+      autogenInit();const parameters=multilearnClone(autogenLesson.parameters),head=autogenLesson.head.map(r=>[...r]),representation=generationRepresentation(autogenLesson.representation),signature=generationSignature(parameters,head,representation);
       if(thermoLesson?.signature!==signature){
         const old=samplerLesson?.signature===signature?(samplerLesson.retry[0]??samplerLesson.original[0]):null,s=current();
-        thermoLesson={signature,parameters,head,temperature:s==='thermo-goal'?1:2.5,opened:s!=='thermo-goal',mechanism:s==='thermo-sample',previewU:old?.u??null,run:[],runDone:false,runTemperature:null,action:null,phase:0,from:1,to:2.5,axisSpan:null};
+        thermoLesson={signature,parameters,head,representation,temperature:s==='thermo-goal'?1:2.5,opened:s!=='thermo-goal',mechanism:s==='thermo-sample',previewU:old?.u??null,run:[],runDone:false,runTemperature:null,action:null,phase:0,from:1,to:2.5,axisSpan:null};
       }
       if(current()==='thermo-sample'&&thermoLesson.previewU===null)thermoLesson.previewU=Math.random();
     }
@@ -5633,7 +5646,7 @@
     function thermoNav(){
       const L=thermoLesson,s=current();back.hidden=false;back.disabled=false;back.textContent='← 上一页';next.disabled=!!L.action;
       automatic.hidden=s!=='thermo-sample'||!L.runDone||!!L.action;automatic.textContent='调整温度';automatic.setAttribute('aria-pressed','false');
-      next.textContent=s==='thermo-goal'?(L.opened?'看看怎样改变机会 →':'多保留一些可能 →'):s==='thermo-scores'?(L.mechanism?'让温度参与采样 →':'重看分数怎样变化 →'):s==='thermo-sample'?(L.runDone?'这一段学到了什么 →':'按这个温度生成 →'):'重看温度的作用 ↻';
+      next.textContent=s==='thermo-goal'?(L.opened?'看看怎样改变机会 →':'多保留一些可能 →'):s==='thermo-scores'?(L.mechanism?'让温度参与采样 →':'重看分数怎样变化 →'):s==='thermo-sample'?(L.runDone?'这一段学到了什么 →':'按这个温度生成 →'):'让整个模型共同学习 →';
     }
     function thermoAdjust(to,kind='adjust'){
       const L=thermoLesson;if(L.action)return;L.run=[];L.runDone=false;L.runTemperature=null;L.from=kind==='mechanism'?1:L.temperature;L.to=clamp(to,.5,3);L.temperature=L.from;L.action=kind;L.phase=0;lastPlot=null;thermoCopy();thermoNav();thermoDraw();
@@ -5646,7 +5659,7 @@
       if(s==='thermo-goal'&&!L.opened){thermoAdjust(2.5,'open');return;}
       if(s==='thermo-scores'&&!L.mechanism){thermoAdjust(L.temperature,'mechanism');return;}
       if(s==='thermo-sample'&&!L.runDone){thermoRun();return;}
-      if(s==='thermo-ending'){L.temperature=1;L.opened=false;L.mechanism=false;L.previewU=null;L.run=[];L.runDone=false;L.runTemperature=null;L.phase=0;state.scene=scenes.indexOf('thermo-goal');}else state.scene++;
+      if(s==='thermo-ending'){state.scene=scenes.indexOf('unified-records');}else state.scene++;
       renderScene();
     }
     function thermoReplay(){const L=thermoLesson;if(L.action)return;L.run=[];L.runDone=false;L.runTemperature=null;L.phase=0;thermoCopy();thermoNav();thermoDraw();}
@@ -5693,7 +5706,187 @@
       for(const [key,value] of Object.entries({...d,geometry:g,scorePoints,segments,marker,flyingPoint,focusX,busy:!!L.action,action:L.action,phase:L.phase,opened:L.opened,mechanism:L.mechanism,runDone:L.runDone}))svg.setAttribute('data-thermo-'+key,JSON.stringify(value));lastPlot={scene:s,width:w,distance:L.phase};if(progress!==null&&!L.action){thermoCopy();thermoNav();}
     }
 
-    const waveChapter={'#act-60':'thermo-goal','#act-60-scores':'thermo-scores','#act-60-sample':'thermo-sample','#act-59':'sampler-pick','#act-59-continue':'sampler-continue','#act-59-retry':'sampler-retry','#act-58':'autogen-pick','#act-58-feed':'autogen-feed','#act-58-repeat':'autogen-repeat','#act-57':'multilearn-goal','#act-57-single':'multilearn-single','#act-57-batch':'multilearn-batch','#act-56':'attlearn-goal','#act-56-value':'attlearn-value','#act-56-joint':'attlearn-joint','#act-55':'wkgroup-goal','#act-55-rules':'wkgroup-compose','#act-55-compose':'wkgroup-compose','#act-55-train':'wkgroup-train','#act-54':'wkshare-purpose','#act-54-rule':'wkshare-rule','#act-54-feedback':'wkshare-feedback','#act-53':'kgrad-source','#act-53-feedback':'kgrad-feedback','#act-52':'qgrad-source','#act-52-paths':'qgrad-paths','#act-52-joint':'qgrad-joint','#act-51':'sgrad-source','#act-51-response':'sgrad-response','#act-51-feedback':'sgrad-feedback','#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber','#act-24':'usage-purpose','#act-24-usage':'usage-observe','#act-24-dimensions':'usage-dimensions','#act-24-data':'usage-data','#act-24-capacity':'usage-capacity','#act-50':'agrad-source','#act-50-feedback':'agrad-feedback','#act-50-trial':'agrad-trial','#act-49':'vgrad-source','#act-49-return':'vgrad-return','#act-48':'backflow-fan','#act-48-sum':'backflow-sum','#act-48-residual':'backflow-residual','#act-47':'tune-loss','#act-47-feedback':'tune-feedback','#act-47-train':'tune-train','#act-46':'readout-purpose','#act-46-score':'readout-score','#act-46-prob':'readout-prob','#act-45':'mask-leak','#act-45-cut':'mask-cut','#act-45-rows':'mask-rows','#act-44':'place-content','#act-44-position':'place-position','#act-44-verify':'place-verify','#act-43':'round-run','#act-42':'residual-prepare','#act-42-join':'residual-join','#act-42-both':'residual-both','#act-41':'project-fixed','#act-41-adjust':'project-adjust','#act-41-shared':'project-shared','#act-40':'values-read','#act-40-values':'values-name','#act-39':'portions-exp','#act-39-cat':'portions-cat','#act-39-white':'portions-white','#act-39-table':'portions-table','#act-38':'scores-purpose','#act-38-pair':'scores-pair','#act-38-inspect':'scores-inspect','#act-37':'rows-purpose','#act-37-build':'rows-build','#act-37-inspect':'rows-inspect','#act-36':'derive-purpose','#act-36-q':'derive-q','#act-36-k':'derive-k','#act-36-shared':'derive-shared','#act-36-link':'derive-link','#act-35':'roles-purpose','#act-35-read':'roles-read','#act-35-match':'roles-match','#act-35-offer':'roles-offer','#act-34':'qk-purpose','#act-34-observe':'qk-observe','#act-34-match':'qk-match','#act-33':'weight-purpose','#act-33-equal':'weight-equal','#act-33-mix':'weight-mix','#act-32':'blend-purpose','#act-32-compose':'blend-compose','#act-32-explore':'blend-explore','#act-31':'prefix-purpose','#act-31-read':'prefix-read','#act-30':'flight','#act-29':'vocab-purpose','#act-29-observe':'vocab-observe','#act-29-feedback':'vocab-feedback','#act-29-train':'vocab-train','#act-28':'signal-purpose','#act-28-source':'signal-source','#act-28-endpoints':'signal-endpoints','#act-28-chain':'signal-chain','#act-28-merge':'signal-merge','#act-28-update':'signal-update','#act-27':'adapt-purpose','#act-27-probe':'adapt-probe','#act-27-rate':'adapt-rate','#act-27-update':'adapt-update','#act-26':'loss-observe','#act-26-design':'loss-design','#act-26-inverse':'loss-inverse','#act-26-ruler':'loss-ruler','#act-26-records':'loss-records','#act-26-curve':'loss-curve','#act-25':'prob-observe','#act-25-distribution':'prob-distribution','#act-25-convert':'prob-convert','#act-25-normalize':'prob-normalize','#act-24-shared':'usage-lookup','#act-24-lab':'emb-purpose','#act-24-lookup':'emb-lookup','#act-24-vector':'emb-vector','#act-24-compute':'emb-compute'}[globalThis.location?.hash];
+    // All trainable tables and projections of the teaching language model.
+    const unifiedGroups=['WQ','WK','WV','head','lexical','positions'];
+    const unifiedSentences=[[0,1,2],[2,1,0]];
+    const unifiedTasks=unifiedSentences.flatMap((ids,sentence)=>ids.slice(1).map((target,i)=>({sentence,position:i+1,ids:ids.slice(0,i+1),target})));
+    let unifiedLesson=null,unifiedFieldCache=null;
+    function unifiedClone(p){return Object.fromEntries(unifiedGroups.map(k=>[k,p[k].map(r=>[...r])]));}
+    function unifiedInit(){
+      multilearnInit();const learned=multilearnPlans().history.at(-1),initial={...multilearnClone(learned.parameters),head:multilearnLesson.head.map(r=>[...r]),lexical:placeLexical.map(r=>[...r]),positions:placePositions.map(r=>[...r])},signature=JSON.stringify(initial);
+      generationSource=null;
+      if(unifiedLesson?.signature===signature)return;
+      unifiedLesson={signature,initial,plans:null,index:current()==='unified-train'?1:0,stepDone:current()==='unified-train',selected:0,phase:0,action:null,compare:false,geometry:null};unifiedFieldCache=null;
+    }
+    function unifiedModel(p,ids,target){
+      const d=multilearnForward(p,ids,p.head,p),last=ids.length-1;
+      if(target===undefined)return d;
+      const max=Math.max(...d.logits),loss=max+Math.log(d.logits.reduce((sum,v)=>sum+Math.exp(v-max),0))-d.logits[target];
+      const outputGradient=d.probabilities.map((v,i)=>v-(i===target?1:0));
+      const gh=[0,1].map(j=>p.head.reduce((sum,r,i)=>sum+r[j]*outputGradient[i],0));
+      const gv=d.shares.map(a=>gh.map(v=>a*v)),ga=d.V.map(v=>v.reduce((sum,x,j)=>sum+x*gh[j],0));
+      const mean=d.shares.reduce((sum,a,i)=>sum+a*ga[i],0),gs=d.shares.map((a,i)=>a*(ga[i]-mean));
+      const gq=[0,1].map(j=>d.K.reduce((sum,k,i)=>sum+k[j]*gs[i],0)),gk=d.K.map((_,i)=>d.Q[last].map(v=>v*gs[i]));
+      const gx=d.inputs.map((_,i)=>[0,1].map(a=>[0,1].reduce((sum,b)=>sum+(i===last?gq[b]*p.WQ[a][b]:0)+gk[i][b]*p.WK[a][b]+gv[i][b]*p.WV[a][b],i===last?gh[a]:0)));
+      const gradients={
+        WQ:p.WQ.map((r,a)=>r.map((_,b)=>d.inputs[last][a]*gq[b])),
+        WK:p.WK.map((r,a)=>r.map((_,b)=>d.inputs.reduce((sum,x,i)=>sum+x[a]*gk[i][b],0))),
+        WV:p.WV.map((r,a)=>r.map((_,b)=>d.inputs.reduce((sum,x,i)=>sum+x[a]*gv[i][b],0))),
+        head:p.head.map((r,i)=>r.map((_,j)=>outputGradient[i]*d.h[j])),
+        lexical:p.lexical.map(r=>r.map(()=>0)),positions:p.positions.map(r=>r.map(()=>0))
+      };
+      ids.forEach((id,i)=>gx[i].forEach((v,j)=>{gradients.lexical[id][j]+=v;gradients.positions[i][j]+=v;}));
+      return {...d,target,loss,gradients,inputGradient:gx};
+    }
+    function unifiedEvaluate(p){
+      const records=unifiedTasks.map(t=>({...unifiedModel(p,t.ids,t.target),sentence:t.sentence,position:t.position}));
+      return {parameters:unifiedClone(p),records,loss:records.reduce((sum,r)=>sum+r.loss,0)/records.length};
+    }
+    function unifiedStep(p){
+      const base=unifiedEvaluate(p),gradients=Object.fromEntries(unifiedGroups.map(k=>[k,p[k].map((r,a)=>r.map((_,b)=>base.records.reduce((s,d)=>s+d.gradients[k][a][b],0)/base.records.length))]));
+      const norm=Math.max(...unifiedGroups.flatMap(k=>gradients[k].flat().map(Math.abs)));
+      if(norm<1e-12)return {parameters:base.parameters,after:base,rate:0,gradients};
+      let rate=Math.min(.2,.18/norm);
+      for(let n=0;n<24;n++){
+        const parameters=Object.fromEntries(unifiedGroups.map(k=>[k,p[k].map((r,a)=>r.map((v,b)=>v-rate*gradients[k][a][b]))])),after=unifiedEvaluate(parameters);
+        if(after.loss<base.loss-1e-12)return {parameters,after,rate,gradients};rate/=2;
+      }
+      return {parameters:base.parameters,after:base,rate:0,gradients};
+    }
+    function unifiedPlans(){
+      const L=unifiedLesson;if(L.plans)return L.plans;
+      const initial=unifiedEvaluate(L.initial),history=[initial],rates=[];
+      for(let i=0;i<1024;i++){const step=unifiedStep(history.at(-1).parameters);if(!step.rate)break;history.push(step.after);rates.push(step.rate);if(step.after.records.every(r=>r.probabilities[r.target]>=.92))break;}
+      return L.plans={initial,history,rates};
+    }
+    function unifiedShown(){
+      const L=unifiedLesson,P=unifiedPlans(),last=P.history.length-1,s=current();let position=0;
+      if(s==='unified-joint')position=L.action==='step'?L.phase:L.stepDone?Math.min(1,last):0;
+      if(s==='unified-train')position=L.action==='train'?L.phase:Math.min(last,Math.max(Math.min(1,last),L.index));
+      if(L.compare)position=0;
+      position=clamp(position,0,last);const i=Math.floor(position),u=position-i,a=P.history[i].parameters,b=P.history[Math.min(i+1,last)].parameters;
+      const parameters=Object.fromEntries(unifiedGroups.map(k=>[k,a[k].map((r,x)=>r.map((v,y)=>v+(b[k][x][y]-v)*u))]));
+      return {...unifiedEvaluate(parameters),position};
+    }
+
+
+
+    function unifiedTexts(){
+      const P=unifiedPlans();
+      return {
+        records:'原文不只告诉我们“追”之后出现什么，也告诉我们“小猫”和“小狗”之后出现了“追”。下面把四次预测的概率放在原文答案词的下方。同一套模型，需要兼顾不同长度、不同内容的前文。',
+        joint:'前面的计算要把前文整理成有用的表示，最后的读出也要学会利用它。四个点是交给读出部分的完整表示，点的颜色对应原文答案；底色表示读出更倾向于哪个词。我们希望每个点都获得对正确下一词更有利的预测。',
+        stepAfter:P.history.length>1?'点移动了，背景中的预测区域也变了：模型同时改进了怎样表示前文、怎样利用这些表示。四次预测共同提供反馈，整体损失降低；并不要求每次调整都让每一个任务立即变好。':'这一步没有找到降低整体损失的更新，参数和预测保持原样。我们判断学习是否有效，依据的是这些预测的实际结果。',
+        train:'把这四次预测的损失一起衡量，让词表示、位置表示、注意力和最后的读出共同调整。图和原句中的概率会一起变化。暂停后，点选原文中的答案词，可以对应到图上那次预测；接下来让同一套参数继续从整段原文学习。',
+        finishedGood:'四次预测现在都给原文中的答案较高概率。模型学习的是一套共用的方法，既整理不同前文，也把表示读成下一词概率。接下来固定这次学到的全部参数，让它根据前文接着写。',
+        finishedLimited:'整体损失已经降低，但有些预测还没有充分符合原文。接下来可以固定当前学到的参数，实际看看这个小模型怎样续写；它的局限也会保留在结果里。',
+        finishedNone:'这次没有找到降低整体损失的调整，预测和参数都保持原样。模型还没能区分这些任务；可以保留当前参数，观察它会怎样续写，看看这些预测还缺少什么。',
+        finishedAlready:'这些预测已经给原文中的答案较高概率，本次没有继续更新参数。接下来保留这套参数，实际看看模型怎样续写。'
+      };
+    }
+    function unifiedCopy(){
+      unifiedInit();copy.style.minHeight='';copy.replaceChildren();const T=unifiedTexts(),L=unifiedLesson,s=current();
+      let height=0;for(const v of Object.values(T)){copy.replaceChildren();paragraph(v);height=Math.max(height,copy.getBoundingClientRect().height);}
+      copy.replaceChildren();const last=unifiedPlans().history.length-1,finished=s==='unified-train'&&L.index>=last&&!L.action&&!L.compare;
+      const learned=unifiedShown().records.every(r=>r.probabilities[r.target]>=.85),completion=unifiedPlans().history.length===1?(learned?T.finishedAlready:T.finishedNone):(learned?T.finishedGood:T.finishedLimited);
+      paragraph(s==='unified-records'?T.records:s==='unified-joint'?(L.stepDone&&!L.compare?T.stepAfter:T.joint):finished?completion:T.train);copy.style.minHeight=height+'px';
+    }
+    function unifiedNav(){
+      const L=unifiedLesson,s=current(),last=unifiedPlans().history.length-1;
+      back.hidden=false;back.disabled=false;back.textContent='← 上一页';next.disabled=!!L.action&&L.action!=='train';
+      automatic.hidden=!!L.action||s==='unified-records'||s==='unified-joint'&&!L.stepDone;automatic.textContent=L.compare?'看学习结果':'对照最初';automatic.setAttribute('aria-pressed',String(L.compare));
+      next.textContent=s==='unified-records'?'让它们共同学习 →':s==='unified-joint'?(L.stepDone?'继续从原文学习 →':'一起学习一次 →'):L.action?'暂停学习':L.index>=last?'用学到的模型续写 →':L.index>1?'继续学习 →':'开始连续学习 →';
+    }
+    function unifiedStart(kind){
+      const L=unifiedLesson,last=unifiedPlans().history.length-1;if(L.action)return;
+      L.compare=false;L.action=kind;L.phase=kind==='step'?0:Math.min(last,Math.max(1,L.index));lastPlot=null;unifiedCopy();unifiedNav();unifiedDraw();
+    }
+    function unifiedPause(){
+      const L=unifiedLesson;if(L.action!=='train')return;cancelPlotAnimation();L.index=Math.min(unifiedPlans().history.length-1,Math.ceil(L.phase));L.phase=L.index;L.action=null;unifiedCopy();unifiedNav();unifiedDraw();
+    }
+    function unifiedExport(){
+      const L=unifiedLesson,P=unifiedPlans(),index=Math.min(P.history.length-1,Math.max(Math.min(1,P.history.length-1),L.index)),d=P.history[index];
+      L.compare=false;generationSource={model:unifiedClone(d.parameters),steps:index,loss:d.loss};autogenLesson=null;samplerLesson=null;thermoLesson=null;state.scene=scenes.indexOf('autogen-pick');renderScene();
+    }
+    function unifiedNext(){
+      const L=unifiedLesson,s=current(),last=unifiedPlans().history.length-1;if(L.action==='train'){unifiedPause();return;}if(L.action)return;
+      if(s==='unified-joint'&&!L.stepDone){unifiedStart('step');return;}
+      if(s==='unified-train'){if(L.index<last)unifiedStart('train');else unifiedExport();return;}
+      L.compare=false;if(s==='unified-joint')L.index=Math.max(Math.min(1,last),L.index);state.scene++;renderScene();
+    }
+    function unifiedReplay(){if(unifiedLesson.action)return;unifiedLesson.compare=!unifiedLesson.compare;unifiedCopy();unifiedNav();unifiedDraw();}
+    function unifiedBack(){stopAutomation();unifiedLesson.action=null;unifiedLesson.compare=false;state.scene--;renderScene();}
+    function unifiedChoose(index,focus=false){
+      if(unifiedLesson.action)return;unifiedLesson.selected=index;unifiedDraw();
+      if(focus)svg.querySelectorAll('[data-unified-record]')[index]?.focus?.();
+    }
+    function unifiedGeometry(w){
+      const L=unifiedLesson,key=String(w);if(L.geometry?.key===key)return L.geometry;
+      const values=[[0,0],...unifiedPlans().history.flatMap(d=>d.records.map(r=>r.h))],minX=Math.min(...values.map(v=>v[0]))-.8,maxX=Math.max(...values.map(v=>v[0]))+.8,minY=Math.min(...values.map(v=>v[1]))-.8,maxY=Math.max(...values.map(v=>v[1]))+.8;
+      const layout=Math.min(w,560),scale=Math.min((layout-64)/(maxX-minX),230/(maxY-minY)),left=(w-(maxX-minX)*scale)/2,top=168,right=w-left,bottom=top+(maxY-minY)*scale;
+      return L.geometry={key,width:w,layout,minX,maxX,minY,maxY,left,right,top,bottom,scale,height:bottom+87};
+    }
+    function unifiedPoint(g,v){return {x:g.left+(v[0]-g.minX)*g.scale,y:g.bottom-(v[1]-g.minY)*g.scale};}
+    function unifiedBoundaries(head,g){
+      const result=[];
+      for(let i=0;i<3;i++)for(let j=i+1;j<3;j++){
+        const n=head[i].map((v,k)=>v-head[j][k]),length=Math.hypot(...n);if(length<1e-12)continue;const v=[-n[1]/length,n[0]/length];let low=-Infinity,high=Infinity;
+        for(const [a,min,max] of [[0,g.minX,g.maxX],[1,g.minY,g.maxY]]){if(Math.abs(v[a])<1e-12){if(min>0||max<0){low=1;high=0;}}else{const ends=[min/v[a],max/v[a]].sort((a,b)=>a-b);low=Math.max(low,ends[0]);high=Math.min(high,ends[1]);}}
+        const other=3-i-j,advantage=head[i].reduce((sum,x,a)=>sum+(x-head[other][a])*v[a],0);
+        if(advantage>1e-12)low=Math.max(low,0);else if(advantage< -1e-12)high=Math.min(high,0);
+        if(high>low+1e-10)result.push({pair:[i,j],a:v.map(x=>x*low),b:v.map(x=>x*high)});
+      }
+      return result;
+    }
+    function unifiedRegions(head,g){
+      return head.map((row,i)=>{
+        let vertices=[[g.minX,g.minY],[g.maxX,g.minY],[g.maxX,g.maxY],[g.minX,g.maxY]];
+        for(let j=0;j<head.length&&vertices.length;j++){
+          if(i===j)continue;const n=row.map((v,k)=>v-head[j][k]);if(n.every(v=>v===0)){if(j<i)vertices=[];continue;}
+          const next=[];for(let k=0;k<vertices.length;k++){const a=vertices[k],b=vertices[(k+1)%vertices.length],da=n[0]*a[0]+n[1]*a[1],db=n[0]*b[0]+n[1]*b[1];if(da>=0)next.push(a);if((da>=0)!==(db>=0)){const t=da/(da-db);next.push(a.map((v,q)=>v+(b[q]-v)*t));}}vertices=next;
+        }
+        return {candidate:i,vertices};
+      });
+    }
+    function unifiedField(g,head){
+      const key=JSON.stringify([g.width,g.minX,g.maxX,g.minY,g.maxY,g.scale]),colors=['var(--ma-net-second)',ink,accent];
+      if(unifiedFieldCache?.key!==key){const node=el('g',{'data-unified-field':'','aria-hidden':'true'}),polygons=colors.map((color,i)=>el('polygon',{fill:color,opacity:.18,'data-unified-region':i},node));unifiedFieldCache={key,node,polygons,regions:[],headKey:null};}else svg.appendChild(unifiedFieldCache.node);
+      const headKey=JSON.stringify(head);if(unifiedFieldCache.headKey!==headKey){unifiedFieldCache.regions=unifiedRegions(head,g);for(const region of unifiedFieldCache.regions){const n=unifiedFieldCache.polygons[region.candidate];n.setAttribute('points',region.vertices.map(v=>{const p=unifiedPoint(g,v);return p.x+','+p.y;}).join(' '));n.setAttribute('data-vertices',JSON.stringify(region.vertices));}unifiedFieldCache.headKey=headKey;}
+      return {head:head.map(r=>[...r]),regions:unifiedFieldCache.regions};
+    }
+    function unifiedMark(p,sentence,color,attrs={},parent=svg){return sentence===0?el('circle',{cx:p.x,cy:p.y,r:4.5,fill:color,...attrs},parent):el('path',{d:`M ${p.x} ${p.y-6} l 6 6 -6 6 -6 -6 Z`,fill:'none',stroke:color,'stroke-width':2,...attrs},parent);}
+    function unifiedDraw(progress=null){
+      unifiedInit();const L=unifiedLesson,P=unifiedPlans(),last=P.history.length-1,s=current();
+      if(progress!==null){L.phase=progress;if(L.action==='train')L.index=Math.min(last,Math.floor(progress));const target=L.action==='step'?Math.min(1,last):last;if(progress>=target-1e-8){if(L.action==='step')L.stepDone=true;if(L.action==='train')L.index=last;L.action=null;}}
+      const w=Math.max(240,figure.getBoundingClientRect().width||736);
+      if(L.action&&progress===null){const target=L.action==='step'?Math.min(1,last):last;lastPlot={scene:s,width:w,distance:L.phase};animatePlot(s,w,target,p=>unifiedDraw(p),L.action==='step'?3200:Math.max(1200,8500*(target-L.phase)/Math.max(1,last)));return;}
+      const d=unifiedShown(),g=unifiedGeometry(w),colors=['var(--ma-net-second)',ink,accent],recordsOnly=s==='unified-records';adaptFrame(w,recordsOnly?157:g.height,'让整段原文共同训练同一个模型');svg.setAttribute('role','group');
+      const layout=Math.min(w-12,440),left=(w-layout)/2,centers=[0,1,2].map(i=>left+layout*(i+.5)/3);
+      unifiedSentences.forEach((ids,row)=>{const y=28+row*66;ids.forEach((id,i)=>{
+        if(i===0){text(placeNames[id],centers[i],y,{'text-anchor':'middle','font-size':w<330?17:20,fill:colors[id]});return;}
+        const index=row*2+i-1,r=d.records[index],selected=!recordsOnly&&L.selected===index,p=r.probabilities[r.target],pct=p>0&&p<.0005?'<0.1%':p<1&&p>.9995?'>99.9%':probPercent(p);
+        const group=el('g',{'data-unified-record':index,...(!recordsOnly?{role:'button',tabindex:L.action?-1:0,'aria-disabled':String(!!L.action),'aria-label':'查看前文“'+r.ids.map(id=>placeNames[id]).join(' ')+'”预测“'+placeNames[r.target]+'”','aria-pressed':String(selected),style:L.action?'cursor:default':'cursor:pointer'}:{})});
+        el('rect',{x:centers[i]-30,y:y-24,width:60,height:53,rx:2,fill:selected?colors[id]:'transparent',opacity:selected?.07:1},group);
+        text(placeNames[id],centers[i],y,{'text-anchor':'middle','font-size':w<330?17:20,fill:colors[id]},group);
+        const marker={x:centers[i]-30,y:y+21};if(row===0)el('circle',{cx:marker.x,cy:marker.y-3,r:2.7,fill:colors[id]},group);else el('path',{d:`M ${marker.x} ${marker.y-7} l 4 4 -4 4 -4 -4 Z`,fill:'none',stroke:colors[id],'stroke-width':1.3},group);
+        text(pct,centers[i]+3,y+24,{'text-anchor':'middle','font-size':11,fill:colors[id]},group);
+        if(!recordsOnly){group.addEventListener('click',()=>unifiedChoose(index));group.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();unifiedChoose(index,true);}});}
+      });if(!recordsOnly&&d.records[L.selected].sentence===row){const end=d.records[L.selected].position-1;line(centers[0]-22,y+8,centers[end]+22,y+8,{stroke:muted,'stroke-width':1.3,'data-unified-prefix':L.selected});}});
+      let field=null,boundaries=[],screens=[];
+      if(!recordsOnly){
+        field=unifiedField(g,d.parameters.head);const O=unifiedPoint(g,[0,0]);line(g.left,O.y,g.right,O.y,{opacity:.55});line(O.x,g.top,O.x,g.bottom,{opacity:.55});text('表示分量 2',g.left,g.top-16,{'font-size':10,fill:muted});text('表示分量 1',g.right,g.bottom+27,{'font-size':10,fill:muted,'text-anchor':'end'});
+        const ticks=(min,max,pixels)=>{const desired=(max-min)*45/pixels,power=10**Math.floor(Math.log10(desired)),step=[1,2,5,10].map(v=>v*power).find(v=>v>=desired),values=[];for(let i=Math.ceil(min/step);i*step<=max;i++)values.push(Number((i*step).toFixed(4)));return values;};
+        for(const v of ticks(g.minX,g.maxX,g.right-g.left)){const p=unifiedPoint(g,[v,0]);line(p.x,O.y-3,p.x,O.y+3);text(v,p.x,O.y+14,{'font-size':10,fill:muted,'text-anchor':'middle'});}
+        for(const v of ticks(g.minY,g.maxY,g.bottom-g.top)){if(v===0)continue;const p=unifiedPoint(g,[0,v]);line(O.x-3,p.y,O.x+3,p.y);text(v,O.x-7,p.y+3,{'font-size':10,fill:muted,'text-anchor':'end'});}
+        if(d.position>0){boundaries=unifiedBoundaries(P.initial.parameters.head,g);for(const edge of boundaries){const a=unifiedPoint(g,edge.a),b=unifiedPoint(g,edge.b);line(a.x,a.y,b.x,b.y,{stroke:muted,'stroke-dasharray':'3 5',opacity:.38,'data-unified-old-boundary':edge.pair.join(',')});}
+          d.records.forEach((r,i)=>{const old=unifiedPoint(g,P.initial.records[i].h),p=unifiedPoint(g,r.h),color=colors[r.target];unifiedMark(old,r.sentence,color,{opacity:.28});line(old.x,old.y,p.x,p.y,{stroke:color,'stroke-width':1.2,opacity:.32});});}
+        d.records.forEach((r,i)=>{const p=unifiedPoint(g,r.h),color=colors[r.target];screens.push(p);const group=el('g',{role:'button',tabindex:0,'data-unified-point':i,'aria-label':r.ids.map(id=>placeNames[id]).join(' ')+'的表示，预测'+placeNames[r.target],style:'cursor:pointer'});el('circle',{cx:p.x,cy:p.y,r:13,fill:'transparent'},group);const mark=unifiedMark(p,r.sentence,color,{'data-unified-dot':i});group.appendChild(mark);el('title',{},group).textContent='前文 '+r.ids.map(id=>placeNames[id]).join(' ')+'；表示 '+r.h.map(v=>Number(v.toFixed(3))).join('，');group.addEventListener('click',()=>unifiedChoose(i));group.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();unifiedChoose(i,true);}});if(L.selected===i)el('circle',{cx:p.x,cy:p.y,r:10,fill:'none',stroke:color,opacity:.7,'stroke-width':1.2});});
+        text('四次预测的平均损失 '+Number(d.loss.toFixed(3)),w/2,g.bottom+65,{'text-anchor':'middle','font-size':w<330?11:13,fill:muted});
+      }
+      for(const [key,value] of Object.entries({...d,geometry:g,field,boundaries,screens,selected:L.selected,index:L.index,stepDone:L.stepDone,compare:L.compare,busy:!!L.action,action:L.action,phase:L.phase,totalSteps:last}))svg.setAttribute('data-unified-'+key,JSON.stringify(value));lastPlot={scene:s,width:w,distance:L.phase};if(progress!==null&&!L.action){unifiedCopy();unifiedNav();}
+    }
+
+    const waveChapter={'#act-61':'unified-records','#act-61-joint':'unified-joint','#act-61-train':'unified-train','#act-60':'thermo-goal','#act-60-scores':'thermo-scores','#act-60-sample':'thermo-sample','#act-59':'sampler-pick','#act-59-continue':'sampler-continue','#act-59-retry':'sampler-retry','#act-58':'autogen-pick','#act-58-feed':'autogen-feed','#act-58-repeat':'autogen-repeat','#act-57':'multilearn-goal','#act-57-single':'multilearn-single','#act-57-batch':'multilearn-batch','#act-56':'attlearn-goal','#act-56-value':'attlearn-value','#act-56-joint':'attlearn-joint','#act-55':'wkgroup-goal','#act-55-rules':'wkgroup-compose','#act-55-compose':'wkgroup-compose','#act-55-train':'wkgroup-train','#act-54':'wkshare-purpose','#act-54-rule':'wkshare-rule','#act-54-feedback':'wkshare-feedback','#act-53':'kgrad-source','#act-53-feedback':'kgrad-feedback','#act-52':'qgrad-source','#act-52-paths':'qgrad-paths','#act-52-joint':'qgrad-joint','#act-51':'sgrad-source','#act-51-response':'sgrad-response','#act-51-feedback':'sgrad-feedback','#act-6':'wave-multi-purpose','#act-7':'wave-score-purpose','#act-8':'wave-strips','#act-9':'wave-shape','#act-10':'bend-purpose','#act-11':'bend-gate','#act-12':'bend-neuron','#act-13':'output-purpose','#act-14':'relay-purpose','#act-14-chain':'relay-chain-trace','#act-15':'joint-purpose','#act-15-train':'joint-train','#act-16':'pair-observe','#act-16-add':'pair-add','#act-17':'duo-purpose','#act-17-train':'duo-train','#act-18':'onset-purpose','#act-18-train':'onset-train','#act-19':'net-purpose','#act-19-back':'net-backward','#act-19-batch':'net-batch','#act-19-train':'net-train','#act-20':'deep-summary','#act-20-layers':'deep-purpose','#act-20-compose':'deep-compose','#act-21':'mesh-purpose','#act-21-network':'mesh-input','#act-21-remove':'mesh-ablate','#act-21-node':'mesh-input','#act-22':'whole-purpose','#act-22-train':'whole-train','#act-22-paths':'whole-paths','#act-23':'text-purpose','#act-23-pairs':'text-pairs','#act-23-ids':'text-ids','#act-23-renumber':'text-renumber','#act-24':'usage-purpose','#act-24-usage':'usage-observe','#act-24-dimensions':'usage-dimensions','#act-24-data':'usage-data','#act-24-capacity':'usage-capacity','#act-50':'agrad-source','#act-50-feedback':'agrad-feedback','#act-50-trial':'agrad-trial','#act-49':'vgrad-source','#act-49-return':'vgrad-return','#act-48':'backflow-fan','#act-48-sum':'backflow-sum','#act-48-residual':'backflow-residual','#act-47':'tune-loss','#act-47-feedback':'tune-feedback','#act-47-train':'tune-train','#act-46':'readout-purpose','#act-46-score':'readout-score','#act-46-prob':'readout-prob','#act-45':'mask-leak','#act-45-cut':'mask-cut','#act-45-rows':'mask-rows','#act-44':'place-content','#act-44-position':'place-position','#act-44-verify':'place-verify','#act-43':'round-run','#act-42':'residual-prepare','#act-42-join':'residual-join','#act-42-both':'residual-both','#act-41':'project-fixed','#act-41-adjust':'project-adjust','#act-41-shared':'project-shared','#act-40':'values-read','#act-40-values':'values-name','#act-39':'portions-exp','#act-39-cat':'portions-cat','#act-39-white':'portions-white','#act-39-table':'portions-table','#act-38':'scores-purpose','#act-38-pair':'scores-pair','#act-38-inspect':'scores-inspect','#act-37':'rows-purpose','#act-37-build':'rows-build','#act-37-inspect':'rows-inspect','#act-36':'derive-purpose','#act-36-q':'derive-q','#act-36-k':'derive-k','#act-36-shared':'derive-shared','#act-36-link':'derive-link','#act-35':'roles-purpose','#act-35-read':'roles-read','#act-35-match':'roles-match','#act-35-offer':'roles-offer','#act-34':'qk-purpose','#act-34-observe':'qk-observe','#act-34-match':'qk-match','#act-33':'weight-purpose','#act-33-equal':'weight-equal','#act-33-mix':'weight-mix','#act-32':'blend-purpose','#act-32-compose':'blend-compose','#act-32-explore':'blend-explore','#act-31':'prefix-purpose','#act-31-read':'prefix-read','#act-30':'flight','#act-29':'vocab-purpose','#act-29-observe':'vocab-observe','#act-29-feedback':'vocab-feedback','#act-29-train':'vocab-train','#act-28':'signal-purpose','#act-28-source':'signal-source','#act-28-endpoints':'signal-endpoints','#act-28-chain':'signal-chain','#act-28-merge':'signal-merge','#act-28-update':'signal-update','#act-27':'adapt-purpose','#act-27-probe':'adapt-probe','#act-27-rate':'adapt-rate','#act-27-update':'adapt-update','#act-26':'loss-observe','#act-26-design':'loss-design','#act-26-inverse':'loss-inverse','#act-26-ruler':'loss-ruler','#act-26-records':'loss-records','#act-26-curve':'loss-curve','#act-25':'prob-observe','#act-25-distribution':'prob-distribution','#act-25-convert':'prob-convert','#act-25-normalize':'prob-normalize','#act-24-shared':'usage-lookup','#act-24-lab':'emb-purpose','#act-24-lookup':'emb-lookup','#act-24-vector':'emb-vector','#act-24-compute':'emb-compute'}[globalThis.location?.hash];
     if(waveChapter)state.scene=scenes.indexOf(waveChapter);
     renderScene();
     if(globalThis.location?.hash==='#act-21-node'){
@@ -5702,7 +5895,7 @@
     }
     new ResizeObserver(entries=>{
       // Height-only layout changes must not finish the current teaching animation.
-      if(entries?.length&&(current().startsWith('vocab-')||current()==='flight'||current().startsWith('blend-')||current().startsWith('weight-')||current().startsWith('roles-')||current().startsWith('derive-')||current().startsWith('rows-')||current().startsWith('scores-')||current().startsWith('portions-')||current().startsWith('values-')||current().startsWith('project-')||current().startsWith('residual-')||current().startsWith('round-')||current().startsWith('place-')||current().startsWith('mask-')||current().startsWith('readout-')||current().startsWith('tune-')||current().startsWith('backflow-')||current().startsWith('vgrad-')||current().startsWith('agrad-')||current().startsWith('sgrad-')||current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-')||current().startsWith('autogen-')||current().startsWith('sampler-')||current().startsWith('thermo-'))&&lastPlot?.width===Math.max(240,figure.getBoundingClientRect().width||736))return;
+      if(entries?.length&&(current().startsWith('vocab-')||current()==='flight'||current().startsWith('blend-')||current().startsWith('weight-')||current().startsWith('roles-')||current().startsWith('derive-')||current().startsWith('rows-')||current().startsWith('scores-')||current().startsWith('portions-')||current().startsWith('values-')||current().startsWith('project-')||current().startsWith('residual-')||current().startsWith('round-')||current().startsWith('place-')||current().startsWith('mask-')||current().startsWith('readout-')||current().startsWith('tune-')||current().startsWith('backflow-')||current().startsWith('vgrad-')||current().startsWith('agrad-')||current().startsWith('sgrad-')||current().startsWith('qgrad-')||current().startsWith('kgrad-')||current().startsWith('wkshare-')||current().startsWith('wkgroup-')||current().startsWith('attlearn-')||current().startsWith('multilearn-')||current().startsWith('autogen-')||current().startsWith('sampler-')||current().startsWith('thermo-')||current().startsWith('unified-'))&&lastPlot?.width===Math.max(240,figure.getBoundingClientRect().width||736))return;
       if(current().startsWith('vocab-')){stopAutomation();renderCopy();updateNav();}
       if(entries?.length&&(meshView()?.detail||current().startsWith('adapt-')||current().startsWith('signal-'))&&plotMotion&&lastPlot?.width===Math.max(240,figure.getBoundingClientRect().width||736))return;
       cancelPlotAnimation(true);lastPlot=null;
